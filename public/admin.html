@@ -117,6 +117,7 @@ const firebaseConfig = {
 // ── Your super-admin email ──────────────────────
 const ADMIN_EMAIL = "yshoeb52@gmail.com"; // CHANGE THIS
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
@@ -126,16 +127,34 @@ let currentAdmin = null;
 let tenants = [];
 let activeTab = 'overview';
 let searchQuery = '';
-let selectedTenant = null;
+
+// ── Helper to show error messages ───────────────
+function showError(msg) {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;color:var(--red);padding:20px;text-align:center;">
+      <i class="fa fa-exclamation-triangle" style="font-size:48px;"></i>
+      <div style="font-size:14px;">${msg}</div>
+      <button class="btn btn-ghost btn-sm" onclick="location.reload()">Retry</button>
+    </div>
+  `;
+}
 
 // ── Auth ────────────────────────────────────────
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(async user => {
+  console.log("Auth state changed:", user?.email);
+  
   if (user && user.email === ADMIN_EMAIL) {
     currentAdmin = user;
-    loadDashboard();
+    try {
+      await loadDashboard();
+    } catch (error) {
+      console.error("Dashboard load error:", error);
+      showError("Failed to load dashboard: " + error.message);
+    }
   } else if (user) {
     // Logged in but not admin
-    auth.signOut();
+    await auth.signOut();
     renderLogin('Access denied — admin only.');
   } else {
     renderLogin();
@@ -145,9 +164,17 @@ auth.onAuthStateChanged(user => {
 // ── Load all tenants ────────────────────────────
 async function loadDashboard() {
   renderLoading();
-  const snap = await db.collection('tenants').orderBy('createdAt','desc').get();
-  tenants = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  renderDashboard();
+  
+  try {
+    console.log("Loading tenants from Firestore...");
+    const snap = await db.collection('tenants').orderBy('createdAt', 'desc').get();
+    tenants = snap.docs.map(d => ({ id: d.id, ...d.data(), uid: d.id }));
+    console.log(`Loaded ${tenants.length} tenants`);
+    renderDashboard();
+  } catch (error) {
+    console.error("Firestore error:", error);
+    throw new Error("Cannot access Firestore. Check security rules.");
+  }
 }
 
 // ── Render functions ────────────────────────────
@@ -167,7 +194,7 @@ function renderLogin(err = '') {
         <div class="login-title">Ordo Admin</div>
         <div class="login-sub">Super admin access only</div>
         ${err ? `<div class="err" style="margin-bottom:14px;padding:8px 12px;background:var(--red-dim);border-radius:6px;">${err}</div>` : ''}
-        <div class="field"><label>Email</label><input class="input" id="adm-email" type="email" placeholder="${ADMIN_EMAIL}"/></div>
+        <div class="field"><label>Email</label><input class="input" id="adm-email" type="email" placeholder="admin@example.com"/></div>
         <div class="field"><label>Password</label><input class="input" id="adm-pass" type="password" onkeydown="if(event.key==='Enter')adminLogin()"/></div>
         <div id="adm-err" class="err"></div>
         <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" onclick="adminLogin()">Sign In →</button>
@@ -175,16 +202,24 @@ function renderLogin(err = '') {
     </div>`;
 }
 
-async function adminLogin() {
+window.adminLogin = async function() {
   const email = document.getElementById('adm-email').value;
   const pass  = document.getElementById('adm-pass').value;
-  if (!email || !pass) { document.getElementById('adm-err').textContent = 'Fill in both fields.'; return; }
+  const errEl = document.getElementById('adm-err');
+  
+  if (!email || !pass) {
+    errEl.textContent = 'Fill in both fields.';
+    return;
+  }
+  
   try {
+    errEl.textContent = '';
     await auth.signInWithEmailAndPassword(email, pass);
   } catch(e) {
-    document.getElementById('adm-err').textContent = 'Invalid credentials.';
+    console.error("Login error:", e);
+    errEl.textContent = 'Invalid credentials or network error.';
   }
-}
+};
 
 function renderDashboard() {
   // Stats
@@ -193,9 +228,10 @@ function renderDashboard() {
   const active      = tenants.filter(t => t.status === 'active').length;
   const expired     = tenants.filter(t => t.status === 'expired').length;
   const mrr         = tenants.filter(t => t.status === 'active' && t.plan === 'monthly').length * 199
-                    + tenants.filter(t => t.status === 'active' && t.plan === 'annual').length  * (149)
+                    + tenants.filter(t => t.status === 'active' && t.plan === 'annual').length  * 149
                     + tenants.filter(t => t.status === 'active' && t.plan === 'lifetime').length * 0;
   const newThisMonth = tenants.filter(t => {
+    if (!t.createdAt) return false;
     const d = new Date(t.createdAt);
     const n = new Date();
     return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
@@ -203,9 +239,9 @@ function renderDashboard() {
 
   const filtered = tenants.filter(t =>
     !searchQuery ||
-    (t.restaurantName||'').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (t.email||'').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (t.plan||'').toLowerCase().includes(searchQuery.toLowerCase())
+    (t.restaurantName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (t.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (t.plan || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   document.getElementById('app').innerHTML = `
@@ -213,20 +249,20 @@ function renderDashboard() {
       <div class="logo">Ordo <span>Admin Dashboard</span></div>
       <div style="display:flex;align-items:center;gap:12px;">
         <span class="admin-badge">ADMIN</span>
-        <span style="font-size:12px;color:var(--t3)">${currentAdmin?.email}</span>
-        <button class="btn btn-ghost btn-sm" onclick="auth.signOut()"><i class="fa fa-sign-out-alt"></i> Sign out</button>
+        <span style="font-size:12px;color:var(--t3)">${currentAdmin?.email || ''}</span>
+        <button class="btn btn-ghost btn-sm" onclick="window.auth.signOut()"><i class="fa fa-sign-out-alt"></i> Sign out</button>
       </div>
     </div>
 
     <div class="layout">
       <div class="sidebar">
-        <button class="nav-item ${activeTab==='overview'?'active':''}" onclick="setTab('overview')"><i class="fa fa-chart-pie"></i> Overview</button>
-        <button class="nav-item ${activeTab==='tenants'?'active':''}" onclick="setTab('tenants')"><i class="fa fa-building"></i> Restaurants</button>
-        <button class="nav-item ${activeTab==='revenue'?'active':''}" onclick="setTab('revenue')"><i class="fa fa-coins"></i> Revenue</button>
-        <button class="nav-item ${activeTab==='expiring'?'active':''}" onclick="setTab('expiring')"><i class="fa fa-clock"></i> Expiring Soon</button>
+        <button class="nav-item ${activeTab === 'overview' ? 'active' : ''}" onclick="window.setTab('overview')"><i class="fa fa-chart-pie"></i> Overview</button>
+        <button class="nav-item ${activeTab === 'tenants' ? 'active' : ''}" onclick="window.setTab('tenants')"><i class="fa fa-building"></i> Restaurants</button>
+        <button class="nav-item ${activeTab === 'revenue' ? 'active' : ''}" onclick="window.setTab('revenue')"><i class="fa fa-coins"></i> Revenue</button>
+        <button class="nav-item ${activeTab === 'expiring' ? 'active' : ''}" onclick="window.setTab('expiring')"><i class="fa fa-clock"></i> Expiring Soon</button>
         <div style="height:1px;background:rgba(255,255,255,.05);margin:10px 0;"></div>
-        <button class="nav-item ${activeTab==='licenses'?'active':''}" onclick="setTab('licenses')"><i class="fa fa-key"></i> License Keys</button>
-        <button class="nav-item ${activeTab==='version'?'active':''}" onclick="setTab('version')"><i class="fa fa-rocket"></i> Version Manager</button>
+        <button class="nav-item ${activeTab === 'licenses' ? 'active' : ''}" onclick="window.setTab('licenses')"><i class="fa fa-key"></i> License Keys</button>
+        <button class="nav-item ${activeTab === 'version' ? 'active' : ''}" onclick="window.setTab('version')"><i class="fa fa-rocket"></i> Version Manager</button>
       </div>
 
       <div class="main" id="tab-content">
@@ -238,6 +274,10 @@ function renderDashboard() {
         ${activeTab === 'version'   ? '<div id="version-tab">Loading…</div>' : ''}
       </div>
     </div>`;
+    
+  // Load async tabs
+  if (activeTab === 'licenses') setTimeout(() => renderLicensesTab(), 50);
+  if (activeTab === 'version') setTimeout(() => renderVersionTab(), 50);
 }
 
 function renderOverview(total, trials, active, expired, mrr, newMonth, tenants) {
@@ -266,14 +306,14 @@ function renderTenants(filtered) {
   return `
     <div class="search-wrap">
       <i class="fa fa-search"></i>
-      <input class="input" placeholder="Search restaurants, email, plan…" value="${searchQuery}" oninput="searchQuery=this.value;renderDashboard()"/>
+      <input class="input" placeholder="Search restaurants, email, plan…" value="${searchQuery}" oninput="window.searchQuery=this.value;window.renderDashboard()"/>
     </div>
-    <div class="sec-hdr">${filtered.length} restaurant${filtered.length!==1?'s':''}</div>
+    <div class="sec-hdr">${filtered.length} restaurant${filtered.length !== 1 ? 's' : ''}</div>
     <div class="card" style="padding:0;overflow:hidden;">
       <table class="tbl">
         <thead><tr><th>Restaurant</th><th>Owner</th><th>Plan</th><th>Status</th><th>Trial Ends</th><th>Actions</th></tr></thead>
         <tbody>${filtered.map(t => tenantRow(t, true)).join('')}</tbody>
-      </table>
+       </table>
     </div>`;
 }
 
@@ -296,12 +336,12 @@ function renderRevenue(tenants) {
     <div class="card" style="padding:0;overflow:hidden;">
       <table class="tbl">
         <thead><tr><th>Restaurant</th><th>Plan</th><th>Email</th><th>Actions</th></tr></thead>
-        <tbody>${paid.map(t=>`
+        <tbody>${paid.map(t => `
           <tr>
-            <td><strong>${t.restaurantName||'—'}</strong></td>
+            <td><strong>${t.restaurantName || '—'}</strong></td>
             <td><span class="badge badge-green">${t.plan}</span></td>
             <td style="color:var(--t3)">${t.email}</td>
-            <td><button class="btn btn-ghost btn-sm" onclick="openTenant('${t.uid}')">View</button></td>
+            <td><button class="btn btn-ghost btn-sm" onclick="window.openTenant('${t.uid}')">View</button></td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -311,12 +351,13 @@ function renderRevenue(tenants) {
 function renderExpiring(tenants) {
   const soon = tenants.filter(t => {
     if (t.status !== 'trial') return false;
+    if (!t.trialEnd) return false;
     const days = Math.ceil((new Date(t.trialEnd) - new Date()) / 86400000);
     return days <= 3 && days >= 0;
   }).sort((a,b) => new Date(a.trialEnd) - new Date(b.trialEnd));
 
   return `
-    <div class="sec-hdr">${soon.length} trial${soon.length!==1?'s':''} expiring within 3 days</div>
+    <div class="sec-hdr">${soon.length} trial${soon.length !== 1 ? 's' : ''} expiring within 3 days</div>
     ${soon.length === 0 ? '<div class="card" style="text-align:center;color:var(--t3);padding:40px;">No trials expiring soon 🎉</div>' : ''}
     ${soon.length > 0 ? `
     <div class="card" style="padding:0;overflow:hidden;">
@@ -325,12 +366,12 @@ function renderExpiring(tenants) {
         <tbody>${soon.map(t => {
           const days = Math.ceil((new Date(t.trialEnd) - new Date()) / 86400000);
           return `<tr>
-            <td><strong>${t.restaurantName||'—'}</strong></td>
+            <td><strong>${t.restaurantName || '—'}</strong></td>
             <td style="color:var(--t3)">${t.email}</td>
-            <td><span class="badge ${days<=1?'badge-red':'badge-yellow'}">${days} day${days!==1?'s':''}</span></td>
+            <td><span class="badge ${days <= 1 ? 'badge-red' : 'badge-yellow'}">${days} day${days !== 1 ? 's' : ''}</span></td>
             <td style="display:flex;gap:6px;">
-              <button class="btn btn-ghost btn-sm" onclick="extendTrial('${t.uid}')"><i class="fa fa-clock"></i> Extend 7d</button>
-              <button class="btn btn-gold btn-sm" onclick="activateTenant('${t.uid}','monthly')"><i class="fa fa-check"></i> Activate</button>
+              <button class="btn btn-ghost btn-sm" onclick="window.extendTrial('${t.uid}')"><i class="fa fa-clock"></i> Extend 7d</button>
+              <button class="btn btn-gold btn-sm" onclick="window.activateTenant('${t.uid}','monthly')"><i class="fa fa-check"></i> Activate</button>
             </td>
           </tr>`;
         }).join('')}
@@ -359,36 +400,34 @@ function tenantRow(t, full = false) {
 
   if (full) return `
     <tr>
-      <td><strong>${t.restaurantName||'—'}</strong><br><span style="color:var(--t3);font-size:11px">${t.email}</span></td>
-      <td style="color:var(--t2)">${t.ownerName||'—'}</td>
+      <td><strong>${t.restaurantName || '—'}</strong><br><span style="color:var(--t3);font-size:11px">${t.email}</span></td>
+      <td style="color:var(--t2)">${t.ownerName || '—'}</td>
       <td>${planBadge}</td>
       <td>${statusBadge}</td>
       <td style="color:var(--t3);font-size:12px">${trialEnd}</td>
       <td style="display:flex;gap:5px;flex-wrap:wrap;">
-        <button class="btn btn-ghost btn-sm" onclick="openTenant('${t.uid}')"><i class="fa fa-eye"></i></button>
-        <button class="btn btn-gold btn-sm" onclick="activateTenant('${t.uid}','monthly')"><i class="fa fa-check"></i> Activate</button>
-        <button class="btn btn-danger btn-sm" onclick="expireTenant('${t.uid}')"><i class="fa fa-ban"></i></button>
+        <button class="btn btn-ghost btn-sm" onclick="window.openTenant('${t.uid}')"><i class="fa fa-eye"></i></button>
+        <button class="btn btn-gold btn-sm" onclick="window.activateTenant('${t.uid}','monthly')"><i class="fa fa-check"></i> Activate</button>
+        <button class="btn btn-danger btn-sm" onclick="window.expireTenant('${t.uid}')"><i class="fa fa-ban"></i></button>
       </td>
     </tr>`;
 
   return `
     <tr>
-      <td><strong>${t.restaurantName||'—'}</strong><br><span style="color:var(--t3);font-size:11px">${t.email}</span></td>
+      <td><strong>${t.restaurantName || '—'}</strong><br><span style="color:var(--t3);font-size:11px">${t.email}</span></td>
       <td>${planBadge}</td>
       <td>${statusBadge}</td>
       <td style="color:var(--t3);font-size:12px">${joined}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="openTenant('${t.uid}')">View</button></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="window.openTenant('${t.uid}')">View</button></td>
     </tr>`;
 }
 
 // ── Actions ─────────────────────────────────────
 
-function setTab(tab) {
+window.setTab = function(tab) {
   activeTab = tab;
   renderDashboard();
-  if (tab === 'licenses') setTimeout(renderLicensesTab, 50);
-  if (tab === 'version')  setTimeout(renderVersionTab, 50);
-}
+};
 
 // ── License Keys Tab ─────────────────────────────
 async function renderLicensesTab() {
@@ -396,36 +435,40 @@ async function renderLicensesTab() {
   if (!el) return;
   el.innerHTML = `<div style="color:var(--t3);font-size:13px;padding:20px;"><i class="fa fa-spinner" style="animation:spin 1s linear infinite;"></i> Loading…</div>`;
 
-  const snap = await db.collection('licenses').orderBy('createdAt','desc').limit(100).get();
-  const licenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    const snap = await db.collection('licenses').orderBy('createdAt','desc').limit(100).get();
+    const licenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-      <div class="sec-hdr" style="margin:0">${licenses.length} License Keys</div>
-      <button class="btn btn-gold btn-sm" onclick="generateLicenseModal()"><i class="fa fa-plus"></i> Generate Key</button>
-    </div>
-    <div class="card" style="padding:0;overflow:hidden;">
-      <table class="tbl">
-        <thead><tr><th>Key</th><th>Email</th><th>Plan</th><th>Status</th><th>Expires</th><th>Actions</th></tr></thead>
-        <tbody>
-          ${licenses.map(l => `
-            <tr>
-              <td style="font-family:monospace;font-size:12px;color:var(--gold2);letter-spacing:1px">${l.id}</td>
-              <td style="font-size:12px;color:var(--t2)">${l.email||'—'}</td>
-              <td><span class="badge badge-gold" style="font-size:10px">${l.plan||'—'}</span></td>
-              <td><span class="badge ${l.status==='active'?'badge-green':l.status==='suspended'?'badge-red':'badge-yellow'}" style="font-size:10px">${l.status||'—'}</span></td>
-              <td style="font-size:11px;color:var(--t3)">${l.expiresAt?new Date(l.expiresAt).toLocaleDateString():'Never'}</td>
-              <td style="display:flex;gap:5px;">
-                <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${l.id}').then(()=>alert('Copied!'))"><i class="fa fa-copy"></i></button>
-                <button class="btn btn-danger btn-sm" onclick="suspendLicense('${l.id}')"><i class="fa fa-ban"></i></button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div class="sec-hdr" style="margin:0">${licenses.length} License Keys</div>
+        <button class="btn btn-gold btn-sm" onclick="window.generateLicenseModal()"><i class="fa fa-plus"></i> Generate Key</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="tbl">
+          <thead><tr><th>Key</th><th>Email</th><th>Plan</th><th>Status</th><th>Expires</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${licenses.map(l => `
+              <tr>
+                <td style="font-family:monospace;font-size:12px;color:var(--gold2);letter-spacing:1px">${l.id}</td>
+                <td style="font-size:12px;color:var(--t2)">${l.email || '—'}</td>
+                <td><span class="badge badge-gold" style="font-size:10px">${l.plan || '—'}</span></td>
+                <td><span class="badge ${l.status === 'active' ? 'badge-green' : l.status === 'suspended' ? 'badge-red' : 'badge-yellow'}" style="font-size:10px">${l.status || '—'}</span></td>
+                <td style="font-size:11px;color:var(--t3)">${l.expiresAt ? new Date(l.expiresAt).toLocaleDateString() : 'Never'}</td>
+                <td style="display:flex;gap:5px;">
+                  <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${l.id}').then(()=>alert('Copied!'))"><i class="fa fa-copy"></i></button>
+                  <button class="btn btn-danger btn-sm" onclick="window.suspendLicense('${l.id}')"><i class="fa fa-ban"></i></button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch (error) {
+    el.innerHTML = `<div style="color:var(--red);padding:20px;">Error loading licenses: ${error.message}</div>`;
+  }
 }
 
-function generateLicenseModal() {
+window.generateLicenseModal = function() {
   document.getElementById('app').insertAdjacentHTML('beforeend', `
     <div class="overlay" id="gen-modal" onclick="if(event.target.id==='gen-modal')this.remove()">
       <div class="modal" style="max-width:400px">
@@ -439,19 +482,18 @@ function generateLicenseModal() {
         <select class="input" id="gen-plan"><option value="monthly">Monthly</option><option value="annual">Annual</option><option value="lifetime">Lifetime</option></select></div>
         <div style="margin-bottom:16px;"><label style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Expires (leave blank = never)</label>
         <input class="input" id="gen-expires" type="date"/></div>
-        <button class="btn btn-gold" style="width:100%;justify-content:center;" onclick="doGenerateLicense()"><i class="fa fa-key"></i> Generate & Save</button>
+        <button class="btn btn-gold" style="width:100%;justify-content:center;" onclick="window.doGenerateLicense()"><i class="fa fa-key"></i> Generate & Save</button>
         <div id="gen-result" style="margin-top:14px;font-family:monospace;font-size:16px;color:var(--gold2);text-align:center;letter-spacing:2px;word-break:break-all;"></div>
       </div>
     </div>`);
-}
+};
 
-async function doGenerateLicense() {
+window.doGenerateLicense = async function() {
   const email   = document.getElementById('gen-email').value.trim();
   const plan    = document.getElementById('gen-plan').value;
   const expires = document.getElementById('gen-expires').value;
   if (!email) { alert('Email required'); return; }
 
-  // Generate key: XXXX-XXXX-XXXX-XXXX
   const part = () => Math.random().toString(36).substring(2,6).toUpperCase();
   const key = `${part()}-${part()}-${part()}-${part()}`;
 
@@ -464,7 +506,6 @@ async function doGenerateLicense() {
 
   await db.collection('licenses').doc(key).set(licData);
 
-  // Also link to tenant if found
   const tenantSnap = await db.collection('tenants').where('email','==',email).limit(1).get();
   if (!tenantSnap.empty) {
     await tenantSnap.docs[0].ref.update({ licenseKey: key });
@@ -472,69 +513,80 @@ async function doGenerateLicense() {
 
   document.getElementById('gen-result').innerHTML = `✓ Key generated:<br/><strong>${key}</strong><br/><button onclick="navigator.clipboard.writeText('${key}')" style="margin-top:8px;font-size:11px;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--t3);">Copy</button>`;
   alert(`License key generated!\n\n${key}\n\nSend this + their email to the customer.`);
-}
+  setTimeout(() => document.getElementById('gen-modal')?.remove(), 2000);
+};
 
-async function suspendLicense(key) {
+window.suspendLicense = async function(key) {
   if (!confirm(`Suspend license key ${key}?`)) return;
   await db.collection('licenses').doc(key).update({ status: 'suspended' });
   renderLicensesTab();
-}
+};
 
 // ── Version Manager Tab ──────────────────────────
 async function renderVersionTab() {
   const el = document.getElementById('version-tab');
   if (!el) return;
-  const snap = await db.collection('app').doc('version').get();
-  const v = snap.exists ? snap.data() : {};
+  
+  try {
+    const snap = await db.collection('app').doc('version').get();
+    const v = snap.exists ? snap.data() : {};
 
-  el.innerHTML = `
-    <div class="sec-hdr">🚀 Version Manager</div>
-    <div class="card" style="margin-bottom:20px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-        <div><label style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Current Version</label>
-        <input class="input" id="v-current" value="${v.current||''}" placeholder="e.g. 2.1"/></div>
-        <div><label style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Minimum Version (force update)</label>
-        <input class="input" id="v-min" value="${v.minVersion||''}" placeholder="e.g. 2.0"/></div>
+    el.innerHTML = `
+      <div class="sec-hdr">🚀 Version Manager</div>
+      <div class="card" style="margin-bottom:20px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+          <div><label style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Current Version</label>
+          <input class="input" id="v-current" value="${v.current || ''}" placeholder="e.g. 2.1"/></div>
+          <div><label style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Minimum Version (force update)</label>
+          <input class="input" id="v-min" value="${v.minVersion || ''}" placeholder="e.g. 2.0"/></div>
+        </div>
+        <div style="margin-bottom:14px;"><label style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Download URL</label>
+        <input class="input" id="v-url" value="${v.downloadUrl || ''}" placeholder="https://your-host.com/ordo_v2.1.html"/></div>
+        <div style="margin-bottom:14px;"><label style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Release Notes (shown to users)</label>
+        <textarea class="input" id="v-notes" rows="4" placeholder="What's new in this version…">${v.releaseNotes || ''}</textarea></div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn btn-gold" onclick="window.saveVersion()"><i class="fa fa-rocket"></i> Publish Update</button>
+          <span style="font-size:12px;color:var(--t3);">Last published: ${v.releasedAt ? new Date(v.releasedAt).toLocaleString() : 'Never'}</span>
+        </div>
       </div>
-      <div style="margin-bottom:14px;"><label style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Download URL</label>
-      <input class="input" id="v-url" value="${v.downloadUrl||''}" placeholder="https://your-host.com/ordo_v2.1.html"/></div>
-      <div style="margin-bottom:14px;"><label style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Release Notes (shown to users)</label>
-      <textarea class="input" id="v-notes" rows="4" placeholder="What's new in this version…">${v.releaseNotes||''}</textarea></div>
-      <div style="display:flex;gap:10px;align-items:center;">
-        <button class="btn btn-gold" onclick="saveVersion()"><i class="fa fa-rocket"></i> Publish Update</button>
-        <span style="font-size:12px;color:var(--t3);">Last published: ${v.releasedAt?new Date(v.releasedAt).toLocaleString():'Never'}</span>
-      </div>
-    </div>
-    <div class="card" style="background:rgba(59,130,246,.05);border-color:rgba(59,130,246,.2);">
-      <div style="font-size:12px;color:var(--blue);line-height:1.8;">
-        <strong style="display:block;margin-bottom:6px;">📋 How updates work:</strong>
-        1. Upload your new <code>ordo_licensed.html</code> file somewhere (Firebase Storage, GitHub, your server)<br/>
-        2. Paste the direct download URL above<br/>
-        3. Set the version number and release notes<br/>
-        4. Click Publish — all licensed apps will show an update banner immediately<br/>
-        5. Set "Minimum Version" to force users to update before they can continue
-      </div>
-    </div>`;
+      <div class="card" style="background:rgba(59,130,246,.05);border-color:rgba(59,130,246,.2);">
+        <div style="font-size:12px;color:var(--blue);line-height:1.8;">
+          <strong style="display:block;margin-bottom:6px;">📋 How updates work:</strong>
+          1. Upload your new <code>ordo_licensed.html</code> file somewhere (Firebase Storage, GitHub, your server)<br/>
+          2. Paste the direct download URL above<br/>
+          3. Set the version number and release notes<br/>
+          4. Click Publish — all licensed apps will show an update banner immediately<br/>
+          5. Set "Minimum Version" to force users to update before they can continue
+        </div>
+      </div>`;
+  } catch (error) {
+    el.innerHTML = `<div style="color:var(--red);padding:20px;">Error loading version data: ${error.message}</div>`;
+  }
 }
 
-async function saveVersion() {
+window.saveVersion = async function() {
   const current    = document.getElementById('v-current').value.trim();
   const minVersion = document.getElementById('v-min').value.trim();
   const downloadUrl= document.getElementById('v-url').value.trim();
   const releaseNotes=document.getElementById('v-notes').value.trim();
+  
   if (!current) { alert('Version number required'); return; }
   if (!downloadUrl) { alert('Download URL required'); return; }
+  
   await db.collection('app').doc('version').set({
-    current, minVersion: minVersion||null,
-    downloadUrl, releaseNotes,
+    current, 
+    minVersion: minVersion || null,
+    downloadUrl, 
+    releaseNotes,
     releasedAt: new Date().toISOString(),
-    publishedBy: currentAdmin?.email||'admin'
+    publishedBy: currentAdmin?.email || 'admin'
   });
+  
   alert(`✅ Version ${current} published!\nAll active apps will show the update banner.`);
   renderVersionTab();
-}
+};
 
-async function activateTenant(uid, plan) {
+window.activateTenant = async function(uid, plan) {
   if (!confirm(`Activate this account on the ${plan} plan?`)) return;
   const paidUntil = new Date();
   paidUntil.setMonth(paidUntil.getMonth() + (plan === 'annual' ? 12 : 1));
@@ -545,15 +597,15 @@ async function activateTenant(uid, plan) {
   });
   await loadDashboard();
   alert('✅ Account activated!');
-}
+};
 
-async function expireTenant(uid) {
+window.expireTenant = async function(uid) {
   if (!confirm('Mark this account as expired?')) return;
   await db.collection('tenants').doc(uid).update({ status: 'expired' });
   await loadDashboard();
-}
+};
 
-async function extendTrial(uid) {
+window.extendTrial = async function(uid) {
   const t = tenants.find(x => x.uid === uid);
   if (!t) return;
   const newEnd = new Date(t.trialEnd || new Date());
@@ -561,24 +613,24 @@ async function extendTrial(uid) {
   await db.collection('tenants').doc(uid).update({ trialEnd: newEnd.toISOString() });
   await loadDashboard();
   alert('✅ Trial extended by 7 days!');
-}
+};
 
-function openTenant(uid) {
+window.openTenant = function(uid) {
   const t = tenants.find(x => x.uid === uid);
   if (!t) return;
   const days = t.trialEnd ? Math.ceil((new Date(t.trialEnd) - new Date()) / 86400000) : null;
   document.getElementById('app').insertAdjacentHTML('beforeend', `
-    <div class="overlay" id="tenant-modal" onclick="if(event.target.id==='tenant-modal')closeTenantModal()">
+    <div class="overlay" id="tenant-modal" onclick="if(event.target.id==='tenant-modal')window.closeTenantModal()">
       <div class="modal">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
           <div>
-            <div style="font-size:18px;font-weight:700;color:var(--t1)">${t.restaurantName||'—'}</div>
+            <div style="font-size:18px;font-weight:700;color:var(--t1)">${t.restaurantName || '—'}</div>
             <div style="font-size:12px;color:var(--t3);margin-top:3px">${t.uid}</div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="closeTenantModal()"><i class="fa fa-times"></i></button>
+          <button class="btn btn-ghost btn-sm" onclick="window.closeTenantModal()"><i class="fa fa-times"></i></button>
         </div>
         <table style="width:100%;font-size:13px;border-collapse:collapse;">
-          ${row('Owner', t.ownerName||'—')}
+          ${row('Owner', t.ownerName || '—')}
           ${row('Email', t.email)}
           ${row('Plan', t.plan)}
           ${row('Status', t.status)}
@@ -588,18 +640,18 @@ function openTenant(uid) {
           ${row('Joined', t.createdAt ? new Date(t.createdAt).toLocaleString() : '—')}
         </table>
         <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;">
-          <button class="btn btn-gold" onclick="activateTenant('${t.uid}','monthly');closeTenantModal()"><i class="fa fa-check"></i> Activate Monthly</button>
-          <button class="btn btn-gold" onclick="activateTenant('${t.uid}','annual');closeTenantModal()"><i class="fa fa-check"></i> Activate Annual</button>
-          <button class="btn btn-ghost" onclick="extendTrial('${t.uid}');closeTenantModal()"><i class="fa fa-clock"></i> Extend Trial 7d</button>
-          <button class="btn btn-danger" onclick="expireTenant('${t.uid}');closeTenantModal()"><i class="fa fa-ban"></i> Expire</button>
+          <button class="btn btn-gold" onclick="window.activateTenant('${t.uid}','monthly');window.closeTenantModal()"><i class="fa fa-check"></i> Activate Monthly</button>
+          <button class="btn btn-gold" onclick="window.activateTenant('${t.uid}','annual');window.closeTenantModal()"><i class="fa fa-check"></i> Activate Annual</button>
+          <button class="btn btn-ghost" onclick="window.extendTrial('${t.uid}');window.closeTenantModal()"><i class="fa fa-clock"></i> Extend Trial 7d</button>
+          <button class="btn btn-danger" onclick="window.expireTenant('${t.uid}');window.closeTenantModal()"><i class="fa fa-ban"></i> Expire</button>
         </div>
       </div>
     </div>`);
-}
+};
 
-function closeTenantModal() {
+window.closeTenantModal = function() {
   document.getElementById('tenant-modal')?.remove();
-}
+};
 
 function row(label, value) {
   return `<tr>
@@ -607,6 +659,12 @@ function row(label, value) {
     <td style="padding:8px 0;color:var(--t1);font-weight:500">${value}</td>
   </tr>`;
 }
+
+// Expose necessary functions to window
+window.auth = auth;
+window.renderDashboard = renderDashboard;
+window.loadDashboard = loadDashboard;
+window.searchQuery = searchQuery;
 </script>
 </body>
 </html>
