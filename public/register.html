@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ordo POS — Create Account</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<!-- ╔══════════════════════════════════════════╗
+     ║  REPLACE WITH YOUR FIREBASE CONFIG      ║
+     ╚══════════════════════════════════════════╝ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--ink:#0a0a0f;--ink2:#13131f;--ink3:#1f1f2e;--gold:#c9a84c;--gold2:#e8c97a;--cream:#f5f0e8;--t1:#f5f0e8;--t2:#9a9080;--t3:#5a5448;--red:#ef4444;--green:#10b981;--border:rgba(201,168,76,.15);}
+body{background:var(--ink);color:var(--t1);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;opacity:.03;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(201,168,76,.15),transparent);}
+
+/* Nav */
+nav{padding:18px 5%;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.04);}
+.logo{font-family:'Instrument Serif',serif;font-size:20px;color:var(--gold2);text-decoration:none;}
+.nav-link{font-size:13px;color:var(--t2);text-decoration:none;}
+.nav-link:hover{color:var(--t1);}
+
+/* Main */
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+.auth-box{width:100%;max-width:420px;}
+.auth-heading{text-align:center;margin-bottom:32px;}
+.auth-heading h1{font-family:'Instrument Serif',serif;font-size:34px;color:var(--cream);letter-spacing:-.5px;margin-bottom:8px;}
+.auth-heading p{font-size:14px;color:var(--t2);font-weight:300;}
+
+/* Tabs */
+.tabs{display:flex;background:var(--ink2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:28px;}
+.tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;transition:.2s;color:var(--t3);border:none;background:none;}
+.tab.active{background:var(--gold);color:var(--ink);}
+
+/* Form */
+.form-card{background:var(--ink2);border:1px solid var(--border);border-radius:14px;padding:28px;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px;}
+.field input, .field select{width:100%;padding:12px 14px;background:var(--ink3);border:1px solid rgba(255,255,255,.07);border-radius:8px;color:var(--t1);font-family:inherit;font-size:14px;outline:none;transition:.2s;}
+.field input:focus, .field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.1);}
+.field input::placeholder{color:var(--t3);}
+.field select option{background:var(--ink2);}
+
+/* Plan selector */
+.plan-select{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.plan-opt{border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:12px;cursor:pointer;transition:.2s;background:var(--ink3);}
+.plan-opt:hover{border-color:var(--border);}
+.plan-opt.selected{border-color:var(--gold);background:rgba(201,168,76,.06);}
+.plan-opt-name{font-size:12px;font-weight:600;color:var(--cream);margin-bottom:3px;}
+.plan-opt-price{font-size:11px;color:var(--t3);}
+.plan-opt.selected .plan-opt-name{color:var(--gold2);}
+
+/* Submit */
+.submit-btn{width:100%;padding:14px;background:var(--gold);color:var(--ink);border:none;border-radius:8px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.2s;margin-top:4px;}
+.submit-btn:hover:not(:disabled){background:var(--gold2);transform:translateY(-1px);}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* Messages */
+.msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;}
+.msg.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#fca5a5;display:flex;gap:8px;align-items:center;}
+.msg.success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#6ee7b7;display:flex;gap:8px;align-items:center;}
+
+/* Divider */
+.or-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--t3);font-size:12px;}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.06);}
+
+/* Trial badge */
+.trial-note{text-align:center;margin-top:16px;font-size:12px;color:var(--t3);line-height:1.6;}
+.trial-note strong{color:var(--gold);}
+
+/* Spinner */
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,.2);border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="landing.html" class="logo">Ordo</a>
+  <a href="landing.html" class="nav-link">← Back to home</a>
+</nav>
+
+<main>
+  <div class="auth-box">
+    <div class="auth-heading">
+      <h1>Welcome to Ordo</h1>
+      <p>Create your restaurant account or sign in below</p>
+    </div>
+
+    <!-- Register / Login tabs -->
+    <div class="tabs">
+      <button class="tab active" id="tab-register" onclick="switchTab('register')">Create Account</button>
+      <button class="tab" id="tab-login" onclick="switchTab('login')">Sign In</button>
+    </div>
+
+    <!-- Error / Success messages -->
+    <div class="msg error" id="msg-error">⚠️ <span id="msg-error-text"></span></div>
+    <div class="msg success" id="msg-success">✓ <span id="msg-success-text"></span></div>
+
+    <!-- REGISTER FORM -->
+    <div class="form-card" id="form-register">
+      <div class="field">
+        <label>Restaurant Name</label>
+        <input type="text" id="reg-rest" placeholder="e.g. Bait Al-Mandi" autocomplete="organization"/>
+      </div>
+      <div class="field">
+        <label>Your Name</label>
+        <input type="text" id="reg-name" placeholder="Owner / Manager name"/>
+      </div>
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" id="reg-email" placeholder="you@restaurant.com" autocomplete="email"/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="reg-pass" placeholder="At least 8 characters" autocomplete="new-password"/>
+      </div>
+      <div class="field">
+        <label>Choose Plan</label>
+        <div class="plan-select" id="plan-select">
+          <div class="plan-opt selected" data-plan="trial" onclick="selectPlan(this,'trial')">
+            <div class="plan-opt-name">Free Trial</div>
+            <div class="plan-opt-price">14 days free</div>
+          </div>
+          <div class="plan-opt" data-plan="monthly" onclick="selectPlan(this,'monthly')">
+            <div class="plan-opt-name">Monthly</div>
+            <div class="plan-opt-price">SAR 199 / month</div>
+          </div>
+          <div class="plan-opt" data-plan="annual" onclick="selectPlan(this,'annual')">
+            <div class="plan-opt-name">Annual</div>
+            <div class="plan-opt-price">SAR 149 / month</div>
+          </div>
+          <div class="plan-opt" data-plan="lifetime" onclick="selectPlan(this,'lifetime')">
+            <div class="plan-opt-name">Lifetime</div>
+            <div class="plan-opt-price">SAR 1,999 once</div>
+          </div>
+        </div>
+      </div>
+      <button class="submit-btn" id="reg-btn" onclick="register()">Start Free Trial →</button>
+      <div class="trial-note"><strong>14 days free.</strong> No credit card required.<br>Cancel or upgrade any time from your account.</div>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div class="form-card" id="form-login" style="display:none">
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" id="log-email" placeholder="you@restaurant.com" autocomplete="email" onkeydown="if(event.key==='Enter')login()"/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="log-pass" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"/>
+      </div>
+      <button class="submit-btn" id="log-btn" onclick="login()">Sign In →</button>
+      <div class="or-divider">or</div>
+      <div style="text-align:center">
+        <a href="#" onclick="resetPassword()" style="font-size:13px;color:var(--t2);text-decoration:none;">Forgot password?</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Firebase Config — REPLACE THIS BLOCK -->
+<script>
+const FIREBASE_CONFIG = {
+  // ╔══════════════════════════════════════════════╗
+  // ║  PASTE YOUR FIREBASE CONFIG HERE             ║
+  // ║  Get it from Firebase Console →              ║
+  // ║  Project Settings → Your apps → Web          ║
+  // ╚══════════════════════════════════════════════╝
+  apiKey:            "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
+  authDomain:        "pos-ordo.firebaseapp.com",
+  projectId:         "pos-ordo",
+  storageBucket:     "pos-ordo.firebasestorage.app",
+  messagingSenderId: "575923763514",
+  appId:             "1:575923763514:web:f81283d99aafd2460f3803"
+};
+
+// Trial length in days
+const TRIAL_DAYS = 14;
+// App file name
+const APP_FILE = 'ordo_saas.html';
+
+// ── Firebase Init ─────────────────────────────────
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ── If already logged in, redirect to app ────────
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    // Check tenant status
+    const snap = await db.collection('tenants').doc(user.uid).get();
+    if (snap.exists) {
+      window.location.href = APP_FILE;
+    }
+  }
+});
+
+// ── UI helpers ─────────────────────────────────────
+let selectedPlan = 'trial';
+
+function switchTab(tab) {
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('form-register').style.display = tab === 'register' ? '' : 'none';
+  document.getElementById('form-login').style.display    = tab === 'login'    ? '' : 'none';
+  clearMsgs();
+}
+
+function selectPlan(el, plan) {
+  document.querySelectorAll('.plan-opt').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPlan = plan;
+  const btn = document.getElementById('reg-btn');
+  btn.textContent = plan === 'trial' ? 'Start Free Trial →' : 'Create Account →';
+}
+
+function showError(msg) {
+  const el = document.getElementById('msg-error');
+  document.getElementById('msg-error-text').textContent = msg;
+  el.style.display = 'flex';
+  document.getElementById('msg-success').style.display = 'none';
+}
+
+function showSuccess(msg) {
+  const el = document.getElementById('msg-success');
+  document.getElementById('msg-success-text').textContent = msg;
+  el.style.display = 'flex';
+  document.getElementById('msg-error').style.display = 'none';
+}
+
+function clearMsgs() {
+  document.getElementById('msg-error').style.display = 'none';
+  document.getElementById('msg-success').style.display = 'none';
+}
+
+function setLoading(btnId, loading, text) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? `<span class="spin"></span>`
+    : text;
+}
+
+// ── Register ───────────────────────────────────────
+async function register() {
+  clearMsgs();
+  const restName = document.getElementById('reg-rest').value.trim();
+  const ownerName = document.getElementById('reg-name').value.trim();
+  const email     = document.getElementById('reg-email').value.trim();
+  const password  = document.getElementById('reg-pass').value;
+
+  if (!restName)           { showError('Please enter your restaurant name.'); return; }
+  if (!ownerName)          { showError('Please enter your name.'); return; }
+  if (!email)              { showError('Please enter your email.'); return; }
+  if (password.length < 8) { showError('Password must be at least 8 characters.'); return; }
+
+  setLoading('reg-btn', true, '');
+
+  try {
+    // Create Firebase Auth account
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    const uid  = cred.user.uid;
+
+    // Calculate trial end date
+    const now       = new Date();
+    const trialEnd  = new Date(now.getTime() + TRIAL_DAYS * 86400000);
+
+    // Save tenant profile in Firestore
+    await db.collection('tenants').doc(uid).set({
+      uid,
+      ownerName,
+      restaurantName:   restName,
+      restaurantNameAr: '',
+      email,
+      plan:       selectedPlan === 'trial' ? 'trial' : selectedPlan,
+      status:     'trial',          // trial | active | expired | cancelled
+      trialStart: now.toISOString(),
+      trialEnd:   trialEnd.toISOString(),
+      paidUntil:  null,
+      createdAt:  now.toISOString(),
+    });
+
+    // Bootstrap the tenant's app data
+    await db.collection('tenants').doc(uid).collection('app').doc('settings').set({
+      restaurantName:   restName,
+      restaurantNameAr: '',
+      vatRate:          15,
+      currency:         'SAR',
+    });
+
+    showSuccess('Account created! Redirecting to your POS…');
+    setTimeout(() => { window.location.href = APP_FILE; }, 1500);
+
+  } catch (err) {
+    console.error(err);
+    const msgs = {
+      'auth/email-already-in-use': 'This email is already registered. Try signing in instead.',
+      'auth/invalid-email':         'Please enter a valid email address.',
+      'auth/weak-password':         'Password is too weak. Use at least 8 characters.',
+    };
+    showError(msgs[err.code] || err.message);
+    setLoading('reg-btn', false, 'Start Free Trial →');
+  }
+}
+
+// ── Login ──────────────────────────────────────────
+async function login() {
+  clearMsgs();
+  const email    = document.getElementById('log-email').value.trim();
+  const password = document.getElementById('log-pass').value;
+
+  if (!email || !password) { showError('Please enter your email and password.'); return; }
+
+  setLoading('log-btn', true, '');
+
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    showSuccess('Signed in! Redirecting…');
+    setTimeout(() => { window.location.href = APP_FILE; }, 1000);
+  } catch (err) {
+    const msgs = {
+      'auth/user-not-found':   'No account found with this email.',
+      'auth/wrong-password':   'Incorrect password.',
+      'auth/invalid-email':    'Please enter a valid email.',
+      'auth/too-many-requests':'Too many attempts. Please wait a moment.',
+    };
+    showError(msgs[err.code] || 'Sign in failed. Please try again.');
+    setLoading('log-btn', false, 'Sign In →');
+  }
+}
+
+// ── Reset Password ─────────────────────────────────
+async function resetPassword() {
+  const email = document.getElementById('log-email').value.trim();
+  if (!email) { showError('Enter your email address above first.'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    showSuccess('Password reset email sent — check your inbox.');
+  } catch(err) {
+    showError('Could not send reset email. Check the address.');
+  }
+}
+</script>
+</body>
+</html>

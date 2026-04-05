@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ordo POS — Download</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--ink:#0a0a0f;--s:#13131f;--card:#1a1a2e;--el:#1f1f35;--gold:#c9a84c;--gold2:#e8c97a;--gold-dim:rgba(201,168,76,.1);--green:#10b981;--green-dim:rgba(16,185,129,.1);--blue:#3b82f6;--blue-dim:rgba(59,130,246,.1);--red:#ef4444;--red-dim:rgba(239,68,68,.1);--t1:#f5f0e8;--t2:#9a9080;--t3:#5a5448;--border:rgba(201,168,76,.12);}
+body{background:var(--ink);color:var(--t1);font-family:'DM Sans',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;opacity:.03;pointer-events:none;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(201,168,76,.2),transparent);}
+
+nav{padding:16px 5%;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(10,10,15,.95);backdrop-filter:blur(12px);z-index:10;}
+.logo{font-family:'Instrument Serif',serif;font-size:20px;color:var(--gold2);}
+.nav-right{display:flex;align-items:center;gap:14px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;transition:.2s;text-decoration:none;}
+.btn-gold{background:var(--gold);color:#0a0a0f;}
+.btn-gold:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 4px 20px rgba(201,168,76,.3);}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold2);}
+.btn-lg{padding:14px 28px;font-size:15px;border-radius:10px;}
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;}
+.badge-green{background:var(--green-dim);color:var(--green);}
+.badge-gold{background:var(--gold-dim);color:var(--gold2);}
+.badge-blue{background:var(--blue-dim);color:var(--blue);}
+
+main{max-width:780px;margin:0 auto;padding:48px 20px;}
+
+.account-card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+.account-avatar{width:52px;height:52px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+.account-info{flex:1;}
+.account-name{font-weight:700;font-size:16px;margin-bottom:3px;}
+.account-email{font-size:13px;color:var(--t3);}
+.account-meta{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+
+.section-hdr{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.section-hdr::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* Download hero box */
+.download-hero{background:linear-gradient(135deg,var(--s),var(--card));border:1px solid var(--border);border-radius:16px;padding:32px;text-align:center;margin-bottom:24px;position:relative;overflow:hidden;}
+.download-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 50% 0%,var(--gold-dim),transparent);pointer-events:none;}
+.download-hero h2{font-family:'Instrument Serif',serif;font-size:28px;color:var(--t1);margin-bottom:8px;position:relative;}
+.download-hero p{font-size:14px;color:var(--t2);margin-bottom:24px;position:relative;}
+.version-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;background:var(--blue-dim);border:1px solid rgba(59,130,246,.2);color:var(--blue);font-size:11px;font-weight:700;margin-bottom:16px;}
+
+/* License key box */
+.license-box{background:var(--el);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:24px;}
+.license-key{font-family:monospace;font-size:18px;color:var(--gold2);letter-spacing:3px;font-weight:700;margin:8px 0;}
+.copy-btn{font-size:11px;color:var(--t3);background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;transition:.2s;}
+.copy-btn:hover{border-color:var(--gold);color:var(--gold2);}
+
+/* Steps */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:28px;}
+.step-card{background:var(--s);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--gold2);margin-bottom:12px;}
+.step-title{font-weight:600;font-size:13px;margin-bottom:5px;}
+.step-desc{font-size:12px;color:var(--t2);line-height:1.5;}
+
+/* Changelog */
+.changelog{background:var(--s);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.changelog-item{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.03);}
+.changelog-item:last-child{border-bottom:none;}
+.changelog-ver{font-weight:700;font-size:13px;color:var(--t1);display:flex;align-items:center;gap:8px;}
+.changelog-date{font-size:11px;color:var(--t3);}
+.changelog-notes{font-size:12px;color:var(--t2);margin-top:6px;line-height:1.6;}
+
+/* Spinner */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin .7s linear infinite;}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="landing.html" class="logo">Ordo</a>
+  <div class="nav-right">
+    <span id="nav-email" style="font-size:12px;color:var(--t3)"></span>
+    <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="signOut()">
+      <i class="fa fa-sign-out-alt"></i> Sign out
+    </button>
+  </div>
+</nav>
+
+<main id="main">
+  <div style="text-align:center;padding:60px;color:var(--t3);">
+    <i class="fa fa-spinner spin" style="font-size:22px;"></i>
+    <div style="margin-top:12px;font-size:13px;">Loading your account…</div>
+  </div>
+</main>
+
+<script>
+// ── PASTE YOUR FIREBASE CONFIG HERE ──────────────
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
+  authDomain:        "pos-ordo.firebaseapp.com",
+  projectId:         "pos-ordo",
+  storageBucket:     "pos-ordo.firebasestorage.app",
+  messagingSenderId: "575923763514",
+  appId:             "1:575923763514:web:f81283d99aafd2460f3803"
+};
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+let currentUser  = null;
+let tenantData   = null;
+let licenseData  = null;
+let versionData  = null;
+
+auth.onAuthStateChanged(async user => {
+  if (!user) { window.location.href = 'register.html'; return; }
+  currentUser = user;
+  document.getElementById('nav-email').textContent = user.email;
+  await loadData(user);
+});
+
+async function loadData(user) {
+  try {
+    // Load tenant, license, and version in parallel
+    const [tenantSnap, versionSnap] = await Promise.all([
+      db.collection('tenants').doc(user.uid).get(),
+      db.collection('app').doc('version').get(),
+    ]);
+
+    if (!tenantSnap.exists) { window.location.href = 'register.html'; return; }
+    tenantData  = tenantSnap.data();
+    versionData = versionSnap.exists ? versionSnap.data() : null;
+
+    // Load license key (stored in licenses collection, indexed by key)
+    if (tenantData.licenseKey) {
+      const licSnap = await db.collection('licenses').doc(tenantData.licenseKey).get();
+      if (licSnap.exists) licenseData = { key: tenantData.licenseKey, ...licSnap.data() };
+    }
+
+    renderPage();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('main').innerHTML = `<div style="color:var(--red);padding:40px;text-align:center;">Failed to load account data. Please refresh.</div>`;
+  }
+}
+
+function renderPage() {
+  const t  = tenantData;
+  const v  = versionData;
+  const lic = licenseData;
+  const planLabels = { trial:'Free Trial', monthly:'Monthly', annual:'Annual', lifetime:'Lifetime License' };
+  const planBadgeClass = { trial:'badge-blue', monthly:'badge-gold', annual:'badge-gold', lifetime:'badge-gold' };
+
+  // Trial days left
+  let trialNote = '';
+  if (t.status === 'trial' && t.trialEnd) {
+    const days = Math.ceil((new Date(t.trialEnd) - new Date()) / 86400000);
+    trialNote = days > 0
+      ? `<span style="color:var(--gold);font-size:12px;margin-left:6px;">${days} days left in trial</span>`
+      : `<span style="color:var(--red);font-size:12px;margin-left:6px;">Trial expired</span>`;
+  }
+
+  document.getElementById('main').innerHTML = `
+    <!-- Account card -->
+    <div class="account-card">
+      <div class="account-avatar">🏪</div>
+      <div class="account-info">
+        <div class="account-name">${t.restaurantName || 'Your Restaurant'}</div>
+        <div class="account-email">${t.email}</div>
+        <div class="account-meta">
+          <span class="badge ${planBadgeClass[t.plan]||'badge-gold'}">${planLabels[t.plan]||t.plan}</span>
+          <span class="badge ${t.status==='active'?'badge-green':t.status==='trial'?'badge-blue':'badge-red'}">${t.status}</span>
+          ${trialNote}
+        </div>
+      </div>
+      <button class="btn btn-ghost" onclick="window.location.href='register.html?tab=account'">
+        <i class="fa fa-cog"></i> Account
+      </button>
+    </div>
+
+    <!-- Download hero -->
+    <div class="section-hdr">Download</div>
+    <div class="download-hero">
+      <div class="version-chip">
+        <i class="fa fa-tag"></i>
+        Latest: v${v?.current || '2.0'}
+      </div>
+      <h2>Ordo POS — Downloadable App</h2>
+      <p>One HTML file. Works in any browser, any device, with or without internet.</p>
+      <button class="btn btn-gold btn-lg" onclick="downloadApp()">
+        <i class="fa fa-download"></i> Download ordo_v${v?.current || '2.0'}.html
+      </button>
+      <div style="margin-top:14px;font-size:12px;color:var(--t3);">
+        ${v?.releasedAt ? `Released ${new Date(v.releasedAt).toLocaleDateString()}` : ''}
+        ${v?.releaseNotes ? `· ${v.releaseNotes.split('\n')[0]}` : ''}
+      </div>
+    </div>
+
+    <!-- License Key -->
+    ${lic ? `
+    <div class="section-hdr">Your License Key</div>
+    <div class="license-box">
+      <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">License Key — keep this safe</div>
+      <div class="license-key" id="lic-key">${lic.key}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+        <button class="copy-btn" onclick="copyKey()"><i class="fa fa-copy"></i> Copy key</button>
+        <span style="font-size:12px;color:var(--t3);">Use this + your email to activate the app after download</span>
+      </div>
+    </div>` : `
+    <div style="padding:14px 18px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);border-radius:10px;font-size:13px;color:var(--gold2);margin-bottom:24px;">
+      ⏳ Your license key will appear here once your account is confirmed by admin.
+    </div>`}
+
+    <!-- How to install -->
+    <div class="section-hdr">How to install</div>
+    <div class="steps">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-title">Download the file</div>
+        <div class="step-desc">Click the download button above. Save <code>ordo_v${v?.current||'2.0'}.html</code> to your device.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-title">Open in Chrome</div>
+        <div class="step-desc">Double-click the file or open it with Chrome or Edge. No installation needed.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-title">Enter license</div>
+        <div class="step-desc">Enter your registered email and license key above. Verifies once, then works offline for 30 days.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <div class="step-title">Updates</div>
+        <div class="step-desc">The app will notify you when a new version is available — come back here to download it.</div>
+      </div>
+    </div>
+
+    <!-- Changelog -->
+    <div class="section-hdr">Version History</div>
+    <div class="changelog" id="changelog">
+      <div class="changelog-item">
+        <div class="changelog-ver">
+          v${v?.current || '2.0'}
+          <span class="badge badge-green">Latest</span>
+        </div>
+        <div class="changelog-date">${v?.releasedAt ? new Date(v.releasedAt).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}) : 'Current release'}</div>
+        <div class="changelog-notes">${(v?.releaseNotes || 'Stable release with all features.').replace(/\n/g,'<br/>')}</div>
+      </div>
+    </div>
+  `;
+}
+
+function downloadApp() {
+  if (!versionData?.downloadUrl) {
+    alert('Download not available yet — please check back soon or contact support.');
+    return;
+  }
+  // Log the download
+  if (tenantData?.uid) {
+    db.collection('tenants').doc(tenantData.uid).update({
+      lastDownload: new Date().toISOString(),
+      downloadVersion: versionData.current,
+    }).catch(()=>{});
+  }
+  const a = document.createElement('a');
+  a.href = versionData.downloadUrl;
+  a.download = `ordo_v${versionData.current}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function copyKey() {
+  const key = document.getElementById('lic-key')?.textContent;
+  if (!key) return;
+  navigator.clipboard.writeText(key).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    if (btn) { btn.innerHTML = '<i class="fa fa-check"></i> Copied!'; setTimeout(() => { btn.innerHTML = '<i class="fa fa-copy"></i> Copy key'; }, 2000); }
+  });
+}
+
+function signOut() {
+  auth.signOut().then(() => { window.location.href = 'landing.html'; });
+}
+</script>
+</body>
+</html>

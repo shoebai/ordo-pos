@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<script>
+  // GitHub Pages SPA routing trick.
+  // When GitHub serves 404, this page redirects back to index.html
+  // preserving the path so the app can handle the route.
+  var path = window.location.pathname;
+
+  // Map clean URLs to actual files
+  var routes = {
+    '/register': '/register.html',
+    '/app':      '/app.html',
+    '/download': '/download.html',
+    '/admin':    '/admin.html',
+  };
+
+  var dest = routes[path] || '/index.html';
+  window.location.replace(dest + window.location.search + window.location.hash);
+</script>
+</head>
+<body></body>
+</html>
