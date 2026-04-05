@@ -19,7 +19,183 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
-/* ... (keep all your existing styles here, they're fine) ... */
+:root{
+  --bg:#0d0d14;--surface:#13131f;--card:#1a1a2e;--elevated:#1f1f35;
+  --border:rgba(255,255,255,0.07);
+  --primary:#fbbf24;--primary-dim:rgba(251,191,36,0.12);--primary-dark:#d97706;
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.12);
+  --green:#10b981;--green-dim:rgba(16,185,129,0.12);
+  --yellow:#f59e0b;--yellow-dim:rgba(245,158,11,0.12);
+  --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.12);
+  --purple:#8b5cf6;--orange:#f97316;
+  --t1:#f1f1f8;--t2:#9898b0;--t3:#5a5a72;
+  --r:14px;--rs:8px;--rl:20px;
+  --nav:60px;--bot:62px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Sora','Cairo',sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;}
+body[dir=rtl]{font-family:'Cairo','Sora',sans-serif;}
+#root{height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+
+/* --- BUTTONS --- */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:var(--rs);border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;transition:all .2s;white-space:nowrap;text-decoration:none;}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#0d0d14;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(251,191,36,.4);}
+.btn-primary:disabled,.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--primary);color:var(--primary);}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+.btn-danger:hover{background:var(--red);color:#fff;}
+.btn-success{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,.25);}
+.btn-success:hover{background:var(--green);color:#fff;}
+.btn-warning{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(245,158,11,.25);}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.btn-lg{padding:13px 26px;font-size:15px;border-radius:var(--r);}
+.btn-icon{padding:0;width:34px;height:34px;justify-content:center;border-radius:var(--rs);}
+.btn-block{width:100%;justify-content:center;}
+
+/* --- FORMS --- */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;}
+.input{width:100%;padding:10px 13px;background:var(--elevated);border:1px solid var(--border);border-radius:var(--rs);color:var(--t1);font-family:inherit;font-size:13px;outline:none;transition:border .2s;}
+.input:focus{border-color:var(--primary);}
+select.input>option{background:var(--card);}
+textarea.input{resize:none;}
+.form-g{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.form-lbl{font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.07em;}
+.divider{height:1px;background:var(--border);margin:14px 0;}
+
+/* --- BADGES --- */
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;}
+.badge-green{background:var(--green-dim);color:var(--green);}
+.badge-yellow{background:var(--yellow-dim);color:var(--yellow);}
+.badge-red{background:var(--red-dim);color:var(--red);}
+.badge-blue{background:var(--blue-dim);color:var(--blue);}
+.badge-purple{background:rgba(139,92,246,.12);color:var(--purple);}
+.badge-orange{background:rgba(249,115,22,.12);color:var(--orange);}
+
+/* --- CHIPS --- */
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);color:var(--t2);background:transparent;transition:all .15s;}
+.chip.active{background:var(--primary);color:#0d0d14;border-color:var(--primary);}
+
+/* --- MODAL --- */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:1000;padding:14px;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--rl);padding:22px;width:100%;max-width:480px;max-height:94vh;overflow-y:auto;}
+.modal-lg{max-width:680px;}
+
+/* --- TOAST --- */
+.toast-wrap{position:fixed;top:14px;right:14px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+[dir=rtl] .toast-wrap{right:auto;left:14px;}
+.toast{background:var(--elevated);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;display:flex;align-items:center;gap:10px;animation:slideUp .3s ease;}
+
+/* --- NAVIGATION --- */
+.nav-bar{display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:var(--nav);background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.nav-logo{font-size:14px;font-weight:800;background:linear-gradient(135deg,var(--primary),#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;}
+.nav-tabs{display:flex;gap:2px;background:var(--card);border-radius:var(--rs);padding:3px;overflow-x:auto;}
+.nav-tab{padding:6px 11px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t2);display:flex;align-items:center;gap:5px;white-space:nowrap;border:none;background:none;transition:all .18s;}
+.nav-tab.active{background:var(--primary);color:#0d0d14;}
+.bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:var(--bot);background:var(--surface);border-top:1px solid var(--border);z-index:99;}
+.bot-inner{display:flex;height:100%;align-items:center;justify-content:space-around;}
+.bot-tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 10px;cursor:pointer;color:var(--t3);font-size:10px;font-weight:600;border:none;background:none;min-width:46px;border-radius:8px;}
+.bot-tab.active{color:var(--primary);}
+.bot-tab i{font-size:16px;}
+
+/* --- TABLES --- */
+.tbl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:10px;}
+.tbl-card{background:var(--card);border:2px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;transition:all .2s;text-align:center;position:relative;}
+.tbl-card.available{border-color:rgba(16,185,129,.35);}
+.tbl-card.ordered{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.04);}
+.tbl-card.bill{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.04);}
+.tbl-card:hover{transform:translateY(-2px);border-color:var(--primary);}
+.tbl-num{font-size:17px;font-weight:700;margin-top:5px;}
+.sdot{width:9px;height:9px;border-radius:50%;position:absolute;top:10px;right:10px;}
+[dir=rtl] .sdot{right:auto;left:10px;}
+.available .sdot{background:var(--green);box-shadow:0 0 5px var(--green);}
+.ordered .sdot{background:var(--yellow);}
+.bill .sdot{background:var(--red);}
+
+/* --- MENU CARDS --- */
+.m-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .2s;}
+.m-card:hover{border-color:var(--primary);transform:translateY(-2px);}
+.m-card.unavailable{opacity:.4;cursor:not-allowed;}
+.m-card.incart{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary-dim);}
+.m-img{width:100%;height:110px;object-fit:cover;}
+.m-emoji{width:100%;height:110px;display:flex;align-items:center;justify-content:center;font-size:42px;background:linear-gradient(135deg,#1a1a2e,#0d0d14);}
+
+/* --- ORDER PANEL --- */
+.order-panel{display:flex;flex-direction:column;height:100%;background:var(--surface);border-left:1px solid var(--border);}
+[dir=rtl] .order-panel{border-left:none;border-right:1px solid var(--border);}
+
+/* --- KITCHEN --- */
+.kit-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;transition:all .2s;}
+.kit-card.rush{border-color:rgba(239,68,68,.6);animation:pulse 2s infinite;}
+
+/* --- STATS --- */
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;}
+.stat-v{font-size:26px;font-weight:800;margin-top:6px;}
+.stat-l{font-size:12px;color:var(--t2);margin-top:3px;}
+
+/* --- TOGGLE --- */
+.tog{position:relative;width:42px;height:23px;border-radius:99px;background:var(--elevated);border:1px solid var(--border);cursor:pointer;transition:.2s;flex-shrink:0;}
+.tog.on{background:var(--primary);border-color:var(--primary);}
+.tog-thumb{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:.2s;pointer-events:none;}
+.tog.on .tog-thumb{left:21px;}
+
+/* --- LIGHT MODE GLOBAL THEME --- */
+html.light{
+  --bg:#f0f0ea;--surface:#ffffff;--card:#e8e8e2;--elevated:#deded8;
+  --border:rgba(0,0,0,.09);
+  --primary:#d97706;--primary-dim:rgba(217,119,6,.13);--primary-dark:#b45309;
+  --red:#dc2626;--red-dim:rgba(220,38,38,.10);
+  --green:#059669;--green-dim:rgba(5,150,105,.10);
+  --yellow:#d97706;--yellow-dim:rgba(217,119,6,.10);
+  --blue:#2563eb;--blue-dim:rgba(37,99,235,.10);
+  --purple:#7c3aed;--orange:#ea580c;
+  --t1:#111827;--t2:#4b5563;--t3:#9ca3af;
+}
+html.light body{background:var(--bg);color:var(--t1);}
+html.light .btn-primary{color:#fff;}
+html.light .m-emoji{background:linear-gradient(135deg,#e8e8e2,#deded8)!important;}
+html.light select.input>option{background:#fff;}
+html.light .nav-bar,html.light .bot-nav{box-shadow:0 1px 8px rgba(0,0,0,.08);}
+html.light .modal{box-shadow:0 8px 40px rgba(0,0,0,.15);}
+html.light .overlay{background:rgba(0,0,0,.55);}
+*{transition:background-color .25s,border-color .2s,color .15s;}
+.btn,.chip,.badge,.nav-tab,.bot-tab,.tog,.input{transition:all .2s!important;}
+.theme-tog{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;border:1px solid var(--border);background:var(--elevated);cursor:pointer;font-size:12px;font-weight:600;color:var(--t2);}
+.theme-tog:hover{border-color:var(--primary);color:var(--primary);}
+
+
+.timer{font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;font-variant-numeric:tabular-nums;}
+.t-fresh{background:var(--green-dim);color:var(--green);}
+.t-warn{background:var(--yellow-dim);color:var(--yellow);}
+.t-hot{background:var(--red-dim);color:var(--red);}
+
+/* --- MISC --- */
+.scroll-y{overflow-y:auto;overflow-x:hidden;}
+.section-hdr{font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.row-between{display:flex;justify-content:space-between;align-items:center;}
+
+/* --- ANIMATIONS --- */
+@keyframes slideUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.3)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* --- RESPONSIVE --- */
+@media print{.no-print{display:none!important;}body{background:#fff;color:#000;overflow:auto;}#root{height:auto;}}
+@media(max-width:768px){
+  .nav-tabs,.hide-sm{display:none!important;}
+  .bot-nav{display:flex;}
+  .mb-pad{padding-bottom:calc(var(--bot) + 16px)!important;}
+  .order-panel{width:100%!important;border:none!important;}
+  .split{flex-direction:column!important;}
+  .split>.left-pane{height:55%!important;flex:none!important;}
+  .split>.order-panel{height:45%!important;}
+}
 </style>
 </head>
 <body>
@@ -30,9 +206,8 @@ window.addEventListener('error', function(e){
   var el=document.getElementById('root');
   if(el&&el.children.length===0){
     el.style.cssText='display:flex;align-items:center;justify-content:center;height:100vh;background:#0d0d14;color:#ef4444;font-family:monospace;font-size:13px;padding:20px;text-align:center;';
-    el.innerHTML='<div><div style="font-size:32px;margin-bottom:12px;">⚠️</div><div>App Error: '+(e.message||'Unknown error')+'</div><div style="font-size:11px;margin-top:12px;color:#9898b0;">Check console for details</div></div>';
+    el.textContent='App Error: '+(e.message||'Unknown error')+' (line '+(e.lineno||'?')+')';
   }
-  console.error('Global error:', e);
 });
 window.addEventListener('unhandledrejection', function(e){
   console.error('Unhandled promise rejection:', e.reason);
@@ -75,7 +250,7 @@ const today=()=>new Date().toDateString();
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 /* ======================================================
-   TRANSLATIONS (abbreviated for brevity - keep your full TR object)
+   TRANSLATIONS
 ====================================================== */
 const TR={
 en:{
@@ -200,7 +375,7 @@ const DEF_ITEMS=[
 const DEF_TABLES=Array.from({length:20},(_,i)=>({id:i+1,num:`T${i+1}`,status:'available',orderId:null,seats:i<5?8:i<12?6:4,area:'Main'}));
 
 /* ======================================================
-   CONTEXT (FIXED - with complete Firebase config)
+   CONTEXT
 ====================================================== */
 const safeArr=(k,def)=>{try{const v=localStorage.getItem(k);if(!v)return def;const p=JSON.parse(v);return Array.isArray(p)?p:def;}catch{return def;}};
 const Ctx=createContext(null);
@@ -219,322 +394,287 @@ function Provider({children}){
   const[pwaEvt,setPwaEvt]=useState(null);
   const[ready,setReady]=useState(false);
   const[theme,setThemeS]=useState(()=>LS.g('theme','dark'));
-  const[fbMode,setFbMode]=useState(true); // Set to true initially
+  const[fbMode,setFbMode]=useState(false);
   const[fbConnected,setFbConnected]=useState(false);
-  const[tenant,setTenant]=useState(null);
+  // SaaS tenant state
+  const[tenant,setTenant]=useState(null);  // { uid, plan, status, trialEnd, restaurantName, ... }
   const[trialDaysLeft,setTrialDaysLeft]=useState(null);
   const[showPaywall,setShowPaywall]=useState(false);
   const fbRef=useRef(null);
   const tenantId=useRef(null);
 
-  // ✅ COMPLETE FIREBASE CONFIGURATION
+  // ── Firebase Config — PASTE YOURS HERE ────────────
   const FIREBASE_CONFIG={
-    apiKey: "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
-    authDomain: "pos-ordo.firebaseapp.com",
-    projectId: "pos-ordo",
-    storageBucket: "pos-ordo.firebasestorage.app",
+    apiKey:            "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
+    authDomain:        "pos-ordo.firebaseapp.com",
+    projectId:         "pos-ordo",
+    storageBucket:     "pos-ordo.firebasestorage.app",
     messagingSenderId: "575923763514",
-    appId: "1:575923763514:web:f81283d99aafd2460f3803",
-    measurementId: "G-PND9FKHRVF"
+    appId:             "1:575923763514:web:f81283d99aafd2460f3803"
   };
 
   // ── Init Firebase once ─────────────────────────────
   useEffect(()=>{
     try{
-      if(window.firebase && !window.firebase.apps.length){
-        const app = window.firebase.initializeApp(FIREBASE_CONFIG);
-        const fs = window.firebase.firestore(app);
-        // Enable offline persistence
-        fs.enablePersistence({synchronizeTabs:true}).catch(err=>{
-          console.warn('Persistence error (multiple tabs open):', err);
-        });
-        fbRef.current = fs;
-        setFbConnected(true);
-        console.log('Firebase initialized successfully');
-      } else if(window.firebase && window.firebase.apps.length){
-        fbRef.current = window.firebase.firestore();
-        setFbConnected(true);
-      }
-    } catch(e){
-      console.error('Firebase init error:', e);
-      setFbConnected(false);
-    }
+      const app=window.firebase.apps.length?window.firebase.app():window.firebase.initializeApp(FIREBASE_CONFIG);
+      const fs=window.firebase.firestore(app);
+      fs.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+      fbRef.current=fs;
+      setFbMode(true);
+      setFbConnected(true);
+    }catch(e){console.error('[Ordo SaaS] Firebase init error:',e);}
   },[]);
 
   // ── Auth listener — resolve tenant on login ────────
   useEffect(()=>{
-    if(!window.firebase) return;
-    const auth = window.firebase.auth();
-    const unsub = auth.onAuthStateChanged(async fbUser=>{
-      console.log('Auth state changed:', fbUser ? 'logged in' : 'no user');
+    if(!fbMode)return;
+    const auth=window.firebase.auth();
+    const unsub=auth.onAuthStateChanged(async fbUser=>{
       if(!fbUser){
         // Not logged in — redirect to register
-        window.location.href = 'register.html';
+        window.location.href='register.html';
         return;
       }
-      tenantId.current = fbUser.uid;
-      try{
-        const snap = await fbRef.current.collection('tenants').doc(fbUser.uid).get();
-        if(!snap.exists){
-          window.location.href = 'register.html';
-          return;
-        }
-        const t = snap.data();
-        setTenant(t);
+      tenantId.current=fbUser.uid;
+      const snap=await fbRef.current.collection('tenants').doc(fbUser.uid).get();
+      if(!snap.exists){window.location.href='register.html';return;}
+      const t=snap.data();
+      setTenant(t);
 
-        // Trial / paywall logic
-        if(t.status === 'trial'){
-          const daysLeft = Math.ceil((new Date(t.trialEnd) - new Date())/86400000);
-          setTrialDaysLeft(Math.max(0, daysLeft));
-          if(daysLeft <= 0){
-            setShowPaywall(true);
-          }
-        } else if(t.status === 'expired'){
-          setShowPaywall(true);
-        }
-
-        // Load tenant settings into app
-        const settingsSnap = await fbRef.current.collection('tenants').doc(fbUser.uid).collection('app').doc('settings').get();
-        if(settingsSnap.exists){
-          const s = settingsSnap.data();
-          setSettingsS(prev=>({...prev,...s}));
-        }
-      } catch(err){
-        console.error('Tenant fetch error:', err);
+      // Trial / paywall logic
+      if(t.status==='trial'){
+        const daysLeft=Math.ceil((new Date(t.trialEnd)-new Date())/86400000);
+        setTrialDaysLeft(Math.max(0,daysLeft));
+        if(daysLeft<=0){setShowPaywall(true);}
+      }else if(t.status==='expired'){
+        setShowPaywall(true);
       }
+
+      // Load tenant settings into app
+      const settingsSnap=await fbRef.current.collection('tenants').doc(fbUser.uid).collection('app').doc('settings').get();
+      if(settingsSnap.exists){
+        const s=settingsSnap.data();
+        setSettingsS(prev=>({...prev,...s}));
+      }
+
       setReady(true);
     });
-    return() => unsub();
-  },[]);
+    return()=>unsub();
+  },[fbMode]);
 
-  // Tenant-scoped Firestore path
-  const tenantDoc = (col) => {
-    if(!fbRef.current || !tenantId.current) return null;
+  // ── Tenant-scoped Firestore path ───────────────────
+  const tenantDoc=(col)=>{
+    if(!fbRef.current||!tenantId.current)return null;
     return fbRef.current.collection('tenants').doc(tenantId.current).collection('app').doc(col);
   };
 
-  // Firestore real-time listeners per tenant
+  // ── Firestore real-time listeners per tenant ───────
   useEffect(()=>{
-    if(!fbMode || !tenant || !fbRef.current) return;
-    const unsubs = [];
-    const listen = (col, setter) => {
-      const ref = tenantDoc(col);
-      if(!ref) return;
-      unsubs.push(ref.onSnapshot(snap => {
+    if(!fbMode||!tenant)return;
+    const unsubs=[];
+    const listen=(col,setter)=>{
+      const ref=tenantDoc(col);
+      if(!ref)return;
+      unsubs.push(ref.onSnapshot(snap=>{
         if(snap.exists){
-          const d = snap.data()?.data;
-          if(Array.isArray(d) && d.length) setter(d);
-          else if(d && typeof d === 'object' && !Array.isArray(d)) setter(s => ({...s,...d}));
+          const d=snap.data()?.data;
+          if(Array.isArray(d)&&d.length)setter(d);
+          else if(d&&typeof d==='object'&&!Array.isArray(d))setter(s=>({...s,...d}));
         }
-      }, err => console.error('Snapshot error:', err)));
+      }));
     };
-    listen('orders', setOrders);
-    listen('tables', setTables);
-    listen('cats', setCats);
-    listen('items', setItems);
-    listen('staff', setStaff);
-    return() => unsubs.forEach(u => u());
-  },[fbMode, tenant]);
+    listen('orders',  setOrders);
+    listen('tables',  setTables);
+    listen('cats',    setCats);
+    listen('items',   setItems);
+    listen('staff',   setStaff);
+    return()=>unsubs.forEach(u=>u());
+  },[fbMode,tenant]);
 
-  // Write to tenant's scoped collection
-  const fbWrite = useCallback((col, value) => {
-    LS.s(col, value);
-    const ref = tenantDoc(col);
-    if(!ref || !fbMode) return;
-    ref.set({data: value, updatedAt: new Date().toISOString()}, {merge: false}).catch(err => console.error('Write error:', err));
-  },[fbMode, tenant]);
+  // ── Write to tenant's scoped collection ───────────
+  const fbWrite=useCallback((col,value)=>{
+    LS.s(col,value);
+    const ref=tenantDoc(col);
+    if(!ref||!fbMode)return;
+    ref.set({data:value,updatedAt:new Date().toISOString()},{merge:false}).catch(()=>{});
+  },[fbMode,tenant]);
 
   // Apply theme class to html element
   useEffect(()=>{
-    document.documentElement.classList.toggle('light', theme === 'light');
-    LS.s('theme', theme);
+    document.documentElement.classList.toggle('light',theme==='light');
+    LS.s('theme',theme);
   },[theme]);
-  const toggleTheme = useCallback(() => setThemeS(t => t === 'dark' ? 'light' : 'dark'), []);
+  const toggleTheme=useCallback(()=>setThemeS(t=>t==='dark'?'light':'dark'),[]);
 
-  // Hash default passwords on first boot
+  // Hash default passwords on first boot — force rehash if upgrading from old prefix
   useEffect(()=>{
     (async()=>{
-      const saved = LS.g('staff');
-      const ver = LS.g('staffVer');
-      if(!saved || !ver || ver !== 'ordo2' || saved.some(s => !s.hash)){
-        const base = saved || DEF_STAFF;
-        const hashed = await Promise.all(base.map(async s => ({
+      const saved=LS.g('staff');
+      const ver=LS.g('staffVer');
+      if(!saved||!ver||ver!=='ordo2'||saved.some(s=>!s.hash)){
+        const base=saved||DEF_STAFF;
+        const hashed=await Promise.all(base.map(async s=>({
           ...s,
-          hash: await hashPw(DEF_PASSES[s.username] || s.username + '123')
+          hash:await hashPw(DEF_PASSES[s.username]||s.username+'123')
         })));
-        setStaff(hashed);
-        LS.s('staff', hashed);
-        LS.s('staffVer', 'ordo2');
+        setStaff(hashed);LS.s('staff',hashed);LS.s('staffVer','ordo2');
       }
+      setReady(true);
     })();
   },[]);
 
   // Restore session
   useEffect(()=>{
-    const sess = LS.g('session');
-    if(sess && sess.uid && sess.exp > Date.now()){
-      const all = LS.g('staff') || DEF_STAFF;
-      const u = all.find(s => s.id === sess.uid && s.active);
-      if(u) setUser(u);
+    if(!ready)return;
+    const sess=LS.g('session');
+    if(sess&&sess.uid&&sess.exp>Date.now()){
+      const all=LS.g('staff')||DEF_STAFF;
+      const u=all.find(s=>s.id===sess.uid&&s.active);
+      if(u)setUser(u);
     }
-  },[]);
+  },[ready]);
 
   // PWA
   useEffect(()=>{
-    const h = e => { e.preventDefault(); setPwaEvt(e); };
-    window.addEventListener('beforeinstallprompt', h);
-    return() => window.removeEventListener('beforeinstallprompt', h);
+    const h=e=>{e.preventDefault();setPwaEvt(e);};
+    window.addEventListener('beforeinstallprompt',h);
+    return()=>window.removeEventListener('beforeinstallprompt',h);
   },[]);
 
   // Persist locally + sync to Firestore
-  useEffect(() => { fbWrite('tables', tables); }, [tables]);
-  useEffect(() => { fbWrite('orders', orders); }, [orders]);
-  useEffect(() => { fbWrite('cats', cats); }, [cats]);
-  useEffect(() => { fbWrite('items', items); }, [items]);
-  useEffect(() => { fbWrite('staff', staff); }, [staff]);
-  useEffect(() => { fbWrite('settings', settings); }, [settings]);
-  useEffect(() => {
-    LS.s('lang', lang);
-    document.documentElement.lang = lang;
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  useEffect(()=>{fbWrite('tables',tables);},[tables]);
+  useEffect(()=>{fbWrite('orders',orders);},[orders]);
+  useEffect(()=>{fbWrite('cats',cats);},[cats]);
+  useEffect(()=>{fbWrite('items',items);},[items]);
+  useEffect(()=>{fbWrite('staff',staff);},[staff]);
+  useEffect(()=>{fbWrite('settings',settings);},[settings]);
+  useEffect(()=>{
+    LS.s('lang',lang);
+    document.documentElement.lang=lang;
+    document.documentElement.dir=lang==='ar'?'rtl':'ltr';
   },[lang]);
 
-  const t = useCallback(k => (TR[lang] || TR.en)[k] || k, [lang]);
-  const setLang = l => setLangS(l);
-  const setSettings = upd => setSettingsS(p => ({...p, ...(typeof upd === 'function' ? upd(p) : upd)}));
+  const t=useCallback(k=>(TR[lang]||TR.en)[k]||k,[lang]);
+  const setLang=l=>setLangS(l);
+  const setSettings=upd=>setSettingsS(p=>({...p,...(typeof upd==='function'?upd(p):upd)}));
 
-  const toast = useCallback((msg, type='info', dur=3500) => {
-    const id = uid();
-    setToasts(p => [...p.slice(-4), {id, msg, type}]);
-    setTimeout(() => setToasts(p => p.filter(x => x.id !== id)), dur);
+  const toast=useCallback((msg,type='info',dur=3500)=>{
+    const id=uid();
+    setToasts(p=>[...p.slice(-4),{id,msg,type}]);
+    setTimeout(()=>setToasts(p=>p.filter(x=>x.id!==id)),dur);
   },[]);
 
-  const beep = useCallback(() => {
-    if(!settings.kitchenSound) return;
+  const beep=useCallback(()=>{
+    if(!settings.kitchenSound)return;
     try{
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx=new(window.AudioContext||window.webkitAudioContext)();
       [880,660].forEach((freq,i)=>{
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.frequency.value = freq;
-        const t0 = ctx.currentTime + i*.3;
-        g.gain.setValueAtTime(.25, t0);
-        g.gain.exponentialRampToValueAtTime(.001, t0+.4);
-        o.start(t0); o.stop(t0+.4);
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.frequency.value=freq;
+        const t0=ctx.currentTime+i*.3;
+        g.gain.setValueAtTime(.25,t0);
+        g.gain.exponentialRampToValueAtTime(.001,t0+.4);
+        o.start(t0);o.stop(t0+.4);
       });
-    } catch(e){}
+    }catch{}
   },[settings.kitchenSound]);
 
-  const login = useCallback(async (username, pw) => {
-    const allStaff = LS.g('staff') || staff;
-    const s = allStaff.find(s => s.username === username.trim().toLowerCase() && s.active);
-    if(!s) return false;
-    const h = await hashPw(pw);
-    if(h !== s.hash) return false;
-    const exp = Date.now() + (settings.sessionTimeout || 480) * 60000;
-    LS.s('session', {uid: s.id, exp});
-    setUser(s);
-    return true;
-  },[staff, settings.sessionTimeout]);
+  const login=useCallback(async(username,pw)=>{
+    const allStaff=LS.g('staff')||staff;
+    const s=allStaff.find(s=>s.username===username.trim().toLowerCase()&&s.active);
+    if(!s)return false;
+    const h=await hashPw(pw);
+    if(h!==s.hash)return false;
+    const exp=Date.now()+(settings.sessionTimeout||480)*60000;
+    LS.s('session',{uid:s.id,exp});
+    setUser(s);return true;
+  },[staff,settings.sessionTimeout]);
 
-  const logout = useCallback(() => { LS.rm('session'); setUser(null); }, []);
+  const logout=useCallback(()=>{LS.rm('session');setUser(null);},[]);
 
-  const calcTotal = useCallback((order) => {
-    if(!order) return {sub:0, disc:0, after:0, vat:0, tip:0, total:0};
-    const vr = (settings.vatRate || 15)/100;
-    const sub = (order.items || []).reduce((s,i) => s + (i.price + (i.modAdj || 0)) * i.qty, 0);
-    const disc = sub * (order.discount || 0)/100;
-    const after = sub - disc;
-    const vatAmt = after * vr;
-    const tip = order.tip || 0;
-    return {sub, disc, after, vat: vatAmt, tip, total: after + vatAmt + tip};
+  // Calc order total
+  const calcTotal=useCallback((order)=>{
+    if(!order)return{sub:0,disc:0,after:0,vat:0,tip:0,total:0};
+    const vr=(settings.vatRate||15)/100;
+    const sub=(order.items||[]).reduce((s,i)=>s+(i.price+(i.modAdj||0))*i.qty,0);
+    const disc=sub*(order.discount||0)/100;
+    const after=sub-disc;
+    const vatAmt=after*vr;
+    const tip=order.tip||0;
+    return{sub,disc,after,vat:vatAmt,tip,total:after+vatAmt+tip};
   },[settings.vatRate]);
 
-  const createOrder = useCallback((tableId, tableNum, itemsList, waiterName, note, orderType) => {
-    const id = `ORD-${Date.now()}`;
-    const order = {id, tableId, tableNum, items: itemsList, waiterName: waiterName || '',
-      note: note || '', status: 'new', discount: 0, tip: 0, paymentMethod: 'cash',
-      orderType: orderType || 'dine-in', priority: 'normal',
-      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()};
-    setOrders(p => [...p, order]);
-    if(tableId) setTables(p => p.map(tb => tb.id === tableId ? {...tb, status: 'ordered', orderId: id} : tb));
-    toast(t('orderSent'), 'success');
-    beep();
+  const createOrder=useCallback((tableId,tableNum,itemsList,waiterName,note,orderType)=>{
+    const id=`ORD-${Date.now()}`;
+    const order={id,tableId,tableNum,items:itemsList,waiterName:waiterName||'',
+      note:note||'',status:'new',discount:0,tip:0,paymentMethod:'cash',
+      orderType:orderType||'dine-in',priority:'normal',
+      createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    setOrders(p=>[...p,order]);
+    if(tableId)setTables(p=>p.map(tb=>tb.id===tableId?{...tb,status:'ordered',orderId:id}:tb));
+    toast(t('orderSent'),'success');beep();
     return id;
-  },[t, toast, beep]);
+  },[t,toast,beep]);
 
-  const addItemsToOrder = useCallback((orderId, newItems, note) => {
-    setOrders(p => p.map(o => {
-      if(o.id !== orderId) return o;
-      const merged = [...(o.items || [])];
-      newItems.forEach(ni => {
-        const key = ni.id + '_' + (ni.selectedMods ? JSON.stringify(ni.selectedMods) : '');
-        const idx = merged.findIndex(m => m.id + '_' + (m.selectedMods ? JSON.stringify(m.selectedMods) : '') === key);
-        if(idx >= 0){
-          merged[idx] = {...merged[idx], qty: merged[idx].qty + ni.qty};
-        } else {
-          merged.push({...ni});
-        }
+  const addItemsToOrder=useCallback((orderId,newItems,note)=>{
+    setOrders(p=>p.map(o=>{
+      if(o.id!==orderId)return o;
+      const merged=[...(o.items||[])];
+      newItems.forEach(ni=>{
+        const key=ni.id+'_'+(ni.selectedMods?JSON.stringify(ni.selectedMods):'');
+        const idx=merged.findIndex(m=>m.id+'_'+(m.selectedMods?JSON.stringify(m.selectedMods):'')===key);
+        if(idx>=0){merged[idx]={...merged[idx],qty:merged[idx].qty+ni.qty};}else{merged.push({...ni});}
       });
-      return {...o, items: merged, note: note || o.note, updatedAt: new Date().toISOString(), status: 'new'};
+      return{...o,items:merged,note:note||o.note,updatedAt:new Date().toISOString(),status:'new'};
     }));
-    toast('Items added to order', 'success');
-    beep();
-  },[toast, beep]);
+    toast('Items added to order','success');beep();
+  },[toast,beep]);
 
-  const updateOrder = useCallback((orderId, updates) => {
-    setOrders(p => p.map(o => {
-      if(o.id !== orderId) return o;
-      const upd = {...o, ...updates, updatedAt: new Date().toISOString()};
-      if(updates.status === 'paid' || updates.status === 'voided'){
-        setTables(tt => tt.map(tb => tb.id === o.tableId ? {...tb, status: 'available', orderId: null} : tb));
+  const updateOrder=useCallback((orderId,updates)=>{
+    setOrders(p=>p.map(o=>{
+      if(o.id!==orderId)return o;
+      const upd={...o,...updates,updatedAt:new Date().toISOString()};
+      if(updates.status==='paid'||updates.status==='voided'){
+        setTables(tt=>tt.map(tb=>tb.id===o.tableId?{...tb,status:'available',orderId:null}:tb));
       }
-      if(updates.status === 'billed'){
-        setTables(tt => tt.map(tb => tb.id === o.tableId ? {...tb, status: 'bill'} : tb));
+      if(updates.status==='billed'){
+        setTables(tt=>tt.map(tb=>tb.id===o.tableId?{...tb,status:'bill'}:tb));
       }
       return upd;
     }));
   },[]);
 
-  const [_confirmResolve, _setConfirmResolve] = useState(null);
-  const [_confirmState, _setConfirmState] = useState({show: false, msg: ''});
-  const confirm = useCallback((msg) => {
-    return new Promise((resolve) => {
-      _setConfirmResolve(() => resolve);
-      _setConfirmState({show: true, msg: msg});
-    });
-  }, []);
-  const _resolveConfirm = useCallback((val) => {
-    if(_confirmResolve) _confirmResolve(val);
-    _setConfirmResolve(null);
-    _setConfirmState({show: false, msg: ''});
-  }, [_confirmResolve]);
+  const _confirmResolve=React.useRef(null);
+  const[_confirmState,_setConfirmState]=useState({show:false,msg:''});
+  const confirm=useCallback(function(msg){return new Promise(function(res){_confirmResolve.current=res;_setConfirmState({show:true,msg:msg});});},[]); 
+  const _resolveConfirm=useCallback(function(val){if(_confirmResolve.current){_confirmResolve.current(val);_confirmResolve.current=null;}_setConfirmState({show:false,msg:''});},[]); 
 
-  const pwaInstall = useCallback(async() => {
-    if(!pwaEvt) return;
+  const pwaInstall=useCallback(async()=>{
+    if(!pwaEvt)return;
     pwaEvt.prompt();
-    const {outcome} = await pwaEvt.userChoice;
-    if(outcome === 'accepted') setPwaEvt(null);
+    const{outcome}=await pwaEvt.userChoice;
+    if(outcome==='accepted')setPwaEvt(null);
   },[pwaEvt]);
 
   return(
     <Ctx.Provider value={{
-      lang, t, setLang, user, setUser, login, logout, ready,
-      tables, setTables, orders, setOrders, cats, setCats, items, setItems,
-      staff, setStaff, settings, setSettings,
-      toasts, toast, createOrder, addItemsToOrder, updateOrder, calcTotal, beep, confirm,
-      pwaEvt, pwaInstall, theme, toggleTheme,
-      fbMode, fbConnected, tenant, trialDaysLeft, showPaywall, setShowPaywall
+      lang,t,setLang,user,setUser,login,logout,ready,
+      tables,setTables,orders,setOrders,cats,setCats,items,setItems,
+      staff,setStaff,settings,setSettings,
+      toasts,toast,createOrder,addItemsToOrder,updateOrder,calcTotal,beep,confirm,
+      pwaEvt,pwaInstall,theme,toggleTheme,
+      fbMode,fbConnected,tenant,trialDaysLeft,showPaywall,setShowPaywall
     }}>
       {children}
       <ToastContainer/>
-      {_confirmState.show && (
-        <div className="overlay" style={{zIndex: 9998}} onClick={e => { if(e.target === e.currentTarget) _resolveConfirm(false); }}>
-          <div className="modal" style={{maxWidth: 360}}>
-            <p style={{fontSize: 14, marginBottom: 20}}>{_confirmState.msg}</p>
-            <div style={{display: 'flex', gap: 8, justifyContent: 'flex-end'}}>
-              <button className="btn btn-ghost" onClick={() => _resolveConfirm(false)}>Cancel</button>
-              <button className="btn btn-danger" onClick={() => _resolveConfirm(true)}>Confirm</button>
+      {_confirmState.show&&(
+        <div className="overlay" style={{zIndex:9998}} onClick={function(e){if(e.target===e.currentTarget)_resolveConfirm(false);}}>
+          <div className="modal" style={{maxWidth:360}}>
+            <p style={{fontSize:14,marginBottom:20}}>{_confirmState.msg}</p>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button className="btn btn-ghost" onClick={function(){_resolveConfirm(false);}}>Cancel</button>
+              <button className="btn btn-danger" onClick={function(){_resolveConfirm(true);}}>Confirm</button>
             </div>
           </div>
         </div>
@@ -559,11 +699,2079 @@ function ToastContainer(){
   );
 }
 
-// ... (keep all your other components: KitTimer, LoginScreen, Header, BotNav, Dashboard, etc.)
-// They are the same as your original file
+/* ======================================================
+   TIMER COMPONENT
+====================================================== */
+function KitTimer({at}){
+  const[min,setMin]=useState(0);
+  useEffect(()=>{
+    const upd=()=>setMin(Math.floor((Date.now()-new Date(at).getTime())/60000));
+    upd();const id=setInterval(upd,30000);return()=>clearInterval(id);
+  },[at]);
+  const cls=min<10?'t-fresh':min<20?'t-warn':'t-hot';
+  return<span className={`timer ${cls}`}>⏱ {min}m</span>;
+}
+
+/* ======================================================
+   LOGIN SCREEN
+====================================================== */
+function LoginScreen(){
+  const{t,login,lang,setLang,pwaEvt,pwaInstall,ready,theme,toggleTheme}=useApp();
+  const[u,setU]=useState('');const[p,setP]=useState('');
+  const[err,setErr]=useState('');const[loading,setLoad]=useState(false);
+  const go=async()=>{
+    if(!u.trim()||!p.trim()){setErr('Please enter username and password');return;}
+    setLoad(true);setErr('');
+    const ok=await login(u,p);
+    if(!ok)setErr(lang==='ar'?'اسم المستخدم أو كلمة المرور غير صحيحة':'Invalid username or password');
+    setLoad(false);
+  };
+  return(
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',padding:20,background:'var(--bg)'}}>
+      {/* top-right theme toggle */}
+      <div style={{position:'absolute',top:14,right:14,display:'flex',gap:6}}>
+        <button className="theme-tog" onClick={toggleTheme}>
+          {theme==='dark'?<><i className="fa fa-sun"/> Day</>:<><i className="fa fa-moon"/> Night</>}
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={()=>setLang(lang==='ar'?'en':'ar')}>{lang==='ar'?'EN':'ع'}</button>
+      </div>
+      <div style={{width:'100%',maxWidth:350}}>
+        <div style={{textAlign:'center',marginBottom:26}}>
+          <div style={{fontSize:52,fontWeight:900,letterSpacing:'-2px',background:'linear-gradient(135deg,var(--primary),#fb923c)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',marginBottom:4}}>
+            Ordo
+          </div>
+          <div style={{fontSize:12,color:'var(--t2)',fontWeight:600,letterSpacing:'3px',textTransform:'uppercase',marginBottom:2}}>Point of Sale</div>
+          <div style={{fontSize:10,color:'var(--t3)'}}>Restaurant Management System · v2.0</div>
+        </div>
+        <div className="card" style={{padding:22}}>
+          {!ready?(
+            <div style={{textAlign:'center',padding:24,color:'var(--t2)',fontSize:13}}>
+              <i className="fa fa-spinner" style={{animation:'spin 1s linear infinite',fontSize:20,display:'block',marginBottom:8}}/>
+              Initializing…
+            </div>
+          ):(
+            <>
+              <div className="form-g">
+                <label className="form-lbl">{t('username')}</label>
+                <input className="input" value={u} onChange={e=>setU(e.target.value)} onKeyDown={e=>e.key==='Enter'&&go()} placeholder="admin" autoComplete="username"/>
+              </div>
+              <div className="form-g">
+                <label className="form-lbl">{t('password')}</label>
+                <input className="input" type="password" value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==='Enter'&&go()} placeholder="••••••••" autoComplete="current-password"/>
+              </div>
+              {err&&<div style={{color:'var(--red)',fontSize:12,marginBottom:8,padding:'6px 10px',background:'var(--red-dim)',borderRadius:6}}>{err}</div>}
+              <button className="btn btn-primary btn-block btn-lg" onClick={go} disabled={loading||!u||!p}>
+                {loading?<i className="fa fa-spinner" style={{animation:'spin 1s linear infinite'}}/>:<i className="fa fa-sign-in-alt"/>}
+                {' '}{t('login')}
+              </button>
+            </>
+          )}
+        </div>
+        <div style={{display:'flex',justifyContent:'center',gap:8,marginTop:12}}>
+          {pwaEvt&&<button className="btn btn-ghost btn-sm" onClick={pwaInstall}><i className="fa fa-download"/> {t('installApp')}</button>}
+        </div>
+        <div style={{marginTop:14,padding:10,background:'var(--elevated)',borderRadius:8,fontSize:10,color:'var(--t3)',textAlign:'center',lineHeight:1.8}}>
+          {t('loginHint')}:<br/>admin / admin123 · cashier / cash123<br/>waiter / wait123 · kitchen / kitchen123
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   HEADER
+====================================================== */
+function Header({screen,setScreen,allowed}){
+  const{t,user,logout,lang,setLang,settings,pwaEvt,pwaInstall,theme,toggleTheme,fbConnected,fbMode}=useApp();
+  const ic={dashboard:'fa-chart-pie',tables:'fa-border-all',orders:'fa-receipt',menu:'fa-utensils',kitchen:'fa-fire-flame-curved',reports:'fa-chart-bar',settings:'fa-cog'};
+  return(
+    <header className="nav-bar no-print">
+      <div className="nav-logo">✦ <span className="hide-sm">{(lang==='ar'?settings.restaurantNameAr:settings.restaurantName)||'Ordo'}</span></div>
+      <div className="nav-tabs">
+        {allowed.map(s=>(
+          <button key={s} className={`nav-tab${screen===s?' active':''}`} onClick={()=>setScreen(s)}>
+            <i className={`fa ${ic[s]||'fa-circle'}`}/><span className="hide-sm"> {t(s)}</span>
+          </button>
+        ))}
+      </div>
+      <div style={{display:'flex',gap:6,alignItems:'center'}}>
+        {fbMode&&(
+          <div style={{display:'flex',alignItems:'center',gap:5,padding:'4px 9px',borderRadius:99,background:'var(--elevated)',border:'1px solid var(--border)',fontSize:11,fontWeight:600}}>
+            <span style={{width:7,height:7,borderRadius:'50%',background:fbConnected?'var(--green)':'var(--yellow)',boxShadow:fbConnected?'0 0 5px var(--green)':undefined,flexShrink:0}}/>
+            <span style={{color:'var(--t2)'}} className="hide-sm">{fbConnected?'Firebase ✓':'Syncing…'}</span>
+          </div>
+        )}
+        <button className="theme-tog" onClick={toggleTheme}>
+          {theme==='dark'?<><i className="fa fa-sun"/><span className="hide-sm"> Day</span></>:<><i className="fa fa-moon"/><span className="hide-sm"> Night</span></>}
+        </button>
+        <button className="btn btn-ghost btn-sm" style={{padding:'4px 9px',fontSize:11}} onClick={()=>setLang(lang==='ar'?'en':'ar')}>{lang==='ar'?'EN':'ع'}</button>
+        {pwaEvt&&<button className="btn btn-ghost btn-sm btn-icon hide-sm" onClick={pwaInstall}><i className="fa fa-download"/></button>}
+        <span style={{fontSize:15}}>{user?.role==='admin'?'👨‍💼':user?.role==='cashier'?'💳':user?.role==='waiter'?'🧑‍🍳':'👨‍🍳'}</span>
+        <button className="btn btn-ghost btn-sm btn-icon" onClick={logout}><i className="fa fa-sign-out-alt"/></button>
+      </div>
+    </header>
+  );
+}
+
+function BotNav({screen,setScreen,allowed}){
+  const{t}=useApp();
+  const ic={dashboard:'fa-chart-pie',tables:'fa-border-all',orders:'fa-receipt',menu:'fa-utensils',kitchen:'fa-fire-flame-curved',reports:'fa-chart-bar',settings:'fa-cog'};
+  return(
+    <div className="bot-nav no-print">
+      <div className="bot-inner">
+        {allowed.slice(0,5).map(s=>(
+          <button key={s} className={`bot-tab${screen===s?' active':''}`} onClick={()=>setScreen(s)}>
+            <i className={`fa ${ic[s]||'fa-circle'}`}/><span>{t(s)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   DASHBOARD
+====================================================== */
+function Dashboard(){
+  const{t,orders,tables,settings,lang}=useApp();
+  const revRef=useRef();const topRef=useRef();
+  const revChart=useRef();const topChart=useRef();
+  const vr=(settings.vatRate||15)/100;
+  const cur=settings.currency||'SAR';
+
+  const paid=useMemo(()=>orders.filter(o=>o.status==='paid'),[orders]);
+  const todayPaid=useMemo(()=>paid.filter(o=>new Date(o.createdAt).toDateString()===today()),[paid]);
+
+  const calcRev=o=>{
+    const sub=(o.items||[]).reduce((s,i)=>s+(i.price+(i.modAdj||0))*i.qty,0);
+    return(sub*(1-(o.discount||0)/100))*(1+vr)+(o.tip||0);
+  };
+
+  const todayRev=useMemo(()=>todayPaid.reduce((s,o)=>s+calcRev(o),0),[todayPaid]);
+  const totalRev=useMemo(()=>paid.reduce((s,o)=>s+calcRev(o),0),[paid]);
+  const active=tables.filter(t=>t.status!=='available').length;
+  const pending=orders.filter(o=>['new','in-progress'].includes(o.status)).length;
+
+  const last7=useMemo(()=>Array.from({length:7},(_,i)=>{
+    const d=new Date();d.setDate(d.getDate()-(6-i));
+    const ds=d.toDateString();
+    const rev=paid.filter(o=>new Date(o.createdAt).toDateString()===ds).reduce((s,o)=>s+calcRev(o),0);
+    return{label:d.toLocaleDateString('en',{weekday:'short'}),rev};
+  }),[paid]);
+
+  const topItems=useMemo(()=>{
+    const cnt={};
+    paid.forEach(o=>(o.items||[]).forEach(i=>{const n=lang==='ar'?i.nameAr:i.name;cnt[n]=(cnt[n]||0)+i.qty;}));
+    return Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  },[paid,lang]);
+
+  useEffect(()=>{
+    if(!revRef.current)return;
+    if(revChart.current)revChart.current.destroy();
+    revChart.current=new Chart(revRef.current,{
+      type:'bar',
+      data:{labels:last7.map(d=>d.label),datasets:[{data:last7.map(d=>Math.round(d.rev)),backgroundColor:'rgba(251,191,36,.45)',borderColor:'#fbbf24',borderWidth:1.5,borderRadius:6,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{ticks:{color:'#9898b0',font:{size:11}},grid:{color:'rgba(255,255,255,.04)'}},x:{ticks:{color:'#9898b0',font:{size:11}},grid:{display:false}}}}
+    });
+    return()=>{revChart.current?.destroy();};
+  },[last7]);
+
+  useEffect(()=>{
+    if(!topRef.current||!topItems.length)return;
+    if(topChart.current)topChart.current.destroy();
+    topChart.current=new Chart(topRef.current,{
+      type:'doughnut',
+      data:{labels:topItems.map(([n])=>n),datasets:[{data:topItems.map(([,v])=>v),backgroundColor:['#fbbf24','#f97316','#8b5cf6','#3b82f6','#10b981'],borderWidth:0,hoverBorderWidth:2,hoverBorderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#9898b0',boxWidth:10,font:{size:11}}}}}
+    });
+    return()=>{topChart.current?.destroy();};
+  },[topItems]);
+
+  return(
+    <div className="scroll-y mb-pad" style={{padding:16,flex:1}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(148px,1fr))',gap:10,marginBottom:14}}>
+        {[
+          {icon:'💰',val:`${cur} ${fmtInt(todayRev)}`,lbl:t('revenueToday'),col:'var(--primary)'},
+          {icon:'📋',val:todayPaid.length,lbl:t('ordersToday')},
+          {icon:'🪑',val:active,lbl:t('activeTables')},
+          {icon:'⏳',val:pending,lbl:t('pendingOrders'),col:pending>0?'var(--yellow)':undefined}
+        ].map((s,i)=>(
+          <div key={i} className="stat-card">
+            <div style={{fontSize:24}}>{s.icon}</div>
+            <div className="stat-v" style={{color:s.col}}>{s.val}</div>
+            <div className="stat-l">{s.lbl}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,2fr)',gap:12,marginBottom:12}}>
+        <div className="card">
+          <div style={{fontSize:11,color:'var(--t2)',marginBottom:8}}>🏆 {t('topItems')}</div>
+          {topItems.length?<div style={{height:160}}><canvas ref={topRef}/></div>:<div style={{textAlign:'center',padding:24,color:'var(--t3)',fontSize:12}}>{t('noData')}</div>}
+        </div>
+        <div className="card">
+          <div style={{fontSize:11,color:'var(--t2)',marginBottom:8}}>📈 {t('weeklySales')}</div>
+          <div style={{height:160}}><canvas ref={revRef}/></div>
+        </div>
+      </div>
+      <div className="card">
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+          <span style={{fontSize:11,color:'var(--t2)'}}>🧾 {t('recentTx')}</span>
+          <span style={{fontSize:11,color:'var(--t2)'}}>{t('totalRevenue')}: <strong style={{color:'var(--primary)'}}>{cur} {totalRev.toFixed(2)}</strong></span>
+        </div>
+        {todayPaid.length===0&&<div style={{textAlign:'center',padding:18,color:'var(--t3)',fontSize:12}}>{t('noData')}</div>}
+        {todayPaid.slice().reverse().slice(0,8).map(o=>{
+          const rev=calcRev(o);
+          return(
+            <div key={o.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'1px solid var(--border)',fontSize:12}}>
+              <span style={{color:'var(--t2)'}}>{o.tableNum||o.orderType} · {new Date(o.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+              <div style={{display:'flex',gap:6,alignItems:'center'}}>
+                <span className={`badge badge-${o.paymentMethod==='cash'?'green':o.paymentMethod==='mada'?'yellow':'blue'}`}>{o.paymentMethod}</span>
+                <span style={{fontWeight:700,color:'var(--primary)',minWidth:80,textAlign:'right'}}>{cur} {rev.toFixed(2)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   MODIFIER MODAL
+====================================================== */
+function ModModal({item,lang,onConfirm,onClose}){
+  const{settings}=useApp();
+  const cur=(settings&&settings.currency)||'SAR';
+  const[sel,setSel]=useState({});const[itemNote,setNote]=useState('');
+  const groups=item.modifiers||[];
+  const canConfirm=groups.filter(g=>g.required).every(g=>!!sel[g.id]);
+  const adj=groups.reduce((s,g)=>{const o=g.opts?.find(o=>o.id===sel[g.id]);return s+(o?.adj||0);},0);
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+          <h3 style={{fontSize:15}}>{lang==='ar'?item.nameAr:item.name}</h3>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}><i className="fa fa-times"/></button>
+        </div>
+        {groups.map(g=>(
+          <div key={g.id} className="form-g">
+            <label className="form-lbl">{lang==='ar'?g.nameAr:g.name} {g.required&&<span style={{color:'var(--red)'}}>*</span>}</label>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
+              {(g.opts||[]).map(o=>(
+                <button key={o.id} className={`chip${sel[g.id]===o.id?' active':''}`} onClick={()=>setSel(p=>({...p,[g.id]:o.id}))}>
+                  {lang==='ar'?o.nameAr||o.name:o.name}
+                  {o.adj>0&&<span style={{fontSize:10}}> +{o.adj}</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+        <div className="form-g">
+          <label className="form-lbl">Special instructions</label>
+          <input className="input" placeholder="e.g. no onions, well done…" value={itemNote} onChange={e=>setNote(e.target.value)}/>
+        </div>
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:8}}>
+          <button className="btn btn-ghost" onClick={onClose}>{lang==='ar'?'إلغاء':'Cancel'}</button>
+          <button className="btn btn-primary" disabled={!canConfirm} onClick={()=>onConfirm({...item,selectedMods:sel,modAdj:adj,itemNote})}>
+            {lang==='ar'?'إضافة':'Add'} · {cur} {(item.price+adj).toFixed(2)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   ORDER SCREEN (waiter ordering)
+====================================================== */
+function OrderScreen({table,existingOrder,onBack}){
+  const{t,lang,items,cats,createOrder,addItemsToOrder,toast,settings}=useApp();
+  const cur=settings.currency||'SAR';
+  const[selCat,setSelCat]=useState(0);const[cart,setCart]=useState([]);
+  const[note,setNote]=useState('');const[search,setSearch]=useState('');
+  const[orderType,setOrderType]=useState('dine-in');const[modItem,setModItem]=useState(null);
+  const isAdd=!!existingOrder;
+
+  const cartKey=c=>c.id+'|'+(c.selectedMods?JSON.stringify(c.selectedMods):'{}');
+  const insert=item=>{
+    setCart(p=>{
+      const k=cartKey(item);
+      const ex=p.find(c=>cartKey(c)===k);
+      return ex?p.map(c=>cartKey(c)===k?{...c,qty:c.qty+1}:c):[...p,{...item,qty:1}];
+    });
+  };
+  const tryAdd=item=>{
+    if(!item.available)return;
+    if(item.modifiers?.length>0){setModItem(item);}
+    else insert({...item,selectedMods:{},modAdj:0,itemNote:''});
+  };
+  const chQty=(k,d)=>setCart(p=>p.map(c=>cartKey(c)===k?{...c,qty:Math.max(0,c.qty+d)}:c).filter(c=>c.qty>0));
+  const cartTotal=cart.reduce((s,c)=>s+(c.price+(c.modAdj||0))*c.qty,0);
+  const cartQty=cart.reduce((s,c)=>s+c.qty,0);
+
+  const send=()=>{
+    if(!cart.length){toast('Add items first!','warning');return;}
+    if(isAdd){addItemsToOrder(existingOrder.id,cart,note);}
+    else{createOrder(table?.id,table?.num,cart,null,note,orderType);}
+    onBack();
+  };
+
+  const filtered=items.filter(i=>(selCat===0||i.catId===selCat)&&(!search||(i.name+i.nameAr).toLowerCase().includes(search.toLowerCase())));
+
+  return(
+    <div style={{display:'flex',height:'100%',overflow:'hidden'}} className="split">
+      {modItem&&<ModModal item={modItem} lang={lang} onConfirm={itm=>{insert(itm);setModItem(null);}} onClose={()=>setModItem(null)}/>}
+
+      {/* Left: menu */}
+      <div className="left-pane" style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <div style={{padding:'9px 12px',borderBottom:'1px solid var(--border)',display:'flex',gap:8,alignItems:'center',flexShrink:0,flexWrap:'wrap'}}>
+          <button className="btn btn-ghost btn-sm" onClick={onBack}><i className="fa fa-arrow-left"/></button>
+          <div>
+            <div style={{fontWeight:700,fontSize:13}}>{table?.num||t('newOrder')}</div>
+            <div style={{fontSize:11,color:'var(--t2)'}}>{isAdd?t('addToOrder'):t('addItem')}</div>
+          </div>
+          {!isAdd&&(
+            <div style={{display:'flex',gap:5}}>
+              {[['dine-in','🪑',t('dineIn')],['takeaway','🛍',t('takeaway')],['delivery','🛵',t('delivery')]].map(([tp,em,lb])=>(
+                <button key={tp} className={`chip${orderType===tp?' active':''}`} onClick={()=>setOrderType(tp)} style={{fontSize:11,padding:'3px 9px'}}>
+                  {em} <span className="hide-sm">{lb}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div style={{flex:1,minWidth:100,marginLeft:'auto'}}>
+            <input className="input" placeholder={t('search')} value={search} onChange={e=>setSearch(e.target.value)} style={{padding:'7px 11px'}}/>
+          </div>
+        </div>
+        <div style={{padding:'7px 10px',display:'flex',gap:6,overflowX:'auto',borderBottom:'1px solid var(--border)',flexShrink:0}}>
+          <button className={`chip${selCat===0?' active':''}`} onClick={()=>setSelCat(0)}>{t('all')}</button>
+          {cats.map(c=>(
+            <button key={c.id} className={`chip${selCat===c.id?' active':''}`} onClick={()=>setSelCat(c.id)}>
+              {c.emoji} <span className="hide-sm">{lang==='ar'?c.nameAr:c.name}</span>
+            </button>
+          ))}
+        </div>
+        <div className="scroll-y" style={{flex:1,padding:10}}>
+          {isAdd&&existingOrder&&(
+            <div style={{marginBottom:10,padding:9,background:'var(--blue-dim)',borderRadius:8,border:'1px solid rgba(59,130,246,.2)'}}>
+              <div style={{fontSize:11,color:'var(--blue)',fontWeight:700,marginBottom:5}}>{t('existingOrder')} — {(existingOrder.items||[]).length} items</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                {(existingOrder.items||[]).map((it,i)=>(
+                  <span key={i} style={{fontSize:10,padding:'2px 7px',background:'var(--elevated)',borderRadius:99,color:'var(--t2)'}}>{it.emoji} {lang==='ar'?it.nameAr:it.name} ×{it.qty}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:9}}>
+            {filtered.map(item=>(
+              <div key={item.id} className={`m-card${!item.available?' unavailable':''}${cart.some(c=>c.id===item.id)?' incart':''}`} onClick={()=>tryAdd(item)}>
+                {item.imageData?<img src={item.imageData} className="m-img" alt=""/>:item.imageUrl?<img src={item.imageUrl} className="m-img" alt=""/>:<div className="m-emoji">{item.emoji}</div>}
+                <div style={{padding:'7px 9px'}}>
+                  <div style={{fontWeight:600,fontSize:11,lineHeight:1.3,marginBottom:2}}>{lang==='ar'?item.nameAr:item.name}</div>
+                  <div style={{color:'var(--primary)',fontSize:12,fontWeight:700}}>{cur} {item.price}</div>
+                  {item.modifiers?.length>0&&<div style={{fontSize:9,color:'var(--t3)',marginTop:1}}>+ options ▾</div>}
+                </div>
+              </div>
+            ))}
+            {!filtered.length&&<div style={{gridColumn:'1/-1',textAlign:'center',padding:32,color:'var(--t3)',fontSize:12}}>{t('noItems')}</div>}
+          </div>
+        </div>
+      </div>
+
+      {/* Right: cart */}
+      <div className="order-panel" style={{width:280,flexShrink:0}}>
+        <div style={{padding:'10px 12px',borderBottom:'1px solid var(--border)',fontWeight:700,fontSize:13,flexShrink:0}}>
+          🛒 {t('cart')} ({cartQty})
+        </div>
+        <div className="scroll-y" style={{flex:1,padding:8}}>
+          {!cart.length&&<div style={{textAlign:'center',padding:28,color:'var(--t3)',fontSize:12}}>{lang==='ar'?'اختر من القائمة':'Tap menu items to add'}</div>}
+          {cart.map(c=>{
+            const k=cartKey(c);
+            return(
+              <div key={k} style={{display:'flex',alignItems:'center',gap:7,marginBottom:7,padding:8,background:'var(--elevated)',borderRadius:8}}>
+                <span style={{fontSize:18,flexShrink:0}}>{c.emoji}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:11,fontWeight:600,lineHeight:1.3}}>{lang==='ar'?c.nameAr:c.name}</div>
+                  {c.modAdj>0&&<div style={{fontSize:10,color:'var(--t3)'}}>+{c.modAdj} options</div>}
+                  {c.itemNote&&<div style={{fontSize:9,color:'var(--t3)',marginTop:1}}>📝 {c.itemNote}</div>}
+                  <div style={{fontSize:11,color:'var(--primary)',fontWeight:700}}>{cur} {((c.price+(c.modAdj||0))*c.qty).toFixed(2)}</div>
+                </div>
+                <div style={{display:'flex',gap:3,alignItems:'center',flexShrink:0}}>
+                  <button className="btn btn-ghost btn-icon" style={{width:26,height:26,fontSize:14}} onClick={()=>chQty(k,-1)}>-</button>
+                  <span style={{width:18,textAlign:'center',fontSize:12,fontWeight:700}}>{c.qty}</span>
+                  <button className="btn btn-ghost btn-icon" style={{width:26,height:26,fontSize:14}} onClick={()=>chQty(k,1)}>+</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{padding:10,borderTop:'1px solid var(--border)',flexShrink:0}}>
+          <textarea className="input" placeholder={t('addNote')} value={note} onChange={e=>setNote(e.target.value)} rows={2} style={{marginBottom:8,fontSize:12}}/>
+          {cart.length>0&&(
+            <div className="row-between" style={{marginBottom:8}}>
+              <span style={{fontSize:12,color:'var(--t2)'}}>{t('total')}</span>
+              <span style={{fontWeight:700,color:'var(--primary)',fontSize:14}}>{cur} {cartTotal.toFixed(2)}</span>
+            </div>
+          )}
+          <button className="btn btn-primary btn-block" onClick={send} disabled={!cart.length}>
+            <i className={`fa ${isAdd?'fa-plus':'fa-paper-plane'}`}/> {isAdd?t('addToOrder'):t('sendKitchen')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   WAITER SCREEN
+====================================================== */
+function WaiterScreen(){
+  const{t,lang,tables,orders,confirm}=useApp();
+  const[selTbl,setSelTbl]=useState(null);const[addMode,setAddMode]=useState(false);
+  const statusLbl={available:t('avail'),ordered:t('occupied'),bill:t('billReady')};
+
+  if(selTbl){
+    const existOrd=addMode?orders.find(o=>o.id===selTbl.orderId):null;
+    return<OrderScreen table={selTbl} existingOrder={existOrd} onBack={()=>{setSelTbl(null);setAddMode(false);}}/>;
+  }
+
+  return(
+    <div className="scroll-y mb-pad" style={{padding:16,flex:1}}>
+      <div className="tbl-grid">
+        {tables.map(tb=>{
+          const ord=orders.find(o=>o.id===tb.orderId);
+          return(
+            <div key={tb.id} className={`tbl-card ${tb.status}`} onClick={()=>{
+              if(tb.status==='available'){setAddMode(false);setSelTbl(tb);}
+              else if(tb.status==='ordered'&&ord){
+                confirm(tb.num+' — Add more items to existing order?').then(function(yes){if(yes){setAddMode(true);setSelTbl(tb);}});
+              }
+            }}>
+              <div className="sdot"/>
+              <span style={{fontSize:28}}>🪑</span>
+              <div className="tbl-num">{tb.num}</div>
+              <div style={{fontSize:10,color:'var(--t3)',marginTop:2}}>{tb.seats} seats</div>
+              <span className={`badge badge-${tb.status==='available'?'green':tb.status==='ordered'?'yellow':'red'}`} style={{marginTop:5,fontSize:10}}>
+                {statusLbl[tb.status]}
+              </span>
+              {ord&&<KitTimer at={ord.createdAt}/>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   KITCHEN SCREEN
+====================================================== */
+function KitchenScreen(){
+  const{t,lang,orders,updateOrder,settings}=useApp();
+  const active=orders.filter(o=>['new','in-progress','ready'].includes(o.status));
+  const[filter,setFilter]=useState('all');
+
+  const shown=filter==='all'?active:active.filter(o=>o.status===filter);
+  const cols={new:{label:lang==='ar'?'جديد':'New',color:'var(--yellow)',bg:'var(--yellow-dim)'},
+    'in-progress':{label:t('inProgress'),color:'var(--blue)',bg:'var(--blue-dim)'},
+    ready:{label:t('ready'),color:'var(--green)',bg:'var(--green-dim)'}};
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
+      <div style={{padding:'9px 14px',borderBottom:'1px solid var(--border)',display:'flex',gap:8,alignItems:'center',flexShrink:0}}>
+        <i className="fa fa-fire-flame-curved" style={{color:'var(--orange)'}}/>
+        <span style={{fontWeight:700,fontSize:14}}>{t('kitchenDisplay')}</span>
+        <div style={{display:'flex',gap:5,marginLeft:'auto'}}>
+          {['all','new','in-progress','ready'].map(f=>(
+            <button key={f} className={`chip${filter===f?' active':''}`} style={{fontSize:11}} onClick={()=>setFilter(f)}>
+              {f==='all'?t('all'):cols[f]?.label||f}
+              {f!=='all'&&<span style={{marginLeft:4,background:'var(--elevated)',borderRadius:99,padding:'1px 5px'}}>{active.filter(o=>o.status===f).length}</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="scroll-y mb-pad" style={{flex:1,padding:12}}>
+        {!shown.length&&<div style={{textAlign:'center',padding:40,color:'var(--t3)',fontSize:13}}>{lang==='ar'?'لا توجد طلبات نشطة':'No active orders'}</div>}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:10}}>
+          {shown.map(order=>{
+            const c=cols[order.status]||cols.new;
+            const isRush=order.priority==='rush';
+            return(
+              <div key={order.id} className={`kit-card${isRush?' rush':''}`} style={{borderLeft:`4px solid ${c.color}`}}>
+                <div className="row-between" style={{marginBottom:9}}>
+                  <div style={{display:'flex',gap:7,alignItems:'center'}}>
+                    <span style={{fontSize:15,fontWeight:800}}>{order.tableNum||order.orderType}</span>
+                    <span className={`badge badge-${order.status==='new'?'yellow':order.status==='in-progress'?'blue':'green'}`} style={{fontSize:10}}>
+                      {c.label}
+                    </span>
+                    {isRush&&<span className="badge badge-red" style={{fontSize:10}}>{t('rush')}</span>}
+                  </div>
+                  <div style={{display:'flex',gap:5,alignItems:'center'}}>
+                    <KitTimer at={order.createdAt}/>
+                    <button className="btn btn-warning btn-icon btn-sm" title="Mark Rush" onClick={()=>updateOrder(order.id,{priority:order.priority==='rush'?'normal':'rush'})}>
+                      <i className="fa fa-bolt" style={{fontSize:11}}/>
+                    </button>
+                  </div>
+                </div>
+                <div style={{marginBottom:10}}>
+                  {(order.items||[]).map((it,i)=>(
+                    <div key={i} style={{display:'flex',gap:7,padding:'4px 0',borderBottom:'1px solid var(--border)',fontSize:12}}>
+                      <span>{it.emoji}</span>
+                      <span style={{flex:1}}>{lang==='ar'?it.nameAr:it.name}</span>
+                      {it.modAdj>0&&<span style={{fontSize:10,color:'var(--t3)'}}>+options</span>}
+                      <span style={{fontWeight:700}}>×{it.qty}</span>
+                    </div>
+                  ))}
+                </div>
+                {order.note&&<div style={{padding:'5px 8px',background:'var(--yellow-dim)',borderRadius:6,fontSize:11,marginBottom:8}}>📝 {order.note}</div>}
+                <div style={{display:'flex',gap:6}}>
+                  {order.status==='new'&&(
+                    <button className="btn btn-primary btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>updateOrder(order.id,{status:'in-progress'})}>
+                      <i className="fa fa-play"/> Start
+                    </button>
+                  )}
+                  {order.status==='in-progress'&&(
+                    <button className="btn btn-success btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>updateOrder(order.id,{status:'ready'})}>
+                      <i className="fa fa-check"/> Ready
+                    </button>
+                  )}
+                  {order.status==='ready'&&(
+                    <button className="btn btn-ghost btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>updateOrder(order.id,{status:'completed'})}>
+                      <i className="fa fa-check-double"/> Served
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   SPLIT BILL MODAL
+====================================================== */
+function SplitModal({order,calcTotal,settings,onClose,onPay}){
+  const[parts,setParts]=useState(2);
+  const{total}=calcTotal(order);
+  const per=total/parts;
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="row-between" style={{marginBottom:14}}>
+          <h3>Split Bill — {order.tableNum}</h3>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}><i className="fa fa-times"/></button>
+        </div>
+        <div className="form-g">
+          <label className="form-lbl">Split into {parts} parts</label>
+          <input type="range" min={2} max={10} value={parts} onChange={e=>setParts(Number(e.target.value))} style={{width:'100%'}}/>
+        </div>
+        <div style={{padding:14,background:'var(--elevated)',borderRadius:8,textAlign:'center',marginBottom:14}}>
+          <div style={{fontSize:28,fontWeight:800,color:'var(--primary)'}}>{settings.currency||'SAR'} {per.toFixed(2)}</div>
+          <div style={{fontSize:12,color:'var(--t2)',marginTop:4}}>per person · total {(settings.currency||'SAR')} {total.toFixed(2)}</div>
+        </div>
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={()=>{onPay(parts);onClose();}}>
+            <i className="fa fa-check"/> Confirm Split Payment
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   EDIT ORDER MODAL
+====================================================== */
+function EditOrderModal({order,onClose}){
+  const{t,lang,items:menuItems,cats,updateOrder,settings,toast}=useApp();
+  const cur=settings.currency||'SAR';
+
+  // Deep-copy order items into local state
+  const[editItems,setEditItems]=useState(()=>(order.items||[]).map(i=>({...i})));
+  const[note,setNote]=useState(order.note||'');
+  const[orderType,setOrderType]=useState(order.orderType||'dine-in');
+  const[tab,setTab]=useState('items'); // 'items' | 'add'
+  const[selCat,setSelCat]=useState(0);
+  const[search,setSearch]=useState('');
+
+  const cartKey=i=>i.id+'|'+(i.selectedMods?JSON.stringify(i.selectedMods):'{}');
+
+  // ── Edit existing items ──────────────────────────────
+  const changeQty=(idx,delta)=>{
+    setEditItems(p=>{
+      const next=[...p];
+      const newQty=next[idx].qty+delta;
+      if(newQty<=0){next.splice(idx,1);}
+      else{next[idx]={...next[idx],qty:newQty};}
+      return next;
+    });
+  };
+
+  // ── Add menu item ────────────────────────────────────
+  const addItem=item=>{
+    if(!item.available)return;
+    setEditItems(p=>{
+      const key=cartKey({...item,selectedMods:{}});
+      const idx=p.findIndex(i=>cartKey(i)===key);
+      if(idx>=0){const n=[...p];n[idx]={...n[idx],qty:n[idx].qty+1};return n;}
+      return[...p,{...item,qty:1,selectedMods:{},modAdj:0,itemNote:''}];
+    });
+  };
+
+  const filtered=menuItems.filter(i=>i.available&&(selCat===0||i.catId===selCat)&&(!search||(i.name+i.nameAr).toLowerCase().includes(search.toLowerCase())));
+
+  const sub=editItems.reduce((s,i)=>s+(i.price+(i.modAdj||0))*i.qty,0);
+
+  const save=()=>{
+    if(!editItems.length){toast('Order must have at least one item','warning');return;}
+    updateOrder(order.id,{items:editItems,note,orderType,updatedAt:new Date().toISOString()});
+    toast('Order updated','success');
+    onClose();
+  };
+
+  return(
+    <div className="overlay" style={{zIndex:1050}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal modal-lg" style={{maxHeight:'95vh',display:'flex',flexDirection:'column'}}>
+
+        {/* Header */}
+        <div className="row-between" style={{marginBottom:14,flexShrink:0}}>
+          <div>
+            <h3 style={{fontSize:15}}>✏️ Edit Order — {order.tableNum||order.orderType}</h3>
+            <div style={{fontSize:11,color:'var(--t2)',marginTop:2}}>{order.id}</div>
+          </div>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}><i className="fa fa-times"/></button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:'flex',gap:6,marginBottom:12,flexShrink:0}}>
+          <button className={`chip${tab==='items'?' active':''}`} onClick={()=>setTab('items')}>
+            <i className="fa fa-list"/> Current Items ({editItems.length})
+          </button>
+          <button className={`chip${tab==='add'?' active':''}`} onClick={()=>setTab('add')}>
+            <i className="fa fa-plus"/> Add Items
+          </button>
+        </div>
+
+        {/* Tab: current items */}
+        {tab==='items'&&(
+          <div className="scroll-y" style={{flex:1,minHeight:0}}>
+            {!editItems.length&&(
+              <div style={{textAlign:'center',padding:32,color:'var(--t3)',fontSize:13}}>No items — add some from the menu</div>
+            )}
+            {editItems.map((it,idx)=>(
+              <div key={idx} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderBottom:'1px solid var(--border)'}}>
+                <span style={{fontSize:22,flexShrink:0}}>{it.emoji}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600}}>{lang==='ar'?it.nameAr:it.name}</div>
+                  {it.modAdj>0&&<div style={{fontSize:10,color:'var(--t3)'}}>+{it.modAdj} options</div>}
+                  {it.itemNote&&<div style={{fontSize:10,color:'var(--t3)'}}>📝 {it.itemNote}</div>}
+                  <div style={{fontSize:12,color:'var(--primary)',fontWeight:700}}>{cur} {((it.price+(it.modAdj||0))*it.qty).toFixed(2)}</div>
+                </div>
+                {/* Qty controls */}
+                <div style={{display:'flex',alignItems:'center',gap:5,flexShrink:0}}>
+                  <button className="btn btn-danger btn-icon btn-sm" style={{width:28,height:28}} onClick={()=>changeQty(idx,-1)}>
+                    {it.qty===1?<i className="fa fa-trash" style={{fontSize:10}}/>:<span style={{fontSize:16,lineHeight:1}}>−</span>}
+                  </button>
+                  <span style={{width:24,textAlign:'center',fontWeight:700,fontSize:13}}>{it.qty}</span>
+                  <button className="btn btn-ghost btn-icon btn-sm" style={{width:28,height:28}} onClick={()=>changeQty(idx,1)}>
+                    <span style={{fontSize:16,lineHeight:1}}>+</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Order type + note */}
+            <div style={{marginTop:14}}>
+              <div className="form-g">
+                <label className="form-lbl">{t('orderType')}</label>
+                <div style={{display:'flex',gap:6}}>
+                  {[['dine-in','🪑',t('dineIn')],['takeaway','🛍',t('takeaway')],['delivery','🛵',t('delivery')]].map(([tp,em,lb])=>(
+                    <button key={tp} className={`chip${orderType===tp?' active':''}`} onClick={()=>setOrderType(tp)} style={{fontSize:11}}>
+                      {em} {lb}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="form-g" style={{marginBottom:0}}>
+                <label className="form-lbl">{t('addNote')}</label>
+                <textarea className="input" rows={2} value={note} onChange={e=>setNote(e.target.value)} style={{fontSize:12}}/>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab: add items */}
+        {tab==='add'&&(
+          <div style={{flex:1,minHeight:0,display:'flex',flexDirection:'column'}}>
+            <div style={{display:'flex',gap:7,marginBottom:8,flexShrink:0,flexWrap:'wrap'}}>
+              <input className="input" placeholder={t('search')} value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:120,padding:'7px 11px'}}/>
+            </div>
+            <div style={{display:'flex',gap:6,marginBottom:8,overflowX:'auto',flexShrink:0}}>
+              <button className={`chip${selCat===0?' active':''}`} onClick={()=>setSelCat(0)}>{t('all')}</button>
+              {cats.map(c=><button key={c.id} className={`chip${selCat===c.id?' active':''}`} onClick={()=>setSelCat(c.id)}>{c.emoji} {lang==='ar'?c.nameAr:c.name}</button>)}
+            </div>
+            <div className="scroll-y" style={{flex:1,minHeight:0}}>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',gap:8}}>
+                {filtered.map(item=>{
+                  const inOrder=editItems.find(i=>i.id===item.id);
+                  return(
+                    <div key={item.id} className={`m-card${inOrder?' incart':''}`} onClick={()=>addItem(item)}
+                      style={{position:'relative'}}>
+                      {item.imageData||item.imageUrl
+                        ?<img src={item.imageData||item.imageUrl} className="m-img" alt=""/>
+                        :<div className="m-emoji">{item.emoji}</div>}
+                      <div style={{padding:'7px 9px'}}>
+                        <div style={{fontWeight:600,fontSize:11}}>{lang==='ar'?item.nameAr:item.name}</div>
+                        <div style={{color:'var(--primary)',fontSize:12,fontWeight:700}}>{cur} {item.price}</div>
+                      </div>
+                      {inOrder&&(
+                        <div style={{position:'absolute',top:6,right:6,background:'var(--primary)',color:'#0d0d14',borderRadius:99,width:20,height:20,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800}}>
+                          {inOrder.qty}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{borderTop:'1px solid var(--border)',paddingTop:12,marginTop:10,flexShrink:0}}>
+          <div className="row-between" style={{marginBottom:10}}>
+            <span style={{fontSize:12,color:'var(--t2)'}}>{editItems.reduce((s,i)=>s+i.qty,0)} items</span>
+            <span style={{fontWeight:700,fontSize:15,color:'var(--primary)'}}>{cur} {sub.toFixed(2)}</span>
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={onClose}>{t('cancel')}</button>
+            <button className="btn btn-primary" style={{flex:2,justifyContent:'center'}} onClick={save}>
+              <i className="fa fa-save"/> Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   CASHIER SCREEN
+====================================================== */
+function CashierScreen(){
+  const{t,lang,tables,orders,updateOrder,calcTotal,settings,toast}=useApp();
+  const[selTbl,setSelTbl]=useState(null);const[discount,setDisc]=useState(0);
+  const[payMethod,setPay]=useState('cash');const[received,setReceived]=useState('');
+  const[tip,setTip]=useState(0);const[showSplit,setShowSplit]=useState(false);
+  const[voidId,setVoidId]=useState(null);const[voidReason,setVoidReason]=useState('');
+  const[editOrder,setEditOrder]=useState(null);
+  const cur=settings.currency||'SAR';
+
+  const activeTables=tables.filter(tb=>tb.status==='ordered'||tb.status==='bill');
+  const selOrder=selTbl?orders.find(o=>o.id===selTbl.orderId):null;
+
+  const{sub,disc,after,vat,total}=selOrder?{...calcTotal({...selOrder,discount,tip}),tip}:{sub:0,disc:0,after:0,vat:0,total:0,tip:0};
+  const change=received?Math.max(0,parseFloat(received)-total):0;
+
+  const pay=()=>{
+    if(!selOrder)return;
+    updateOrder(selOrder.id,{status:'paid',discount,tip,paymentMethod:payMethod,paidAt:new Date().toISOString()});
+    toast(`Payment accepted · ${cur} ${total.toFixed(2)}`,'success');
+    setSelTbl(null);setDisc(0);setTip(0);setReceived('');
+  };
+
+  const printReceipt=()=>{
+    if(!selOrder)return;
+    const vr=(settings.vatRate||15)/100;
+    const sub2=(selOrder.items||[]).reduce((s,i)=>s+(i.price+(i.modAdj||0))*i.qty,0);
+    const disc2=sub2*(discount/100);
+    const after2=sub2-disc2;
+    const vat2=after2*vr;
+    const tip2=tip||0;
+    const tot2=after2+vat2+tip2;
+    const change2=received?Math.max(0,parseFloat(received)-tot2):0;
+    const w=window.open('','_blank','width=380,height=700');
+    w.document.write(`<!DOCTYPE html><html><head><title>Receipt</title>
+    <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:monospace;font-size:13px;max-width:300px;margin:0 auto;padding:16px}
+    .c{text-align:center}.d{border-top:1px dashed #000;margin:8px 0}.r{display:flex;justify-content:space-between}
+    h2{font-size:16px}h3{font-size:14px}.big{font-size:17px;font-weight:bold}</style></head><body>
+    <div class="c"><h2>${settings.restaurantName}</h2>
+    <div>${settings.address||''}</div><div>${settings.phone||''}</div>
+    ${settings.vatNumber?`<div>VAT: ${settings.vatNumber}</div>`:''}
+    ${settings.crNumber?`<div>CR: ${settings.crNumber}</div>`:''}
+    <div>${new Date().toLocaleString()}</div></div>
+    <div class="d"></div>
+    <div class="r"><span>Table: ${selTbl?.num}</span><span>Order: ${selOrder.id.slice(-8)}</span></div>
+    <div class="r"><span>Type: ${selOrder.orderType||'dine-in'}</span><span>Staff: ${selOrder.waiterName||'-'}</span></div>
+    <div class="d"></div>
+    ${(selOrder.items||[]).map(i=>`<div class="r"><span>${lang==='ar'?i.nameAr:i.name}${i.itemNote?` (${i.itemNote})`:''} x${i.qty}</span><span>${cur} ${((i.price+(i.modAdj||0))*i.qty).toFixed(2)}</span></div>`).join('')}
+    <div class="d"></div>
+    <div class="r"><span>Subtotal</span><span>${cur} ${sub2.toFixed(2)}</span></div>
+    ${discount>0?`<div class="r"><span>Discount ${discount}%</span><span>-${cur} ${disc2.toFixed(2)}</span></div>`:''}
+    <div class="r"><span>VAT ${settings.vatRate||15}%</span><span>${cur} ${vat2.toFixed(2)}</span></div>
+    ${tip2>0?`<div class="r"><span>Tip</span><span>${cur} ${tip2.toFixed(2)}</span></div>`:''}
+    <div class="d"></div>
+    <div class="r big"><span>TOTAL</span><span>${cur} ${tot2.toFixed(2)}</span></div>
+    ${payMethod==='cash'&&received?`<div class="r"><span>Received</span><span>${cur} ${parseFloat(received).toFixed(2)}</span></div><div class="r"><span>Change</span><span>${cur} ${change2.toFixed(2)}</span></div>`:''}
+    <div class="d"></div>
+    <div class="c"><p>${lang==='ar'?settings.receiptFooterAr:settings.receiptFooter}</p></div>
+    <div style="text-align:center;margin-top:18px"><button onclick="window.print()" style="padding:8px 20px;font-family:monospace">Print</button></div>
+    </body></html>`);
+    w.document.close();
+  };
+
+  return(
+    <div style={{display:'flex',height:'100%',overflow:'hidden'}} className="split">
+      {editOrder&&<EditOrderModal order={editOrder} onClose={()=>setEditOrder(null)}/>}
+      {showSplit&&selOrder&&<SplitModal order={{...selOrder,discount,tip}} calcTotal={calcTotal} settings={settings} onClose={()=>setShowSplit(false)} onPay={(parts)=>{
+        updateOrder(selOrder.id,{status:'paid',discount,tip,paymentMethod:'split',splits:parts,paidAt:new Date().toISOString()});
+        toast(`Split payment (${parts} ways) · ${cur} ${(total/parts).toFixed(2)} each`,'success');
+        setSelTbl(null);setDisc(0);setTip(0);
+      }}/>}
+      {voidId&&(
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setVoidId(null)}>
+          <div className="modal">
+            <h3 style={{marginBottom:12}}>{t('voidOrder')}</h3>
+            <div className="form-g">
+              <label className="form-lbl">{t('voidReason')}</label>
+              <input className="input" placeholder={t('enterReason')} value={voidReason} onChange={e=>setVoidReason(e.target.value)}/>
+            </div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:10}}>
+              <button className="btn btn-ghost" onClick={()=>setVoidId(null)}>{t('cancel')}</button>
+              <button className="btn btn-danger" onClick={()=>{
+                updateOrder(voidId,{status:'voided',voidReason,voidedAt:new Date().toISOString()});
+                toast('Order voided','warning');setVoidId(null);setSelTbl(null);
+              }}>{t('confirm')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Left: table list */}
+      <div style={{width:240,borderRight:'1px solid var(--border)',display:'flex',flexDirection:'column',overflow:'hidden',flexShrink:0}}>
+        <div style={{padding:'10px 12px',fontWeight:700,fontSize:13,borderBottom:'1px solid var(--border)',flexShrink:0}}>{t('tables')}</div>
+        <div className="scroll-y" style={{flex:1}}>
+          {!activeTables.length&&<div style={{padding:20,textAlign:'center',color:'var(--t3)',fontSize:12}}>No active tables</div>}
+          {activeTables.map(tb=>(
+            <div key={tb.id} onClick={()=>{setSelTbl(tb);setDisc(0);setTip(0);setReceived('');setPay('cash');}}
+              style={{padding:'10px 12px',cursor:'pointer',borderBottom:'1px solid var(--border)',background:selTbl?.id===tb.id?'var(--primary-dim)':'transparent',transition:'all .15s'}}>
+              <div className="row-between">
+                <span style={{fontWeight:700}}>{tb.num}</span>
+                <span className={`badge badge-${tb.status==='bill'?'red':'yellow'}`}>{tb.status==='bill'?t('billReady'):t('occupied')}</span>
+              </div>
+              {orders.find(o=>o.id===tb.orderId)&&(
+                <div style={{fontSize:11,color:'var(--t2)',marginTop:3}}>
+                  {orders.find(o=>o.id===tb.orderId)?.items.length} items
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right: bill */}
+      <div style={{flex:1,overflow:'auto',padding:14}}>
+        {!selOrder?(
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--t3)',fontSize:13,flexDirection:'column',gap:10}}>
+            <i className="fa fa-receipt" style={{fontSize:32,opacity:.3}}/>
+            <span>Select a table to process payment</span>
+          </div>
+        ):(
+          <div style={{maxWidth:520}}>
+            <div className="row-between" style={{marginBottom:14}}>
+              <div>
+                <h3 style={{fontSize:16}}>{selTbl?.num}</h3>
+                <div style={{fontSize:11,color:'var(--t2)'}}>{selOrder.id} · {selOrder.orderType}</div>
+              </div>
+              <div style={{display:'flex',gap:6}}>
+                <button className="btn btn-ghost btn-sm" onClick={()=>setEditOrder(selOrder)}><i className="fa fa-edit"/> Edit</button>
+                <button className="btn btn-ghost btn-sm" onClick={printReceipt}><i className="fa fa-print"/> {t('print')}</button>
+                <button className="btn btn-danger btn-sm" onClick={()=>setVoidId(selOrder.id)}><i className="fa fa-ban"/> Void</button>
+              </div>
+            </div>
+            {/* Items */}
+            <div className="card" style={{marginBottom:12,padding:12}}>
+              {(selOrder.items||[]).map((it,i)=>(
+                <div key={i} className="row-between" style={{padding:'6px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
+                  <span>{it.emoji} {lang==='ar'?it.nameAr:it.name}{it.modAdj>0?` (+${it.modAdj})`:''} ×{it.qty}</span>
+                  <span style={{fontWeight:600}}>{cur} {((it.price+(it.modAdj||0))*it.qty).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+            {/* Controls */}
+            <div className="card" style={{marginBottom:12,padding:14}}>
+              <div className="form-g">
+                <label className="form-lbl">{t('discount')} (%)</label>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                  {[0,5,10,15,20].map(d=>(
+                    <button key={d} className={`chip${discount===d?' active':''}`} style={{fontSize:11}} onClick={()=>setDisc(d)}>{d}%</button>
+                  ))}
+                  <input type="number" className="input" style={{width:70}} value={discount} onChange={e=>setDisc(Math.min(100,Math.max(0,+e.target.value)))} min={0} max={100}/>
+                </div>
+              </div>
+              {settings.enableTips&&(
+                <div className="form-g">
+                  <label className="form-lbl">{t('tips')} ({cur})</label>
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                    {[0,5,10,15,20].map(tv=>(
+                      <button key={tv} className={`chip${tip===tv?' active':''}`} style={{fontSize:11}} onClick={()=>setTip(tv)}>{tv>0?`${cur} ${tv}`:'No tip'}</button>
+                    ))}
+                    <input type="number" className="input" style={{width:80}} value={tip} onChange={e=>setTip(Math.max(0,+e.target.value))} min={0}/>
+                  </div>
+                </div>
+              )}
+              <div className="form-g">
+                <label className="form-lbl">{t('payMethod')}</label>
+                <div style={{display:'flex',gap:6}}>
+                  {['cash','card','mada'].map(m=>(
+                    <button key={m} className={`chip${payMethod===m?' active':''}`} onClick={()=>setPay(m)}>
+                      {m==='cash'?'💵':m==='card'?'💳':'🏧'} {t(m)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {payMethod==='cash'&&(
+                <div className="form-g">
+                  <label className="form-lbl">{t('received')}</label>
+                  <input type="number" className="input" value={received} onChange={e=>setReceived(e.target.value)} placeholder="0.00"/>
+                </div>
+              )}
+            </div>
+            {/* Totals */}
+            <div className="card" style={{marginBottom:12,padding:14}}>
+              {[
+                [t('subtotal'),`${cur} ${sub.toFixed(2)}`],
+                discount>0?[`${t('discount')} (${discount}%)`,`-${cur} ${disc.toFixed(2)}`]:null,
+                [`${t('vat')} ${settings.vatRate||15}%`,`${cur} ${vat.toFixed(2)}`],
+                tip>0?[t('tips'),`${cur} ${tip.toFixed(2)}`]:null,
+              ].filter(Boolean).map(([l,v],i)=>(
+                <div key={i} className="row-between" style={{padding:'5px 0',fontSize:13,color:l.includes('Disc')||l.includes('خصم')?'var(--green)':'inherit'}}>
+                  <span>{l}</span><span>{v}</span>
+                </div>
+              ))}
+              <div className="divider"/>
+              <div className="row-between" style={{fontSize:19,fontWeight:800}}>
+                <span>{t('grandTotal')}</span>
+                <span style={{color:'var(--primary)'}}>{cur} {total.toFixed(2)}</span>
+              </div>
+              {payMethod==='cash'&&received&&<div className="row-between" style={{marginTop:6,fontSize:13,color:'var(--green)'}}>
+                <span>{t('change')}</span><span>{cur} {change.toFixed(2)}</span>
+              </div>}
+            </div>
+            {/* Action buttons */}
+            <div style={{display:'flex',gap:8}}>
+              <button className="btn btn-success btn-lg" style={{flex:1,justifyContent:'center'}} onClick={pay}>
+                <i className="fa fa-check"/> {t('markPaid')}
+              </button>
+              <button className="btn btn-ghost btn-lg" onClick={()=>setShowSplit(true)}>
+                <i className="fa fa-scissors"/> {t('split')}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   ORDERS SCREEN
+====================================================== */
+function OrdersScreen(){
+  const{t,lang,orders,tables,updateOrder,calcTotal,settings,toast}=useApp();
+  const[filter,setFilter]=useState('active');const[search,setSearch]=useState('');
+  const[editOrder,setEditOrder]=useState(null);
+  const cur=settings.currency||'SAR';
+
+  const shown=useMemo(()=>{
+    let list=orders.slice().reverse();
+    if(filter==='active')list=list.filter(o=>!['paid','voided'].includes(o.status));
+    if(filter==='paid')list=list.filter(o=>o.status==='paid');
+    if(filter==='voided')list=list.filter(o=>o.status==='voided');
+    if(search)list=list.filter(o=>(o.tableNum+o.id).toLowerCase().includes(search.toLowerCase()));
+    return list;
+  },[orders,filter,search]);
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
+      {editOrder&&<EditOrderModal order={editOrder} onClose={()=>setEditOrder(null)}/>}
+      <div style={{padding:'9px 12px',borderBottom:'1px solid var(--border)',display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',flexShrink:0}}>
+        <div style={{display:'flex',gap:5}}>
+          {[['active',t('active')],['paid',t('paid')],['voided','Voided'],['all',t('all')]].map(([k,l])=>(
+            <button key={k} className={`chip${filter===k?' active':''}`} style={{fontSize:11}} onClick={()=>setFilter(k)}>{l}</button>
+          ))}
+        </div>
+        <div style={{flex:1,maxWidth:200,marginLeft:'auto'}}>
+          <input className="input" placeholder={t('search')} value={search} onChange={e=>setSearch(e.target.value)} style={{padding:'6px 10px'}}/>
+        </div>
+      </div>
+      <div className="scroll-y mb-pad" style={{flex:1,padding:12}}>
+        {!shown.length&&<div style={{textAlign:'center',padding:40,color:'var(--t3)',fontSize:13}}>{t('noData')}</div>}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:10}}>
+          {shown.map(order=>{
+            const{total}=calcTotal(order);
+            const stColors={new:'yellow','in-progress':'blue',ready:'green',billed:'orange',completed:'purple',paid:'green',voided:'red'};
+            return(
+              <div key={order.id} className="card" style={{padding:12}}>
+                <div className="row-between" style={{marginBottom:8}}>
+                  <div>
+                    <span style={{fontWeight:700,fontSize:13}}>{order.tableNum||order.orderType}</span>
+                    <span style={{fontSize:10,color:'var(--t2)',marginLeft:6}}>{order.id.slice(-8)}</span>
+                  </div>
+                  <div style={{display:'flex',gap:5,alignItems:'center'}}>
+                    <span className={`badge badge-${stColors[order.status]||'blue'}`} style={{fontSize:10}}>{order.status}</span>
+                    <KitTimer at={order.createdAt}/>
+                  </div>
+                </div>
+                <div style={{fontSize:11,color:'var(--t2)',marginBottom:7}}>
+                  {new Date(order.createdAt).toLocaleString()} · {order.orderType}
+                </div>
+                {(order.items||[]).slice(0,3).map((it,i)=>(
+                  <div key={i} style={{fontSize:11,padding:'2px 0',color:'var(--t2)'}}>
+                    {it.emoji} {lang==='ar'?it.nameAr:it.name} ×{it.qty}
+                  </div>
+                ))}
+                {(order.items||[]).length>3&&<div style={{fontSize:10,color:'var(--t3)'}}>+{(order.items||[]).length-3} more</div>}
+                <div className="divider"/>
+                <div className="row-between">
+                  <span style={{fontWeight:700,color:'var(--primary)',fontSize:13}}>{cur} {total.toFixed(2)}</span>
+                  <div style={{display:'flex',gap:5}}>
+                    {!['paid','voided'].includes(order.status)&&(
+                      <button className="btn btn-ghost btn-sm" onClick={()=>setEditOrder(order)}>
+                        <i className="fa fa-edit"/> Edit
+                      </button>
+                    )}
+                    {order.status==='ready'&&(
+                      <button className="btn btn-success btn-sm" onClick={()=>{updateOrder(order.id,{status:'billed'});toast('Marked for billing','info');}}>
+                        Bill
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   REPORTS
+====================================================== */
+function Reports(){
+  const{t,orders,settings,lang}=useApp();
+  const[range,setRange]=useState(7);
+  const cur=settings.currency||'SAR';
+  const vr=(settings.vatRate||15)/100;
+  const lineRef=useRef();const lineChart=useRef();
+
+  const paid=useMemo(()=>orders.filter(o=>o.status==='paid'),[orders]);
+
+  const calcRev=o=>{
+    const sub=(o.items||[]).reduce((s,i)=>s+(i.price+(i.modAdj||0))*i.qty,0);
+    return(sub*(1-(o.discount||0)/100))*(1+vr)+(o.tip||0);
+  };
+
+  const days=useMemo(()=>Array.from({length:range},(_,i)=>{
+    const d=new Date();d.setDate(d.getDate()-(range-1-i));
+    const ds=d.toDateString();
+    const dayOrders=paid.filter(o=>new Date(o.createdAt).toDateString()===ds);
+    return{label:d.toLocaleDateString('en',{month:'short',day:'numeric'}),rev:dayOrders.reduce((s,o)=>s+calcRev(o),0),cnt:dayOrders.length};
+  }),[paid,range]);
+
+  const totalRev=days.reduce((s,d)=>s+d.rev,0);
+  const totalOrds=days.reduce((s,d)=>s+d.cnt,0);
+  const avgOrder=totalOrds?totalRev/totalOrds:0;
+
+  const itemStats=useMemo(()=>{
+    const m={};
+    paid.forEach(o=>(o.items||[]).forEach(i=>{
+      const n=lang==='ar'?i.nameAr:i.name;
+      if(!m[n])m[n]={name:n,qty:0,rev:0};
+      m[n].qty+=i.qty;m[n].rev+=(i.price+(i.modAdj||0))*i.qty;
+    }));
+    return Object.values(m).sort((a,b)=>b.rev-a.rev).slice(0,10);
+  },[paid,lang]);
+
+  useEffect(()=>{
+    if(!lineRef.current)return;
+    if(lineChart.current)lineChart.current.destroy();
+    lineChart.current=new Chart(lineRef.current,{
+      type:'line',
+      data:{labels:days.map(d=>d.label),datasets:[{label:'Revenue',data:days.map(d=>Math.round(d.rev)),borderColor:'#fbbf24',backgroundColor:'rgba(251,191,36,.1)',fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'#fbbf24'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{ticks:{color:'#9898b0',font:{size:11}},grid:{color:'rgba(255,255,255,.04)'}},x:{ticks:{color:'#9898b0',font:{size:11}},grid:{display:false}}}}
+    });
+    return()=>lineChart.current?.destroy();
+  },[days]);
+
+  return(
+    <div className="scroll-y mb-pad" style={{padding:14,flex:1}}>
+      <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap',alignItems:'center'}}>
+        <span style={{fontSize:12,color:'var(--t2)',marginRight:4}}>Range:</span>
+        {[7,14,30,90].map(r=>(
+          <button key={r} className={`chip${range===r?' active':''}`} style={{fontSize:11}} onClick={()=>setRange(r)}>Last {r}d</button>
+        ))}
+        <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}} onClick={()=>{
+          const data=JSON.stringify({orders,exportedAt:new Date().toISOString()},null,2);
+          const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(data);
+          a.download=`ordo-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
+        }}><i className="fa fa-download"/> Export</button>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(145px,1fr))',gap:10,marginBottom:14}}>
+        {[
+          {l:'Total Revenue',v:`${cur} ${totalRev.toFixed(2)}`,col:'var(--primary)'},
+          {l:'Orders',v:totalOrds},
+          {l:'Avg Order',v:`${cur} ${avgOrder.toFixed(2)}`},
+          {l:'Total Items',v:paid.reduce((s,o)=>s+(o.items||[]).reduce((ss,i)=>ss+i.qty,0),0)},
+        ].map((s,i)=>(
+          <div key={i} className="stat-card">
+            <div className="stat-v" style={{color:s.col,fontSize:22}}>{s.v}</div>
+            <div className="stat-l">{s.l}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{marginBottom:12}}>
+        <div style={{fontSize:11,color:'var(--t2)',marginBottom:8}}>Revenue Trend</div>
+        <div style={{height:180}}><canvas ref={lineRef}/></div>
+      </div>
+
+      <div className="card">
+        <div style={{fontSize:11,color:'var(--t2)',marginBottom:10}}>Top Items by Revenue</div>
+        {!itemStats.length&&<div style={{textAlign:'center',padding:20,color:'var(--t3)',fontSize:12}}>{t('noData')}</div>}
+        {itemStats.map((it,i)=>{
+          const pct=itemStats[0]?.rev?it.rev/itemStats[0].rev*100:0;
+          return(
+            <div key={i} style={{marginBottom:8}}>
+              <div className="row-between" style={{marginBottom:3}}>
+                <span style={{fontSize:12}}>{it.name}</span>
+                <span style={{fontSize:12,color:'var(--t2)'}}>{it.qty} sold · <span style={{color:'var(--primary)',fontWeight:700}}>{cur} {it.rev.toFixed(2)}</span></span>
+              </div>
+              <div style={{height:5,background:'var(--elevated)',borderRadius:99,overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${pct}%`,background:'var(--primary)',borderRadius:99,transition:'width .4s'}}/>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   MENU MANAGEMENT
+====================================================== */
+function MenuManagement(){
+  const{t,lang,cats,setCats,items,setItems,toast,confirm,settings}=useApp();
+  const cur=settings.currency||'SAR';
+  const[tab,setTab]=useState('items');const[showModal,setShowModal]=useState(false);
+  const[editItem,setEditItem]=useState(null);
+  const blank={name:'',nameAr:'',price:'',emoji:'🍽️',imageUrl:'',imageData:'',catId:'',available:true,modifiers:[]};
+  const[form,setForm]=useState(blank);
+  const[showCatModal,setShowCatModal]=useState(false);
+  const[editCat,setEditCat]=useState(null);
+  const[catForm,setCatForm]=useState({name:'',nameAr:'',emoji:'🍽️'});
+
+  const openItem=(item=null)=>{
+    if(item){setEditItem(item);setForm({...item});}
+    else{setEditItem(null);setForm({...blank,catId:cats[0]?.id||''});}
+    setShowModal(true);
+  };
+
+  const saveItem=()=>{
+    if(!form.name.trim()||!form.price){toast('Name and price required','warning');return;}
+    const it={...form,id:editItem?.id||Date.now(),price:parseFloat(form.price),catId:parseInt(form.catId),modifiers:form.modifiers||[]};
+    if(editItem)setItems(p=>p.map(i=>i.id===editItem.id?it:i));
+    else setItems(p=>[...p,it]);
+    setShowModal(false);toast(t('save'),'success');
+  };
+
+  const delItem=function(id){confirm('Delete this item?').then(function(yes){if(yes){setItems(p=>p.filter(i=>i.id!==id));toast('Deleted','warning');}});};
+
+  const handleImg=e=>{
+    const f=e.target.files?.[0];if(!f)return;
+    const reader=new FileReader();
+    reader.onload=ev=>setForm(p=>({...p,imageData:ev.target.result,imageUrl:''}));
+    reader.readAsDataURL(f);
+  };
+
+  // Modifier management
+  const addMod=()=>setForm(p=>({...p,modifiers:[...p.modifiers,{id:uid(),name:'',nameAr:'',required:false,opts:[{id:uid(),name:'',nameAr:'',adj:0}]}]}));
+  const updMod=(mid,key,val)=>setForm(p=>({...p,modifiers:p.modifiers.map(m=>m.id===mid?{...m,[key]:val}:m)}));
+  const delMod=mid=>setForm(p=>({...p,modifiers:p.modifiers.filter(m=>m.id!==mid)}));
+  const addOpt=mid=>setForm(p=>({...p,modifiers:p.modifiers.map(m=>m.id===mid?{...m,opts:[...m.opts,{id:uid(),name:'',nameAr:'',adj:0}]}:m)}));
+  const updOpt=(mid,oid,key,val)=>setForm(p=>({...p,modifiers:p.modifiers.map(m=>m.id===mid?{...m,opts:m.opts.map(o=>o.id===oid?{...o,[key]:val}:o)}:m)}));
+  const delOpt=(mid,oid)=>setForm(p=>({...p,modifiers:p.modifiers.map(m=>m.id===mid?{...m,opts:m.opts.filter(o=>o.id!==oid)}:m)}));
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
+      <div style={{padding:'8px 12px',borderBottom:'1px solid var(--border)',display:'flex',gap:6,flexShrink:0}}>
+        {[['items','Items'],['cats','Categories']].map(([k,l])=>(
+          <button key={k} className={`chip${tab===k?' active':''}`} onClick={()=>setTab(k)}>{l}</button>
+        ))}
+        <button className="btn btn-primary btn-sm" style={{marginLeft:'auto'}} onClick={()=>tab==='items'?openItem():setShowCatModal(true)}>
+          <i className="fa fa-plus"/> {tab==='items'?t('addMenuItem'):t('addCat')}
+        </button>
+      </div>
+
+      {/* Items tab */}
+      {tab==='items'&&(
+        <div className="scroll-y mb-pad" style={{flex:1,padding:12}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:10}}>
+            {items.map(item=>(
+              <div key={item.id} className="card" style={{display:'flex',gap:10,padding:12}}>
+                <div style={{width:52,height:52,borderRadius:8,overflow:'hidden',flexShrink:0,background:'var(--elevated)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28}}>
+                  {item.imageData||item.imageUrl?<img src={item.imageData||item.imageUrl} style={{width:'100%',height:'100%',objectFit:'cover'}} alt=""/>:item.emoji}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:13}}>{lang==='ar'?item.nameAr:item.name}</div>
+                  <div style={{fontSize:12,color:'var(--primary)',marginTop:2}}>{cur} {item.price}</div>
+                  <div style={{display:'flex',gap:4,marginTop:4,flexWrap:'wrap'}}>
+                    <span className={`badge badge-${item.available?'green':'red'}`} style={{fontSize:10}}>{item.available?t('avail2'):t('unavail')}</span>
+                    {item.modifiers?.length>0&&<span className="badge badge-purple" style={{fontSize:10}}>{item.modifiers.length} mod</span>}
+                  </div>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:5}}>
+                  <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>openItem(item)}><i className="fa fa-edit"/></button>
+                  <button className="btn btn-danger btn-icon btn-sm" onClick={()=>delItem(item.id)}><i className="fa fa-trash"/></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cats tab */}
+      {tab==='cats'&&(
+        <div className="scroll-y mb-pad" style={{flex:1,padding:12}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:10}}>
+            {cats.map(c=>(
+              <div key={c.id} className="card" style={{display:'flex',alignItems:'center',gap:10,padding:12}}>
+                <span style={{fontSize:28}}>{c.emoji}</span>
+                <div style={{flex:1}}><div style={{fontWeight:700,fontSize:13}}>{lang==='ar'?c.nameAr:c.name}</div>
+                <div style={{fontSize:11,color:'var(--t2)'}}>{items.filter(i=>i.catId===c.id).length} items</div></div>
+                <div style={{display:'flex',gap:5}}>
+                  <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>{setEditCat(c);setCatForm({...c});setShowCatModal(true);}}><i className="fa fa-edit"/></button>
+                  <button className="btn btn-danger btn-icon btn-sm" onClick={function(){confirm('Delete category?').then(function(yes){if(yes){setCats(p=>p.filter(x=>x.id!==c.id));toast('Deleted','warning');}});}}><i className="fa fa-trash"/></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Item modal */}
+      {showModal&&(
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowModal(false)}>
+          <div className="modal modal-lg" style={{maxHeight:'95vh'}}>
+            <div className="row-between" style={{marginBottom:14}}>
+              <h3>{editItem?t('editItem'):t('addMenuItem')}</h3>
+              <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>setShowModal(false)}><i className="fa fa-times"/></button>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <div className="form-g">
+                <label className="form-lbl">English Name *</label>
+                <input className="input" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="e.g. Grilled Chicken"/>
+              </div>
+              <div className="form-g">
+                <label className="form-lbl">Arabic Name</label>
+                <input className="input" value={form.nameAr} onChange={e=>setForm(p=>({...p,nameAr:e.target.value}))} placeholder="e.g. دجاج مشوي" dir="rtl"/>
+              </div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
+              <div className="form-g">
+                <label className="form-lbl">Price (SAR) *</label>
+                <input type="number" className="input" value={form.price} onChange={e=>setForm(p=>({...p,price:e.target.value}))} placeholder="0.00" min={0}/>
+              </div>
+              <div className="form-g">
+                <label className="form-lbl">Emoji</label>
+                <input className="input" value={form.emoji} onChange={e=>setForm(p=>({...p,emoji:e.target.value}))} placeholder="🍽️"/>
+              </div>
+              <div className="form-g">
+                <label className="form-lbl">Category</label>
+                <select className="input" value={form.catId} onChange={e=>setForm(p=>({...p,catId:e.target.value}))}>
+                  {cats.map(c=><option key={c.id} value={c.id}>{lang==='ar'?c.nameAr:c.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="form-g">
+              <label className="form-lbl">{t('uploadPhoto')}</label>
+              <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                <input type="file" accept="image/*" onChange={handleImg} style={{display:'none'}} id="imgup"/>
+                <label htmlFor="imgup" className="btn btn-ghost btn-sm" style={{cursor:'pointer'}}><i className="fa fa-camera"/> {t('uploadPhoto')}</label>
+                <span style={{fontSize:11,color:'var(--t2)'}}>or</span>
+                <input className="input" placeholder="Image URL" value={form.imageUrl} onChange={e=>setForm(p=>({...p,imageUrl:e.target.value,imageData:''}))}/>
+                {(form.imageData||form.imageUrl)&&<img src={form.imageData||form.imageUrl} style={{width:40,height:40,objectFit:'cover',borderRadius:6}} alt=""/>}
+              </div>
+            </div>
+            <label style={{display:'flex',alignItems:'center',gap:8,marginBottom:12,cursor:'pointer'}}>
+              <div className={`tog${form.available?' on':''}`} onClick={()=>setForm(p=>({...p,available:!p.available}))}>
+                <div className="tog-thumb"/>
+              </div>
+              <span style={{fontSize:13}}>{t('avail2')}</span>
+            </label>
+            {/* Modifiers */}
+            <div style={{borderTop:'1px solid var(--border)',paddingTop:12,marginTop:4}}>
+              <div className="row-between" style={{marginBottom:10}}>
+                <span className="form-lbl">{t('modifiers')}</span>
+                <button className="btn btn-ghost btn-sm" onClick={addMod}><i className="fa fa-plus"/> {t('addMod')}</button>
+              </div>
+              {form.modifiers.map(mg=>(
+                <div key={mg.id} style={{background:'var(--elevated)',borderRadius:8,padding:10,marginBottom:8}}>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr auto auto',gap:7,marginBottom:7,alignItems:'center'}}>
+                    <input className="input" placeholder="Name (EN)" value={mg.name} onChange={e=>updMod(mg.id,'name',e.target.value)} style={{fontSize:12}}/>
+                    <input className="input" placeholder="الاسم" value={mg.nameAr||''} onChange={e=>updMod(mg.id,'nameAr',e.target.value)} style={{fontSize:12}} dir="rtl"/>
+                    <label style={{display:'flex',alignItems:'center',gap:5,fontSize:11,cursor:'pointer',whiteSpace:'nowrap'}}>
+                      <div className={`tog${mg.required?' on':''}`} onClick={()=>updMod(mg.id,'required',!mg.required)} style={{width:32,height:18}}>
+                        <div className="tog-thumb" style={{width:13,height:13,top:1,left:mg.required?16:2}}/>
+                      </div>{t('required')}
+                    </label>
+                    <button className="btn btn-danger btn-icon btn-sm" onClick={()=>delMod(mg.id)}><i className="fa fa-times" style={{fontSize:10}}/></button>
+                  </div>
+                  {mg.opts.map(o=>(
+                    <div key={o.id} style={{display:'grid',gridTemplateColumns:'1fr 1fr 60px auto',gap:5,marginBottom:5,alignItems:'center'}}>
+                      <input className="input" placeholder="Option (EN)" value={o.name} onChange={e=>updOpt(mg.id,o.id,'name',e.target.value)} style={{fontSize:11,padding:'6px 9px'}}/>
+                      <input className="input" placeholder="الخيار" value={o.nameAr||''} onChange={e=>updOpt(mg.id,o.id,'nameAr',e.target.value)} style={{fontSize:11,padding:'6px 9px'}} dir="rtl"/>
+                      <input type="number" className="input" placeholder="+0" value={o.adj} onChange={e=>updOpt(mg.id,o.id,'adj',parseFloat(e.target.value)||0)} style={{fontSize:11,padding:'6px 8px'}}/>
+                      <button className="btn btn-ghost btn-icon btn-sm" style={{width:26,height:26}} onClick={()=>delOpt(mg.id,o.id)}><i className="fa fa-times" style={{fontSize:9}}/></button>
+                    </div>
+                  ))}
+                  <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>addOpt(mg.id)}><i className="fa fa-plus"/> {t('addOption')}</button>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:14}}>
+              <button className="btn btn-ghost" onClick={()=>setShowModal(false)}>{t('cancel')}</button>
+              <button className="btn btn-primary" onClick={saveItem}><i className="fa fa-save"/> {t('save')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category modal */}
+      {showCatModal&&(
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowCatModal(false)}>
+          <div className="modal">
+            <div className="row-between" style={{marginBottom:14}}>
+              <h3>{editCat?'Edit Category':t('addCat')}</h3>
+              <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>{setShowCatModal(false);setEditCat(null);}}><i className="fa fa-times"/></button>
+            </div>
+            <div className="form-g"><label className="form-lbl">English Name</label><input className="input" value={catForm.name} onChange={e=>setCatForm(p=>({...p,name:e.target.value}))}/></div>
+            <div className="form-g"><label className="form-lbl">Arabic Name</label><input className="input" value={catForm.nameAr} onChange={e=>setCatForm(p=>({...p,nameAr:e.target.value}))} dir="rtl"/></div>
+            <div className="form-g"><label className="form-lbl">Emoji</label><input className="input" value={catForm.emoji} onChange={e=>setCatForm(p=>({...p,emoji:e.target.value}))}/></div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:10}}>
+              <button className="btn btn-ghost" onClick={()=>{setShowCatModal(false);setEditCat(null);}}>{t('cancel')}</button>
+              <button className="btn btn-primary" onClick={()=>{
+                if(!catForm.name.trim())return;
+                const cat={...catForm,id:editCat?.id||Date.now()};
+                if(editCat)setCats(p=>p.map(c=>c.id===editCat.id?cat:c));
+                else setCats(p=>[...p,cat]);
+                setShowCatModal(false);setEditCat(null);toast(t('save'),'success');
+              }}>{t('save')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ======================================================
+   SETTINGS
+====================================================== */
+function Settings(){
+  const{t,lang,settings,setSettings,staff,setStaff,tables,setTables,toast,logout,confirm}=useApp();
+  const[tab,setTab]=useState('restaurant');
+  const[staffModal,setStaffModal]=useState(false);
+  const[editStaff,setEditStaff]=useState(null);
+  const[staffForm,setStaffForm]=useState({name:'',nameAr:'',username:'',password:'',role:'waiter',active:true});
+  const[tblForm,setTblForm]=useState({num:'',seats:4,area:'Main'});
+  const[passForm,setPassForm]=useState({cur:'',nw:'',nw2:''});
+  const[passErr,setPassErr]=useState('');
+  const[showShareQR,setShowShareQR]=useState(false);
+
+  const Tog=({k,label})=>(
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 0',borderBottom:'1px solid var(--border)'}}>
+      <span style={{fontSize:13}}>{label}</span>
+      <div className={`tog${settings[k]?' on':''}`} onClick={()=>setSettings({[k]:!settings[k]})}>
+        <div className="tog-thumb"/>
+      </div>
+    </div>
+  );
+
+  const saveStaff=async()=>{
+    if(!staffForm.name||!staffForm.username){toast('Name and username required','warning');return;}
+    if(!editStaff&&!staffForm.password){toast('Password required for new staff','warning');return;}
+    let hash=editStaff?.hash||'';
+    if(staffForm.password)hash=await hashPw(staffForm.password);
+    const s={...staffForm,id:editStaff?.id||Date.now(),hash,pin:staffForm.pin||'0000'};
+    delete s.password;
+    if(editStaff)setStaff(p=>p.map(x=>x.id===editStaff.id?s:x));
+    else setStaff(p=>[...p,s]);
+    setStaffModal(false);setEditStaff(null);toast(t('save'),'success');
+  };
+
+  const changePass=async()=>{
+    setPassErr('');
+    if(passForm.nw!==passForm.nw2){setPassErr('Passwords do not match');return;}
+    if(passForm.nw.length<6){setPassErr('Minimum 6 characters');return;}
+    // verify current
+    const h=await hashPw(passForm.cur);
+    const me=staff.find(s=>s.id===(JSON.parse(localStorage.getItem('session')||'{}').uid));
+    if(!me||h!==me.hash){setPassErr('Current password incorrect');return;}
+    const nh=await hashPw(passForm.nw);
+    setStaff(p=>p.map(s=>s.id===me.id?{...s,hash:nh}:s));
+    setPassForm({cur:'',nw:'',nw2:''});toast('Password changed','success');
+  };
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
+      <div style={{padding:'8px 12px',borderBottom:'1px solid var(--border)',display:'flex',gap:5,flexShrink:0,overflowX:'auto'}}>
+        {[['restaurant','🏪 Restaurant'],['security','🔐 Security'],['staff','👥 Staff'],['tables','🪑 Tables'],['data','💾 Data']].map(([k,l])=>(
+          <button key={k} className={`chip${tab===k?' active':''}`} style={{fontSize:11,whiteSpace:'nowrap'}} onClick={()=>setTab(k)}>{l}</button>
+        ))}
+      </div>
+      <div className="scroll-y mb-pad" style={{flex:1,padding:14}}>
+
+        {/* Restaurant */}
+        {tab==='restaurant'&&(
+          <div>
+            <div className="section-hdr">🏪 Restaurant Info</div>
+            <div className="card" style={{marginBottom:12}}>
+              {[['restaurantName','Restaurant Name (EN)',''],['restaurantNameAr','Restaurant Name (AR)','rtl'],['address','Address (EN)',''],['addressAr','Address (AR)','rtl'],['phone','Phone',''],['crNumber','CR Number',''],['vatNumber','VAT Number (15-digit)','']].map(([k,l,d])=>(
+                <div key={k} className="form-g">
+                  <label className="form-lbl">{l}</label>
+                  <input className="input" value={settings[k]||''} onChange={e=>setSettings({[k]:e.target.value})} dir={d||'auto'}/>
+                </div>
+              ))}
+            </div>
+            <div className="section-hdr">💰 Financial</div>
+            <div className="card" style={{marginBottom:12}}>
+              <div className="form-g">
+                <label className="form-lbl">{t('vatRate')}</label>
+                <input type="number" className="input" value={settings.vatRate||15} onChange={e=>setSettings({vatRate:Math.min(100,Math.max(0,+e.target.value))})} min={0} max={100}/>
+              </div>
+              <div className="form-g">
+                <label className="form-lbl">Currency</label>
+                <select className="input" value={settings.currency||'SAR'} onChange={e=>setSettings({currency:e.target.value})}>
+                  {['SAR','USD','AED','KWD','BHD','QAR','OMR'].map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <Tog k="enableTips" label="Enable Tips"/>
+              <Tog k="enableDelivery" label="Enable Delivery Orders"/>
+            </div>
+            <div className="section-hdr">🧾 Receipt</div>
+            <div className="card" style={{marginBottom:12}}>
+              <div className="form-g">
+                <label className="form-lbl">{t('receiptMsg')} (EN)</label>
+                <input className="input" value={settings.receiptFooter||''} onChange={e=>setSettings({receiptFooter:e.target.value})}/>
+              </div>
+              <div className="form-g">
+                <label className="form-lbl">{t('receiptMsg')} (AR)</label>
+                <input className="input" value={settings.receiptFooterAr||''} onChange={e=>setSettings({receiptFooterAr:e.target.value})} dir="rtl"/>
+              </div>
+            </div>
+            <div className="section-hdr">📋 Digital Menu</div>
+            <div className="card" style={{background:'linear-gradient(135deg,rgba(251,191,36,.06),rgba(251,191,36,.02))',border:'1px solid rgba(251,191,36,.2)'}}>
+              <div style={{display:'flex',gap:14,alignItems:'center'}}>
+                <div style={{fontSize:38}}>📱</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:14,marginBottom:3}}>Share Menu via QR</div>
+                  <div style={{fontSize:12,color:'var(--t2)',lineHeight:1.5}}>Generate a QR code for your customers to scan and view your menu. View-only with Day &amp; Night mode.</div>
+                </div>
+              </div>
+              <button className="btn btn-primary" style={{marginTop:12,width:'100%',justifyContent:'center'}} onClick={()=>setShowShareQR(true)}>
+                <i className="fa fa-qrcode"/> Generate Menu QR Code
+              </button>
+            </div>
+          </div>
+        )}
+        {showShareQR&&<ShareMenuQR onClose={()=>setShowShareQR(false)}/>}
+
+        {/* Security */}
+        {tab==='security'&&(
+          <div>
+            <div className="section-hdr">🔐 Security Settings</div>
+            <div className="card" style={{marginBottom:12}}>
+              <div className="form-g">
+                <label className="form-lbl">{t('sessionTimeout')}</label>
+                <input type="number" className="input" value={settings.sessionTimeout||480} onChange={e=>setSettings({sessionTimeout:Math.max(15,+e.target.value)})} min={15}/>
+              </div>
+              <Tog k="kitchenSound" label={t('kitchenSound')}/>
+            </div>
+            <div className="section-hdr">🔑 Change My Password</div>
+            <div className="card">
+              <div className="form-g"><label className="form-lbl">{t('currentPass')}</label><input className="input" type="password" value={passForm.cur} onChange={e=>setPassForm(p=>({...p,cur:e.target.value}))}/></div>
+              <div className="form-g"><label className="form-lbl">{t('newPass')}</label><input className="input" type="password" value={passForm.nw} onChange={e=>setPassForm(p=>({...p,nw:e.target.value}))}/></div>
+              <div className="form-g"><label className="form-lbl">Confirm New Password</label><input className="input" type="password" value={passForm.nw2} onChange={e=>setPassForm(p=>({...p,nw2:e.target.value}))}/></div>
+              {passErr&&<div style={{color:'var(--red)',fontSize:12,marginBottom:8}}>{passErr}</div>}
+              <button className="btn btn-primary btn-sm" onClick={changePass}><i className="fa fa-lock"/> {t('changePass')}</button>
+            </div>
+          </div>
+        )}
+
+        {/* Staff */}
+        {tab==='staff'&&(
+          <div>
+            <div style={{display:'flex',justifyContent:'flex-end',marginBottom:10}}>
+              <button className="btn btn-primary btn-sm" onClick={()=>{setEditStaff(null);setStaffForm({name:'',nameAr:'',username:'',password:'',role:'waiter',active:true});setStaffModal(true);}}>
+                <i className="fa fa-plus"/> {t('addStaff')}
+              </button>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:10}}>
+              {staff.map(s=>(
+                <div key={s.id} className="card" style={{display:'flex',gap:10,padding:12,opacity:s.active?1:.55}}>
+                  <div style={{width:40,height:40,borderRadius:99,background:'var(--primary-dim)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>
+                    {s.role==='admin'?'👨‍💼':s.role==='cashier'?'💳':s.role==='waiter'?'🧑‍🍳':'👨‍🍳'}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:700,fontSize:13}}>{lang==='ar'?s.nameAr||s.name:s.name}</div>
+                    <div style={{fontSize:11,color:'var(--t2)'}}>{s.username}</div>
+                    <span className={`badge badge-${s.role==='admin'?'red':s.role==='cashier'?'blue':s.role==='waiter'?'green':'orange'}`} style={{fontSize:10,marginTop:4}}>{s.role}</span>
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                    <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>{setEditStaff(s);setStaffForm({...s,password:''});setStaffModal(true);}}><i className="fa fa-edit"/></button>
+                    <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>setStaff(p=>p.map(x=>x.id===s.id?{...x,active:!x.active}:x))}>
+                      <i className={`fa ${s.active?'fa-user-slash':'fa-user-check'}`}/>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {staffModal&&(
+              <div className="overlay" onClick={e=>e.target===e.currentTarget&&setStaffModal(false)}>
+                <div className="modal">
+                  <div className="row-between" style={{marginBottom:14}}>
+                    <h3>{editStaff?'Edit Staff':t('addStaff')}</h3>
+                    <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>setStaffModal(false)}><i className="fa fa-times"/></button>
+                  </div>
+                  <div className="form-g"><label className="form-lbl">Full Name (EN)</label><input className="input" value={staffForm.name} onChange={e=>setStaffForm(p=>({...p,name:e.target.value}))}/></div>
+                  <div className="form-g"><label className="form-lbl">Full Name (AR)</label><input className="input" value={staffForm.nameAr||''} onChange={e=>setStaffForm(p=>({...p,nameAr:e.target.value}))} dir="rtl"/></div>
+                  <div className="form-g"><label className="form-lbl">Username</label><input className="input" value={staffForm.username} onChange={e=>setStaffForm(p=>({...p,username:e.target.value.toLowerCase()}))} /></div>
+                  <div className="form-g"><label className="form-lbl">{editStaff?'New Password (leave blank to keep)':'Password *'}</label><input className="input" type="password" value={staffForm.password||''} onChange={e=>setStaffForm(p=>({...p,password:e.target.value}))}/></div>
+                  <div className="form-g">
+                    <label className="form-lbl">Role</label>
+                    <select className="input" value={staffForm.role} onChange={e=>setStaffForm(p=>({...p,role:e.target.value}))}>
+                      {['admin','cashier','waiter','kitchen'].map(r=><option key={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  <label style={{display:'flex',alignItems:'center',gap:8,marginBottom:12,cursor:'pointer'}}>
+                    <div className={`tog${staffForm.active?' on':''}`} onClick={()=>setStaffForm(p=>({...p,active:!p.active}))}>
+                      <div className="tog-thumb"/>
+                    </div>
+                    <span style={{fontSize:13}}>Active</span>
+                  </label>
+                  <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+                    <button className="btn btn-ghost" onClick={()=>setStaffModal(false)}>{t('cancel')}</button>
+                    <button className="btn btn-primary" onClick={saveStaff}><i className="fa fa-save"/> {t('save')}</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tables */}
+        {tab==='tables'&&(
+          <div>
+            <div className="card" style={{marginBottom:12}}>
+              <div className="section-hdr">{t('addTable')}</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:8,alignItems:'end'}}>
+                <div className="form-g" style={{marginBottom:0}}><label className="form-lbl">Table #</label><input className="input" placeholder="T21" value={tblForm.num} onChange={e=>setTblForm(p=>({...p,num:e.target.value}))}/></div>
+                <div className="form-g" style={{marginBottom:0}}><label className="form-lbl">{t('seats')}</label><input type="number" className="input" value={tblForm.seats} onChange={e=>setTblForm(p=>({...p,seats:+e.target.value}))} min={1}/></div>
+                <div className="form-g" style={{marginBottom:0}}><label className="form-lbl">{t('area')}</label><input className="input" placeholder="Main" value={tblForm.area} onChange={e=>setTblForm(p=>({...p,area:e.target.value}))}/></div>
+                <button className="btn btn-primary btn-sm" style={{height:38}} onClick={()=>{
+                  if(!tblForm.num.trim())return;
+                  setTables(p=>[...p,{id:Date.now(),num:tblForm.num,status:'available',orderId:null,seats:tblForm.seats,area:tblForm.area}]);
+                  setTblForm({num:'',seats:4,area:'Main'});toast('Table added','success');
+                }}><i className="fa fa-plus"/></button>
+              </div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',gap:9}}>
+              {tables.map(tb=>(
+                <div key={tb.id} className="card" style={{padding:10,textAlign:'center',opacity:tb.status!=='available'?.7:1}}>
+                  <div style={{fontSize:22}}>🪑</div>
+                  <div style={{fontWeight:700,marginTop:4}}>{tb.num}</div>
+                  <div style={{fontSize:11,color:'var(--t2)'}}>{tb.seats} seats · {tb.area||'Main'}</div>
+                  <span className={`badge badge-${tb.status==='available'?'green':tb.status==='ordered'?'yellow':'red'}`} style={{marginTop:6,fontSize:10}}>{tb.status}</span>
+                  <div style={{marginTop:7}}>
+                    <button className="btn btn-danger btn-icon btn-sm" style={{width:'100%',height:26}} onClick={function(){if(tb.status!=='available'){toast('Cannot delete occupied table','warning');return;}confirm('Delete table '+tb.num+'?').then(function(yes){if(yes)setTables(p=>p.filter(x=>x.id!==tb.id));});}}>
+                      <i className="fa fa-trash" style={{fontSize:11}}/> Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Data */}
+        {tab==='data'&&(
+          <div>
+            <div className="section-hdr">💾 Data Management</div>
+            <div className="card" style={{marginBottom:12}}>
+              <p style={{fontSize:13,color:'var(--t2)',marginBottom:14}}>Export a full JSON backup of all orders, settings, and menu data.</p>
+              <button className="btn btn-ghost" onClick={()=>{
+                const data={orders:JSON.parse(localStorage.getItem('orders')||'[]'),items:JSON.parse(localStorage.getItem('items')||'[]'),cats:JSON.parse(localStorage.getItem('cats')||'[]'),settings:JSON.parse(localStorage.getItem('settings')||'{}'),exportedAt:new Date().toISOString()};
+                const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
+                a.download=`ordo-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
+              }}><i className="fa fa-download"/> {t('exportData')}</button>
+            </div>
+            <div className="card" style={{marginBottom:12,border:'1px solid rgba(59,130,246,.25)'}}>
+              <div className="section-hdr" style={{marginBottom:8}}>🔥 Firebase Connection</div>
+              <p style={{fontSize:13,color:'var(--t2)',marginBottom:12}}>Disconnect Firebase to re-enter a different config or switch to offline mode.</p>
+              <button className="btn btn-ghost" onClick={()=>{
+                localStorage.removeItem('fbConfig');
+                window.location.reload();
+              }}><i className="fa fa-unlink"/> Disconnect Firebase</button>
+            </div>
+            <div className="card" style={{border:'1px solid rgba(239,68,68,.3)'}}>
+              <p style={{fontSize:13,color:'var(--t2)',marginBottom:14}}>⚠️ This will permanently delete ALL orders, settings, and menu data. This cannot be undone.</p>
+              <button className="btn btn-danger" onClick={function(){
+                confirm('Are you SURE? This permanently deletes ALL data and cannot be undone.').then(function(yes){
+                  if(yes){['orders','tables','cats','items','staff','settings','session','lang'].forEach(function(k){localStorage.removeItem(k);});window.location.reload();}
+                });
+              }}><i className="fa fa-trash"/> {t('clearData')}</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   SHARE MENU QR MODAL
+====================================================== */
+function ShareMenuQR({onClose}){
+  const qrRef=useRef();
+  const menuUrl=(window.location.href.split('#')[0])+'#/menu';
+
+  useEffect(()=>{
+    if(!qrRef.current)return;
+    qrRef.current.innerHTML='';
+    try{
+      new window.QRCode(qrRef.current,{
+        text:menuUrl,
+        width:220,height:220,
+        colorDark:'#0d0d14',colorLight:'#ffffff',
+        correctLevel:window.QRCode.CorrectLevel.M
+      });
+    }catch(e){
+      qrRef.current.innerHTML='<div style="padding:20px;font-size:12px;color:#ef4444;">QR generation failed</div>';
+    }
+  },[menuUrl]);
+
+  const copy=()=>{
+    navigator.clipboard.writeText(menuUrl).then(()=>{
+      // simple feedback via title flash
+    }).catch(()=>{});
+  };
+
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal" style={{maxWidth:340,textAlign:'center'}}>
+        <div className="row-between" style={{marginBottom:18}}>
+          <div>
+            <h3 style={{fontSize:15}}>📋 Share Menu</h3>
+            <div style={{fontSize:11,color:'var(--t2)',marginTop:2}}>Customers scan to view the menu</div>
+          </div>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}><i className="fa fa-times"/></button>
+        </div>
+
+        {/* QR Code */}
+        <div style={{display:'flex',justifyContent:'center',marginBottom:16}}>
+          <div style={{background:'#fff',padding:14,borderRadius:12,display:'inline-block',boxShadow:'0 4px 24px rgba(0,0,0,.18)'}}>
+            <div ref={qrRef}/>
+          </div>
+        </div>
+
+        {/* Features note */}
+        <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:16,padding:'10px 12px',background:'var(--elevated)',borderRadius:10,textAlign:'left'}}>
+          <div style={{fontSize:11,color:'var(--t2)',display:'flex',alignItems:'center',gap:6}}><i className="fa fa-check" style={{color:'var(--green)',fontSize:10}}/> View-only — no ordering</div>
+          <div style={{fontSize:11,color:'var(--t2)',display:'flex',alignItems:'center',gap:6}}><i className="fa fa-check" style={{color:'var(--green)',fontSize:10}}/> Day &amp; Night mode</div>
+          <div style={{fontSize:11,color:'var(--t2)',display:'flex',alignItems:'center',gap:6}}><i className="fa fa-check" style={{color:'var(--green)',fontSize:10}}/> Arabic &amp; English</div>
+        </div>
+
+        {/* URL */}
+        <div style={{background:'var(--elevated)',borderRadius:8,padding:'8px 12px',fontSize:10,color:'var(--t3)',wordBreak:'break-all',marginBottom:14,fontFamily:'monospace'}}>
+          {menuUrl}
+        </div>
+
+        <div style={{display:'flex',gap:8}}>
+          <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={copy}>
+            <i className="fa fa-copy"/> Copy Link
+          </button>
+          <button className="btn btn-primary" style={{flex:1,justifyContent:'center'}} onClick={()=>window.print()}>
+            <i className="fa fa-print"/> Print QR
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
+   MENU VIEW ONLY  (opened via #/menu hash)
+====================================================== */
+function MenuViewOnly(){
+  const{lang,setLang,items,cats,settings}=useApp();
+  const cur=settings.currency||'SAR';
+  const[selCat,setSelCat]=useState(0);
+  const[theme,setTheme]=useState(()=>localStorage.getItem('mvTheme')||'dark');
+  const[search,setSearch]=useState('');
+
+  const toggleTheme=()=>{
+    const next=theme==='dark'?'light':'dark';
+    setTheme(next);
+    localStorage.setItem('mvTheme',next);
+  };
+
+  const isLight=theme==='light';
+
+  // Build inline CSS vars for light mode applied to wrapper
+  const lightVars=isLight?{
+    '--bg':'#f5f5ef','--surface':'#ffffff','--card':'#eeeee8','--elevated':'#e5e5df',
+    '--border':'rgba(0,0,0,.10)','--t1':'#1a1a2e','--t2':'#55556a','--t3':'#9898b0',
+    '--primary':'#d97706','--primary-dim':'rgba(217,119,6,.12)','--primary-dark':'#b45309',
+    '--red':'#dc2626','--red-dim':'rgba(220,38,38,.10)',
+    '--green':'#059669','--green-dim':'rgba(5,150,105,.10)',
+    '--blue':'#2563eb','--blue-dim':'rgba(37,99,235,.10)',
+    '--elevated':'#e5e5df'
+  }:{};
+
+  const filtered=items.filter(i=>i.available&&(selCat===0||i.catId===i.catId)&&(selCat===0||i.catId===selCat)&&(!search||(i.name+i.nameAr).toLowerCase().includes(search.toLowerCase())));
+
+  const restName=lang==='ar'?settings.restaurantNameAr:settings.restaurantName;
+
+  return(
+    <div style={{
+      minHeight:'100vh',
+      background:'var(--bg)',
+      color:'var(--t1)',
+      ...lightVars
+    }}>
+      {/* Header */}
+      <div style={{padding:'12px 16px',background:'var(--surface)',borderBottom:'1px solid var(--border)',position:'sticky',top:0,zIndex:10,display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}>
+        <div>
+          <div style={{fontWeight:800,fontSize:16,color:'var(--t1)'}}>
+            🍽️ {restName||'Menu'}
+          </div>
+          <div style={{fontSize:10,color:'var(--t3)',marginTop:1}}>
+            {lang==='ar'?'قائمة الطعام — عرض فقط':'Food Menu — View Only'}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:6,alignItems:'center'}}>
+          {/* Day/Night toggle */}
+          <button className="theme-tog" style={{background:'var(--elevated)',border:'1px solid var(--border)',color:'var(--t2)'}} onClick={toggleTheme}>
+            {isLight?<><i className="fa fa-moon"/> {lang==='ar'?'ليلي':'Night'}</>:<><i className="fa fa-sun"/> {lang==='ar'?'نهاري':'Day'}</>}
+          </button>
+          {/* Language toggle */}
+          <button className="btn btn-ghost btn-sm" onClick={()=>setLang(lang==='ar'?'en':'ar')}>
+            {lang==='ar'?'EN':'ع'}
+          </button>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div style={{padding:'10px 14px',background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
+        <div style={{position:'relative'}}>
+          <i className="fa fa-search" style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--t3)',fontSize:12,pointerEvents:'none'}}/>
+          <input
+            className="input"
+            placeholder={lang==='ar'?'ابحث في القائمة…':'Search menu…'}
+            value={search}
+            onChange={e=>setSearch(e.target.value)}
+            style={{paddingLeft:30,fontSize:13,background:'var(--elevated)',border:'1px solid var(--border)',color:'var(--t1)'}}
+          />
+        </div>
+      </div>
+
+      {/* Categories */}
+      <div style={{padding:'10px 12px',display:'flex',gap:7,overflowX:'auto',borderBottom:'1px solid var(--border)',background:'var(--surface)'}}>
+        <button className={`chip${selCat===0?' active':''}`} onClick={()=>setSelCat(0)}>
+          {lang==='ar'?'الكل':'All'}
+        </button>
+        {cats.map(c=>(
+          <button key={c.id} className={`chip${selCat===c.id?' active':''}`} onClick={()=>setSelCat(c.id)}>
+            {c.emoji} {lang==='ar'?c.nameAr:c.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Menu Grid */}
+      <div style={{padding:'14px 12px 40px'}}>
+        {cats.filter(c=>selCat===0||c.id===selCat).map(cat=>{
+          const catItems=filtered.filter(i=>i.catId===cat.id);
+          if(!catItems.length)return null;
+          return(
+            <div key={cat.id} style={{marginBottom:24}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12,paddingBottom:6,borderBottom:'2px solid var(--primary)'}}>
+                <span style={{fontSize:22}}>{cat.emoji}</span>
+                <div>
+                  <div style={{fontWeight:800,fontSize:15,color:'var(--t1)'}}>{lang==='ar'?cat.nameAr:cat.name}</div>
+                  <div style={{fontSize:10,color:'var(--t3)'}}>{catItems.length} {lang==='ar'?'صنف':'items'}</div>
+                </div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(148px,1fr))',gap:10}}>
+                {catItems.map(item=>(
+                  <div key={item.id} style={{background:'var(--card)',border:'1px solid var(--border)',borderRadius:12,overflow:'hidden',boxShadow:isLight?'0 2px 8px rgba(0,0,0,.07)':'none'}}>
+                    {item.imageData||item.imageUrl
+                      ?<img src={item.imageData||item.imageUrl} style={{width:'100%',height:110,objectFit:'cover'}} alt=""/>
+                      :<div style={{width:'100%',height:110,display:'flex',alignItems:'center',justifyContent:'center',fontSize:44,background:isLight?'#e8e8e0':'linear-gradient(135deg,#1a1a2e,#0d0d14)'}}>{item.emoji}</div>
+                    }
+                    <div style={{padding:'9px 11px'}}>
+                      <div style={{fontWeight:700,fontSize:12,color:'var(--t1)',lineHeight:1.3}}>{lang==='ar'?item.nameAr:item.name}</div>
+                      {item.description&&<div style={{fontSize:10,color:'var(--t3)',marginTop:3,lineHeight:1.4}}>{item.description}</div>}
+                      <div style={{marginTop:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <span style={{color:'var(--primary)',fontWeight:800,fontSize:14}}>{cur} {item.price}</span>
+                        {item.modifiers?.length>0&&(
+                          <span style={{fontSize:9,color:'var(--t3)',background:'var(--elevated)',padding:'2px 6px',borderRadius:99}}>
+                            {lang==='ar'?'خيارات':'options'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length===0&&(
+          <div style={{textAlign:'center',padding:48,color:'var(--t3)',fontSize:14}}>
+            <div style={{fontSize:40,marginBottom:10}}>🔍</div>
+            {lang==='ar'?'لا توجد نتائج':'No items found'}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{textAlign:'center',padding:'14px 16px',borderTop:'1px solid var(--border)',background:'var(--surface)',fontSize:10,color:'var(--t3)'}}>
+        {restName&&<div style={{fontWeight:700,marginBottom:3}}>{restName}</div>}
+        {settings.phone&&<div>📞 {settings.phone}</div>}
+        <div style={{marginTop:4,opacity:.6}}>Powered by Ordo POS</div>
+      </div>
+    </div>
+  );
+}
+
+
+function CustomerQR({tableNum}){
+  const{t,lang,setLang,items,cats,createOrder,toast,settings}=useApp();
+  const cur=settings.currency||'SAR';
+  const[selCat,setSelCat]=useState(0);const[cart,setCart]=useState([]);
+  const[note,setNote]=useState('');const[done,setDone]=useState(false);
+  const[modItem,setModItem]=useState(null);
+
+  const cartKey=c=>c.id+'|'+(c.selectedMods?JSON.stringify(c.selectedMods):'{}');
+  const insert=item=>setCart(p=>{const k=cartKey(item);const ex=p.find(c=>cartKey(c)===k);return ex?p.map(c=>cartKey(c)===k?{...c,qty:c.qty+1}:c):[...p,{...item,qty:1}];});
+  const tryAdd=item=>{if(!item.available)return;if(item.modifiers?.length>0){setModItem(item);}else insert({...item,selectedMods:{},modAdj:0});};
+  const chQty=(k,d)=>setCart(p=>p.map(c=>cartKey(c)===k?{...c,qty:Math.max(0,c.qty+d)}:c).filter(c=>c.qty>0));
+  const total=cart.reduce((s,c)=>s+(c.price+(c.modAdj||0))*c.qty,0);
+
+  if(done)return(
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',padding:24,textAlign:'center'}}>
+      <div style={{fontSize:64,marginBottom:16}}>✅</div>
+      <h2 style={{marginBottom:8}}>{lang==='ar'?'تم تقديم طلبك!':'Your order has been placed!'}</h2>
+      <p style={{color:'var(--t2)',fontSize:14}}>{lang==='ar'?'سيتم تحضيره قريباً':'The kitchen has received your order'}</p>
+      <p style={{color:'var(--primary)',marginTop:10,fontWeight:700}}>{tableNum}</p>
+    </div>
+  );
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100vh'}}>
+      {modItem&&<ModModal item={modItem} lang={lang} onConfirm={itm=>{insert(itm);setModItem(null);}} onClose={()=>setModItem(null)}/>}
+      <div style={{padding:'12px 14px',background:'var(--surface)',borderBottom:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <div>
+          <div style={{fontWeight:800,fontSize:16}}>🍽️ {lang==='ar'?'قائمة الطعام':'Menu'}</div>
+          <div style={{fontSize:11,color:'var(--t2)'}}>🪑 {tableNum}</div>
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={()=>setLang(lang==='ar'?'en':'ar')}>{lang==='ar'?'EN':'ع'}</button>
+      </div>
+      <div style={{padding:'8px 12px',display:'flex',gap:6,overflowX:'auto',borderBottom:'1px solid var(--border)'}}>
+        <button className={`chip${selCat===0?' active':''}`} onClick={()=>setSelCat(0)}>{t('all')}</button>
+        {cats.map(c=><button key={c.id} className={`chip${selCat===c.id?' active':''}`} onClick={()=>setSelCat(c.id)}>{c.emoji} {lang==='ar'?c.nameAr:c.name}</button>)}
+      </div>
+      <div className="scroll-y" style={{flex:1,padding:12,paddingBottom:cart.length?150:20}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:10}}>
+          {items.filter(i=>i.available&&(selCat===0||i.catId===selCat)).map(item=>(
+            <div key={item.id} className={`m-card${cart.some(c=>c.id===item.id)?' incart':''}`} onClick={()=>tryAdd(item)}>
+              {item.imageData||item.imageUrl?<img src={item.imageData||item.imageUrl} className="m-img" alt=""/>:<div className="m-emoji">{item.emoji}</div>}
+              <div style={{padding:'8px 10px'}}>
+                <div style={{fontWeight:600,fontSize:12}}>{lang==='ar'?item.nameAr:item.name}</div>
+                <div style={{color:'var(--primary)',fontWeight:700,fontSize:13,marginTop:3}}>{cur} {item.price}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {cart.length>0&&(
+        <div style={{position:'fixed',bottom:0,left:0,right:0,padding:12,background:'var(--surface)',borderTop:'1px solid var(--border)'}}>
+          <div style={{maxWidth:480,margin:'0 auto'}}>
+            <div style={{display:'flex',gap:6,overflowX:'auto',marginBottom:8}}>
+              {cart.map(c=>{const k=cartKey(c);return(
+                <div key={k} style={{display:'flex',alignItems:'center',gap:5,padding:'4px 8px',background:'var(--elevated)',borderRadius:8,flexShrink:0}}>
+                  <span style={{fontSize:14}}>{c.emoji}</span>
+                  <span style={{fontSize:11}}>{c.qty}</span>
+                  <button style={{fontSize:14,background:'none',border:'none',cursor:'pointer',color:'var(--t2)'}} onClick={()=>chQty(k,-1)}>×</button>
+                </div>
+              );})}
+            </div>
+            <textarea className="input" placeholder={t('addNote')} value={note} onChange={e=>setNote(e.target.value)} rows={1} style={{marginBottom:8,fontSize:12}}/>
+            <button className="btn btn-primary btn-block btn-lg" onClick={()=>{
+              createOrder(null,tableNum,cart,'Customer (QR)',note,'dine-in');
+              setCart([]);setDone(true);
+            }}>
+              <i className="fa fa-check"/> {t('placeOrder')} · {cur} {total.toFixed(2)}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ======================================================
+   PAYWALL SCREEN
+====================================================== */
+function PaywallScreen(){
+  const{tenant,lang}=useApp();
+  const signOut=()=>{window.firebase.auth().signOut().then(()=>{window.location.href='register.html';});};
+  return(
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',padding:24,background:'var(--bg)',textAlign:'center'}}>
+      <div style={{fontSize:52,marginBottom:16}}>⏰</div>
+      <h2 style={{fontSize:24,fontWeight:800,marginBottom:10,color:'var(--t1)'}}>
+        {lang==='ar'?'انتهت الفترة التجريبية':'Your free trial has ended'}
+      </h2>
+      <p style={{color:'var(--t2)',fontSize:14,maxWidth:400,lineHeight:1.7,marginBottom:32}}>
+        {lang==='ar'
+          ?`شكراً ${tenant?.restaurantName||''} — للاستمرار يرجى اختيار خطة مناسبة`
+          :`Thanks for trying Ordo, ${tenant?.restaurantName||''}! Choose a plan to keep your data and continue.`}
+      </p>
+      <div style={{display:'flex',flexDirection:'column',gap:12,width:'100%',maxWidth:340,marginBottom:24}}>
+        {[
+          {plan:'monthly',  label:'Monthly Plan',  price:'SAR 199 / month', note:'Cancel anytime'},
+          {plan:'annual',   label:'Annual Plan',   price:'SAR 149 / month', note:'Save 25% · billed yearly'},
+          {plan:'lifetime', label:'Lifetime License',price:'SAR 1,999 once',note:'Pay once, own forever'},
+        ].map(p=>(
+          <button key={p.plan} style={{padding:'14px 20px',borderRadius:10,border:'1px solid var(--border)',background:'var(--card)',cursor:'pointer',textAlign:'left',display:'flex',justifyContent:'space-between',alignItems:'center'}}
+            onClick={()=>alert('Redirect to payment gateway for plan: '+p.plan+'\nIntegrate Moyasar or Stripe here.')}>
+            <div>
+              <div style={{fontWeight:700,fontSize:14,color:'var(--t1)'}}>{p.label}</div>
+              <div style={{fontSize:12,color:'var(--t3)',marginTop:2}}>{p.note}</div>
+            </div>
+            <div style={{fontWeight:700,color:'var(--primary)',fontSize:13,whiteSpace:'nowrap',marginLeft:12}}>{p.price}</div>
+          </button>
+        ))}
+      </div>
+      <button onClick={signOut} style={{fontSize:12,color:'var(--t3)',background:'none',border:'none',cursor:'pointer',textDecoration:'underline'}}>
+        Sign out
+      </button>
+    </div>
+  );
+}
+
+/* ======================================================
+   TRIAL BANNER
+====================================================== */
+function TrialBanner(){
+  const{trialDaysLeft,lang}=useApp();
+  const[hidden,setHidden]=useState(false);
+  if(hidden||trialDaysLeft===null||trialDaysLeft>14)return null;
+  const urgent=trialDaysLeft<=3;
+  return(
+    <div style={{background:urgent?'var(--red-dim)':'var(--primary-dim)',borderBottom:`1px solid ${urgent?'rgba(239,68,68,.25)':'rgba(251,191,36,.2)'}`,padding:'7px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:12,flexShrink:0}}>
+      <span style={{color:urgent?'var(--red)':'var(--primary)',fontWeight:600}}>
+        {urgent?'⚠️':'⏳'} {lang==='ar'
+          ?`${trialDaysLeft} أيام متبقية في فترتك التجريبية`
+          :`${trialDaysLeft} day${trialDaysLeft!==1?'s':''} left in your free trial`}
+      </span>
+      <div style={{display:'flex',gap:10,alignItems:'center'}}>
+        <button style={{fontSize:12,fontWeight:700,color:urgent?'var(--red)':'var(--primary)',background:'none',border:`1px solid currentColor`,borderRadius:6,padding:'3px 10px',cursor:'pointer'}}
+          onClick={()=>alert('Redirect to pricing/payment page')}>
+          Upgrade →
+        </button>
+        <button onClick={()=>setHidden(true)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--t3)',fontSize:16',lineHeight:1}}>×</button>
+      </div>
+    </div>
+  );
+}
+
+
+function FirebaseSetup(){
+  const{setFbConfig,lang}=useApp();
+  const[raw,setRaw]=useState('');
+  const[err,setErr]=useState('');
+
+  const save=()=>{
+    setErr('');
+    try{
+      // Accept either a raw JS object string or JSON
+      const cleaned=raw
+        .replace(/^[\s\S]*?firebaseConfig\s*=\s*/,'')
+        .replace(/;?\s*$/,'')
+        .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g,'$1"$2":')
+        .replace(/'/g,'"');
+      const cfg=JSON.parse(cleaned);
+      if(!cfg.apiKey||!cfg.projectId){setErr('Missing apiKey or projectId');return;}
+      setFbConfig(cfg);
+    }catch(e){
+      setErr('Invalid config — please paste the full firebaseConfig object');
+    }
+  };
+
+  return(
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',padding:20,background:'var(--bg)'}}>
+      <div style={{width:'100%',maxWidth:480}}>
+        <div style={{textAlign:'center',marginBottom:24}}>
+          <div style={{fontSize:44,marginBottom:8}}>🔥</div>
+          <div style={{fontSize:20,fontWeight:800,color:'var(--primary)'}}>Connect to Firebase</div>
+          <div style={{fontSize:12,color:'var(--t2)',marginTop:6,lineHeight:1.6}}>
+            Paste your Firebase config to enable real-time sync across all devices
+          </div>
+        </div>
+        <div className="card" style={{padding:20,marginBottom:14}}>
+          <div className="form-g">
+            <label className="form-lbl">Firebase Config</label>
+            <textarea
+              className="input"
+              rows={8}
+              style={{fontFamily:'monospace',fontSize:11,lineHeight:1.5}}
+              placeholder={`const firebaseConfig = {\n  apiKey: "AIza...",\n  authDomain: "your-app.firebaseapp.com",\n  projectId: "your-app",\n  storageBucket: "...",\n  messagingSenderId: "...",\n  appId: "..."\n};`}
+              value={raw}
+              onChange={e=>setRaw(e.target.value)}
+            />
+          </div>
+          {err&&<div style={{color:'var(--red)',fontSize:12,padding:'6px 10px',background:'var(--red-dim)',borderRadius:6,marginBottom:8}}>{err}</div>}
+          <button className="btn btn-primary btn-block" onClick={save} disabled={!raw.trim()}>
+            <i className="fa fa-plug"/> Connect Firebase
+          </button>
+        </div>
+        <div style={{fontSize:11,color:'var(--t3)',lineHeight:1.7,padding:'10px 14px',background:'var(--elevated)',borderRadius:10}}>
+          <strong style={{color:'var(--t2)'}}>How to get your config:</strong><br/>
+          1. Go to console.firebase.google.com<br/>
+          2. Your project → Project Settings → Your apps<br/>
+          3. Click ⋮ → SDK setup → Copy firebaseConfig<br/>
+          4. Paste above and click Connect
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function MainApp(){
-  const{user, showPaywall, ready}=useApp();
+  const{user,showPaywall,ready}=useApp();
   const[screen,setScreen]=useState('tables');
   const[qrTable,setQrTable]=useState(null);
   const[menuView,setMenuView]=useState(false);
@@ -588,11 +2796,11 @@ function MainApp(){
     if(role&&!allowed.includes(screen))setScreen(allowed[0]);
   },[role]);
 
-  if(menuView) return <div>Menu View (implement if needed)</div>;
-  if(qrTable) return <div>QR View for table {qrTable}</div>;
+  if(menuView)return<MenuViewOnly/>;
+  if(qrTable)return<CustomerQR tableNum={qrTable}/>;
 
   // Show loading while Firebase Auth resolves
-  if(!ready) return (
+  if(!ready)return(
     <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',flexDirection:'column',gap:14,background:'var(--bg)'}}>
       <div style={{fontSize:36,fontWeight:900,letterSpacing:'-2px',background:'linear-gradient(135deg,var(--primary),#fb923c)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Ordo</div>
       <div style={{fontSize:12,color:'var(--t3)'}}>Loading your restaurant…</div>
@@ -600,38 +2808,41 @@ function MainApp(){
   );
 
   // Trial expired / unpaid
-  if(showPaywall) return <div>Paywall (implement upgrade screen)</div>;
+  if(showPaywall)return<PaywallScreen/>;
 
   // Staff login (within tenant)
-  if(!user) return <LoginScreen/>;
+  if(!user)return<LoginScreen/>;
 
-  // Simplified panel rendering
-  return (
+  const panels={
+    dashboard:<Dashboard/>,
+    tables:role==='cashier'?<CashierScreen/>:<WaiterScreen/>,
+    orders:<OrdersScreen/>,
+    menu:<MenuManagement/>,
+    kitchen:<KitchenScreen/>,
+    reports:<Reports/>,
+    settings:<Settings/>
+  };
+
+  return(
     <div style={{display:'flex',flexDirection:'column',height:'100vh',overflow:'hidden'}}>
+      <TrialBanner/>
       <Header screen={screen} setScreen={setScreen} allowed={allowed}/>
-      <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>
-        {screen === 'dashboard' && <Dashboard/>}
-        {screen === 'tables' && (role === 'cashier' ? <CashierScreen/> : <WaiterScreen/>)}
-        {screen === 'orders' && <OrdersScreen/>}
-        {screen === 'menu' && <MenuManagement/>}
-        {screen === 'kitchen' && <KitchenScreen/>}
-        {screen === 'reports' && <Reports/>}
-        {screen === 'settings' && <Settings/>}
-      </div>
+      <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>{panels[screen]||panels[allowed[0]]}</div>
       <BotNav screen={screen} setScreen={setScreen} allowed={allowed}/>
     </div>
   );
 }
 
-// Make sure all components are defined before rendering
-// You need to include: LoginScreen, Header, BotNav, Dashboard, CashierScreen, WaiterScreen, 
-// OrdersScreen, MenuManagement, KitchenScreen, Reports, Settings, KitTimer, etc.
-// (Keep all your existing component definitions from the original file)
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <ErrorBoundary><Provider><MainApp/></Provider></ErrorBoundary>
 );
 </script>
-<!-- Remove the service worker registration if sw.js doesn't exist -->
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
 </body>
 </html>
