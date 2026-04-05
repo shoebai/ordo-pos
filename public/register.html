@@ -5,9 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Ordo POS — Create Account</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<!-- ╔══════════════════════════════════════════╗
-     ║  REPLACE WITH YOUR FIREBASE CONFIG      ║
-     ╚══════════════════════════════════════════╝ -->
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
+  authDomain: "pos-ordo.firebaseapp.com",
+  projectId: "pos-ordo",
+  storageBucket: "pos-ordo.firebasestorage.app",
+  messagingSenderId: "575923763514",
+  appId: "1:575923763514:web:f81283d99aafd2460f3803",
+  measurementId: "G-PND9FKHRVF"
+};
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -167,17 +174,15 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 <!-- Firebase Config — REPLACE THIS BLOCK -->
 <script>
 const FIREBASE_CONFIG = {
-  // ╔══════════════════════════════════════════════╗
-  // ║  PASTE YOUR FIREBASE CONFIG HERE             ║
-  // ║  Get it from Firebase Console →              ║
-  // ║  Project Settings → Your apps → Web          ║
-  // ╚══════════════════════════════════════════════╝
-  apiKey:            "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
-  authDomain:        "pos-ordo.firebaseapp.com",
-  projectId:         "pos-ordo",
-  storageBucket:     "pos-ordo.firebasestorage.app",
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
+  authDomain: "pos-ordo.firebaseapp.com",
+  projectId: "pos-ordo",
+  storageBucket: "pos-ordo.firebasestorage.app",
   messagingSenderId: "575923763514",
-  appId:             "1:575923763514:web:f81283d99aafd2460f3803"
+  appId: "1:575923763514:web:f81283d99aafd2460f3803",
+  measurementId: "G-PND9FKHRVF"
 };
 
 // Trial length in days
