@@ -1,1 +1,7 @@
-
+{
+  "name": "Ordo POS",
+  "short_name": "Ordo",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0d0d14"
+}
