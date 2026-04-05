@@ -103,7 +103,7 @@ body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;font-
 </div>
 
 <script>
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
   authDomain: "pos-ordo.firebaseapp.com",
@@ -117,7 +117,7 @@ const firebaseConfig = {
 // ── Your super-admin email ──────────────────────
 const ADMIN_EMAIL = "yshoeb52@gmail.com"; // CHANGE THIS
 
-firebase.initializeApp(FIREBASE_CONFIG);
+firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
