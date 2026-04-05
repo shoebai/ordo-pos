@@ -415,14 +415,23 @@ function Provider({children}){
 
   // ── Init Firebase once ─────────────────────────────
   useEffect(()=>{
-    try{
-      const app=window.firebase.apps.length?window.firebase.app():window.firebase.initializeApp(FIREBASE_CONFIG);
+    let app;
+try {
+  app = window.firebase.apps.length
+    ? window.firebase.app()
+    : window.firebase.initializeApp(FIREBASE_CONFIG);
+} catch (e) {
+  console.warn("Firebase init failed, running offline mode");
+  setFbMode(false);
+  setReady(true);
+  return;
+}
       const fs=window.firebase.firestore(app);
       fs.enablePersistence({synchronizeTabs:true}).catch(()=>{});
       fbRef.current=fs;
       setFbMode(true);
       setFbConnected(true);
-    }catch(e){console.error('[Ordo SaaS] Firebase init error:',e);}
+    }catch(e){console.error('[pos ordo] Firebase init error:',e);}
   },[]);
 
   // ── Auth listener — resolve tenant on login ────────
