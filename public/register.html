@@ -5,22 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Ordo POS — Create Account</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
-  authDomain: "pos-ordo.firebaseapp.com",
-  projectId: "pos-ordo",
-  storageBucket: "pos-ordo.firebasestorage.app",
-  messagingSenderId: "575923763514",
-  appId: "1:575923763514:web:f81283d99aafd2460f3803",
-  measurementId: "G-PND9FKHRVF"
-};
+<!-- FIX 1: Firebase scripts belong here, NOT the raw config object -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-:root{--ink:#0a0a0f;--ink2:#13131f;--ink3:#1f1f2e;--gold:#c9a84c;--gold2:#e8c97a;--cream:#f5f0e8;--t1:#f5f0e8;--t2:#9a9080;--t3:#5a5448;--red:#ef4444;--green:#10b981;--border:rgba(201,168,76,.15);}
+:root{
+  --ink:#0a0a0f;--ink2:#13131f;--ink3:#1f1f2e;
+  --gold:#c9a84c;--gold2:#e8c97a;
+  --cream:#f5f0e8;--t1:#f5f0e8;--t2:#9a9080;--t3:#5a5448;
+  --red:#ef4444;--green:#10b981;
+  --border:rgba(201,168,76,.15);
+}
 body{background:var(--ink);color:var(--t1);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
 body::before{content:'';position:fixed;inset:0;opacity:.03;pointer-events:none;
   background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(201,168,76,.15),transparent);}
@@ -40,16 +37,17 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 
 /* Tabs */
 .tabs{display:flex;background:var(--ink2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:28px;}
-.tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;transition:.2s;color:var(--t3);border:none;background:none;}
+.tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;transition:.2s;color:var(--t3);border:none;background:none;font-family:'DM Sans',sans-serif;}
 .tab.active{background:var(--gold);color:var(--ink);}
 
 /* Form */
 .form-card{background:var(--ink2);border:1px solid var(--border);border-radius:14px;padding:28px;}
 .field{margin-bottom:16px;}
 .field label{display:block;font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px;}
-.field input, .field select{width:100%;padding:12px 14px;background:var(--ink3);border:1px solid rgba(255,255,255,.07);border-radius:8px;color:var(--t1);font-family:inherit;font-size:14px;outline:none;transition:.2s;}
-.field input:focus, .field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.1);}
+.field input,.field select{width:100%;padding:12px 14px;background:var(--ink3);border:1px solid rgba(255,255,255,.07);border-radius:8px;color:var(--t1);font-family:inherit;font-size:14px;outline:none;transition:.2s;}
+.field input:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.1);}
 .field input::placeholder{color:var(--t3);}
+.field input.err{border-color:rgba(239,68,68,.6);background:rgba(239,68,68,.04);}
 .field select option{background:var(--ink2);}
 
 /* Plan selector */
@@ -61,34 +59,51 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 .plan-opt-price{font-size:11px;color:var(--t3);}
 .plan-opt.selected .plan-opt-name{color:var(--gold2);}
 
+/* Password strength */
+.pass-strength{height:3px;background:rgba(255,255,255,.06);border-radius:99px;margin:6px 0 0;overflow:hidden;}
+.pass-strength-fill{height:100%;width:0;border-radius:99px;transition:width .3s,background .3s;}
+
 /* Submit */
-.submit-btn{width:100%;padding:14px;background:var(--gold);color:var(--ink);border:none;border-radius:8px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.2s;margin-top:4px;}
-.submit-btn:hover:not(:disabled){background:var(--gold2);transform:translateY(-1px);}
-.submit-btn:disabled{opacity:.5;cursor:not-allowed;}
+.submit-btn{width:100%;padding:14px;background:var(--gold);color:var(--ink);border:none;border-radius:8px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:.2s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.submit-btn:hover:not(:disabled){background:var(--gold2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,.25);}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed;transform:none !important;}
 
 /* Messages */
-.msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;}
-.msg.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#fca5a5;display:flex;gap:8px;align-items:center;}
-.msg.success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#6ee7b7;display:flex;gap:8px;align-items:center;}
+.msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;align-items:flex-start;gap:8px;line-height:1.5;}
+.msg.show{display:flex;}
+.msg.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#fca5a5;}
+.msg.success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#6ee7b7;}
+.msg-icon{flex-shrink:0;font-size:14px;}
 
 /* Divider */
 .or-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--t3);font-size:12px;}
 .or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.06);}
 
-/* Trial badge */
-.trial-note{text-align:center;margin-top:16px;font-size:12px;color:var(--t3);line-height:1.6;}
+/* Trial note */
+.trial-note{text-align:center;margin-top:16px;font-size:12px;color:var(--t3);line-height:1.7;}
 .trial-note strong{color:var(--gold);}
 
+/* Forgot / links */
+.text-link{font-size:13px;color:var(--t2);text-decoration:none;transition:.15s;}
+.text-link:hover{color:var(--gold);}
+
 /* Spinner */
-.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,.2);border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+.spin{width:16px;height:16px;border:2px solid rgba(0,0,0,.25);border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* Success screen */
+.success-screen{text-align:center;padding:40px 20px;display:none;}
+.success-screen.show{display:block;}
+.success-screen .icon{font-size:52px;margin-bottom:16px;}
+.success-screen h2{font-family:'Instrument Serif',serif;font-size:28px;color:var(--cream);margin-bottom:8px;}
+.success-screen p{font-size:14px;color:var(--t2);}
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="landing.html" class="logo">Ordo</a>
-  <a href="landing.html" class="nav-link">← Back to home</a>
+  <a href="ordo_landing.html" class="logo">Ordo</a>
+  <a href="ordo_landing.html" class="nav-link">← Back to home</a>
 </nav>
 
 <main>
@@ -98,17 +113,24 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
       <p>Create your restaurant account or sign in below</p>
     </div>
 
-    <!-- Register / Login tabs -->
+    <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" id="tab-register" onclick="switchTab('register')">Create Account</button>
       <button class="tab" id="tab-login" onclick="switchTab('login')">Sign In</button>
     </div>
 
-    <!-- Error / Success messages -->
-    <div class="msg error" id="msg-error">⚠️ <span id="msg-error-text"></span></div>
-    <div class="msg success" id="msg-success">✓ <span id="msg-success-text"></span></div>
+    <!-- Messages -->
+    <div class="msg error" id="msg-error"><span class="msg-icon">⚠️</span><span id="msg-error-text"></span></div>
+    <div class="msg success" id="msg-success"><span class="msg-icon">✓</span><span id="msg-success-text"></span></div>
 
-    <!-- REGISTER FORM -->
+    <!-- Success screen (shown after register/login) -->
+    <div class="success-screen" id="success-screen">
+      <div class="icon">✦</div>
+      <h2 id="success-title">You're in!</h2>
+      <p id="success-sub">Redirecting to your dashboard…</p>
+    </div>
+
+    <!-- ══════════════ REGISTER FORM ══════════════ -->
     <div class="form-card" id="form-register">
       <div class="field">
         <label>Restaurant Name</label>
@@ -124,11 +146,13 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" id="reg-pass" placeholder="At least 8 characters" autocomplete="new-password"/>
+        <input type="password" id="reg-pass" placeholder="At least 8 characters" autocomplete="new-password"
+          oninput="updateStrength(this.value)" onkeydown="if(event.key==='Enter')register()"/>
+        <div class="pass-strength"><div class="pass-strength-fill" id="str-fill"></div></div>
       </div>
       <div class="field">
         <label>Choose Plan</label>
-        <div class="plan-select" id="plan-select">
+        <div class="plan-select">
           <div class="plan-opt selected" data-plan="trial" onclick="selectPlan(this,'trial')">
             <div class="plan-opt-name">Free Trial</div>
             <div class="plan-opt-price">14 days free</div>
@@ -147,207 +171,334 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
           </div>
         </div>
       </div>
-      <button class="submit-btn" id="reg-btn" onclick="register()">Start Free Trial →</button>
-      <div class="trial-note"><strong>14 days free.</strong> No credit card required.<br>Cancel or upgrade any time from your account.</div>
+      <button class="submit-btn" id="reg-btn" onclick="register()">
+        <span id="reg-btn-text">Start Free Trial →</span>
+      </button>
+      <div class="trial-note">
+        <strong>14 days free.</strong> No credit card required.<br>
+        Already have an account? <a href="#" class="text-link" onclick="switchTab('login');return false;">Sign in →</a>
+      </div>
     </div>
 
-    <!-- LOGIN FORM -->
+    <!-- ══════════════ LOGIN FORM ══════════════ -->
     <div class="form-card" id="form-login" style="display:none">
       <div class="field">
         <label>Email Address</label>
-        <input type="email" id="log-email" placeholder="you@restaurant.com" autocomplete="email" onkeydown="if(event.key==='Enter')login()"/>
+        <input type="email" id="log-email" placeholder="you@restaurant.com" autocomplete="email"
+          onkeydown="if(event.key==='Enter')login()"/>
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" id="log-pass" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"/>
+        <input type="password" id="log-pass" placeholder="Your password" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')login()"/>
       </div>
-      <button class="submit-btn" id="log-btn" onclick="login()">Sign In →</button>
+      <button class="submit-btn" id="log-btn" onclick="login()">
+        <span id="log-btn-text">Sign In →</span>
+      </button>
       <div class="or-divider">or</div>
       <div style="text-align:center">
-        <a href="#" onclick="resetPassword()" style="font-size:13px;color:var(--t2);text-decoration:none;">Forgot password?</a>
+        <a href="#" class="text-link" onclick="resetPassword();return false;">Forgot password?</a>
+      </div>
+      <div class="trial-note" style="margin-top:14px;">
+        Don't have an account? <a href="#" class="text-link" onclick="switchTab('register');return false;">Create one free →</a>
       </div>
     </div>
 
   </div>
 </main>
 
-<!-- Firebase Config — REPLACE THIS BLOCK -->
 <script>
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// ══════════════════════════════════════════════════════════════
+//  FIREBASE CONFIG
+//  FIX 1: Config is a plain JS object — NOT in <head>, NOT raw text
+//  FIX 2: Variable is named firebaseConfig (lowercase)
+// ══════════════════════════════════════════════════════════════
 const firebaseConfig = {
-  apiKey: "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
-  authDomain: "pos-ordo.firebaseapp.com",
-  projectId: "pos-ordo",
-  storageBucket: "pos-ordo.firebasestorage.app",
+  apiKey:            "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
+  authDomain:        "pos-ordo.firebaseapp.com",
+  projectId:         "pos-ordo",
+  storageBucket:     "pos-ordo.firebasestorage.app",
   messagingSenderId: "575923763514",
-  appId: "1:575923763514:web:f81283d99aafd2460f3803",
-  measurementId: "G-PND9FKHRVF"
+  appId:             "1:575923763514:web:f81283d99aafd2460f3803",
+  measurementId:     "G-PND9FKHRVF"
 };
 
-// Trial length in days
 const TRIAL_DAYS = 14;
-// App file name
-const APP_FILE = 'ordo_saas.html';
+const APP_FILE   = 'ordo_pos.html';
 
-// ── Firebase Init ─────────────────────────────────
-firebase.initializeApp(FIREBASE_CONFIG);
+// ── Firebase init ─────────────────────────────────────────────
+// FIX 2: was firebase.initializeApp(FIREBASE_CONFIG) — undefined variable
+firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
-// ── If already logged in, redirect to app ────────
+// Set persistence so login survives tab close
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+
+// ── Auth state: redirect if already logged in ─────────────────
+// FIX 4: Guard with _justRegistered flag so we don't redirect
+//         mid-registration before the tenant doc is written
+let _justRegistered = false;
+
 auth.onAuthStateChanged(async user => {
-  if (user) {
-    // Check tenant status
+  if (!user || _justRegistered) return;
+  try {
     const snap = await db.collection('tenants').doc(user.uid).get();
     if (snap.exists) {
       window.location.href = APP_FILE;
     }
+  } catch(e) {
+    // Firestore read failed (offline) — do nothing, let user try manually
+    console.warn('Auth state check failed:', e);
   }
 });
 
-// ── UI helpers ─────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  UI STATE
+// ══════════════════════════════════════════════════════════════
 let selectedPlan = 'trial';
 
 function switchTab(tab) {
-  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-  document.getElementById('form-register').style.display = tab === 'register' ? '' : 'none';
-  document.getElementById('form-login').style.display    = tab === 'login'    ? '' : 'none';
+  ['register','login'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
+    document.getElementById('form-'+t).style.display = t === tab ? '' : 'none';
+  });
   clearMsgs();
+  // focus first input in new tab
+  setTimeout(() => {
+    const panel = document.getElementById('form-'+tab);
+    const inp = panel.querySelector('input');
+    if (inp) inp.focus();
+  }, 50);
 }
 
 function selectPlan(el, plan) {
   document.querySelectorAll('.plan-opt').forEach(p => p.classList.remove('selected'));
   el.classList.add('selected');
   selectedPlan = plan;
-  const btn = document.getElementById('reg-btn');
-  btn.textContent = plan === 'trial' ? 'Start Free Trial →' : 'Create Account →';
+  document.getElementById('reg-btn-text').textContent =
+    plan === 'trial' ? 'Start Free Trial →' : 'Create Account →';
 }
 
+// Password strength indicator
+function updateStrength(v) {
+  let score = 0;
+  if (v.length >= 8)  score++;
+  if (v.length >= 12) score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  const pct = Math.min(100, score * 22);
+  const col = score < 2 ? '#ef4444' : score < 4 ? '#f59e0b' : '#10b981';
+  const fill = document.getElementById('str-fill');
+  fill.style.width   = pct + '%';
+  fill.style.background = col;
+}
+
+// ── Messages ──────────────────────────────────────────────────
 function showError(msg) {
-  const el = document.getElementById('msg-error');
   document.getElementById('msg-error-text').textContent = msg;
-  el.style.display = 'flex';
-  document.getElementById('msg-success').style.display = 'none';
+  document.getElementById('msg-error').classList.add('show');
+  document.getElementById('msg-success').classList.remove('show');
 }
-
 function showSuccess(msg) {
-  const el = document.getElementById('msg-success');
   document.getElementById('msg-success-text').textContent = msg;
-  el.style.display = 'flex';
-  document.getElementById('msg-error').style.display = 'none';
+  document.getElementById('msg-success').classList.add('show');
+  document.getElementById('msg-error').classList.remove('show');
 }
-
 function clearMsgs() {
-  document.getElementById('msg-error').style.display = 'none';
-  document.getElementById('msg-success').style.display = 'none';
+  document.getElementById('msg-error').classList.remove('show');
+  document.getElementById('msg-success').classList.remove('show');
 }
 
-function setLoading(btnId, loading, text) {
-  const btn = document.getElementById(btnId);
-  btn.disabled = loading;
-  btn.innerHTML = loading
-    ? `<span class="spin"></span>`
-    : text;
+// ── Loading state ─────────────────────────────────────────────
+function setLoading(btnId, textId, on) {
+  const btn  = document.getElementById(btnId);
+  const span = document.getElementById(textId);
+  btn.disabled = on;
+  if (on) {
+    btn.innerHTML = '<span class="spin"></span>';
+  } else {
+    // restore original text via the span
+    btn.innerHTML = '';
+    span.textContent = span.textContent; // keep existing
+    btn.appendChild(span);
+  }
+}
+function setBtnText(textId, text) {
+  // Safe helper — rebuild button with text span
+  const btn = document.getElementById(textId.replace('-text',''));
+  btn.disabled = false;
+  btn.innerHTML = '<span id="'+textId+'">'+text+'</span>';
 }
 
-// ── Register ───────────────────────────────────────
+// ── Show success screen ───────────────────────────────────────
+function showSuccessScreen(title, sub) {
+  document.getElementById('form-register').style.display = 'none';
+  document.getElementById('form-login').style.display    = 'none';
+  document.getElementById('msg-error').classList.remove('show');
+  const sc = document.getElementById('success-screen');
+  sc.classList.add('show');
+  document.getElementById('success-title').textContent = title;
+  document.getElementById('success-sub').textContent   = sub;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  REGISTER
+// ══════════════════════════════════════════════════════════════
 async function register() {
   clearMsgs();
-  const restName = document.getElementById('reg-rest').value.trim();
+  const restName  = document.getElementById('reg-rest').value.trim();
   const ownerName = document.getElementById('reg-name').value.trim();
   const email     = document.getElementById('reg-email').value.trim();
   const password  = document.getElementById('reg-pass').value;
 
-  if (!restName)           { showError('Please enter your restaurant name.'); return; }
-  if (!ownerName)          { showError('Please enter your name.'); return; }
-  if (!email)              { showError('Please enter your email.'); return; }
+  if (!restName)           { showError('Please enter your restaurant name.');      return; }
+  if (!ownerName)          { showError('Please enter your name.');                 return; }
+  if (!email)              { showError('Please enter your email address.');         return; }
+  if (!email.includes('@')){ showError('Please enter a valid email address.');     return; }
   if (password.length < 8) { showError('Password must be at least 8 characters.'); return; }
 
-  setLoading('reg-btn', true, '');
+  document.getElementById('reg-btn').disabled = true;
+  document.getElementById('reg-btn').innerHTML = '<span class="spin"></span>';
+
+  _justRegistered = true; // prevent onAuthStateChanged from redirecting early
 
   try {
-    // Create Firebase Auth account
     const cred = await auth.createUserWithEmailAndPassword(email, password);
     const uid  = cred.user.uid;
 
-    // Calculate trial end date
-    const now       = new Date();
-    const trialEnd  = new Date(now.getTime() + TRIAL_DAYS * 86400000);
+    // Update display name in Firebase Auth
+    await cred.user.updateProfile({ displayName: ownerName });
 
-    // Save tenant profile in Firestore
+    const now      = new Date();
+    const trialEnd = new Date(now.getTime() + TRIAL_DAYS * 86400000);
+
+    // Save tenant profile
     await db.collection('tenants').doc(uid).set({
       uid,
       ownerName,
       restaurantName:   restName,
       restaurantNameAr: '',
       email,
-      plan:       selectedPlan === 'trial' ? 'trial' : selectedPlan,
-      status:     'trial',          // trial | active | expired | cancelled
+      plan:       'trial',
+      status:     'trial',
       trialStart: now.toISOString(),
       trialEnd:   trialEnd.toISOString(),
       paidUntil:  null,
       createdAt:  now.toISOString(),
     });
 
-    // Bootstrap the tenant's app data
+    // Bootstrap app settings
     await db.collection('tenants').doc(uid).collection('app').doc('settings').set({
       restaurantName:   restName,
       restaurantNameAr: '',
       vatRate:          15,
       currency:         'SAR',
+      enableTips:       true,
+      enableDelivery:   true,
     });
 
-    showSuccess('Account created! Redirecting to your POS…');
+    _justRegistered = false;
+    showSuccessScreen('Account created — welcome!', 'Setting up your restaurant workspace…');
     setTimeout(() => { window.location.href = APP_FILE; }, 1500);
 
   } catch (err) {
-    console.error(err);
+    _justRegistered = false;
+    console.error('Register error:', err.code, err.message);
     const msgs = {
       'auth/email-already-in-use': 'This email is already registered. Try signing in instead.',
-      'auth/invalid-email':         'Please enter a valid email address.',
-      'auth/weak-password':         'Password is too weak. Use at least 8 characters.',
+      'auth/invalid-email':        'Please enter a valid email address.',
+      'auth/weak-password':        'Password is too weak. Use at least 8 characters with letters and numbers.',
+      'auth/network-request-failed': 'Network error — please check your internet connection.',
+      'auth/too-many-requests':    'Too many attempts. Please wait a few minutes and try again.',
     };
-    showError(msgs[err.code] || err.message);
-    setLoading('reg-btn', false, 'Start Free Trial →');
+    showError(msgs[err.code] || ('Registration failed: ' + err.message));
+    document.getElementById('reg-btn').disabled = false;
+    document.getElementById('reg-btn').innerHTML =
+      '<span id="reg-btn-text">' +
+      (selectedPlan === 'trial' ? 'Start Free Trial →' : 'Create Account →') +
+      '</span>';
   }
 }
 
-// ── Login ──────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════════════════════════
 async function login() {
   clearMsgs();
   const email    = document.getElementById('log-email').value.trim();
   const password = document.getElementById('log-pass').value;
 
-  if (!email || !password) { showError('Please enter your email and password.'); return; }
+  if (!email || !password) {
+    showError('Please enter your email and password.');
+    return;
+  }
+  if (!email.includes('@')) {
+    showError('Please enter a valid email address.');
+    return;
+  }
 
-  setLoading('log-btn', true, '');
+  document.getElementById('log-btn').disabled = true;
+  document.getElementById('log-btn').innerHTML = '<span class="spin"></span>';
 
   try {
     await auth.signInWithEmailAndPassword(email, password);
-    showSuccess('Signed in! Redirecting…');
+    showSuccessScreen('Welcome back!', 'Redirecting to your dashboard…');
     setTimeout(() => { window.location.href = APP_FILE; }, 1000);
+
   } catch (err) {
-    const msgs = {
-      'auth/user-not-found':   'No account found with this email.',
-      'auth/wrong-password':   'Incorrect password.',
-      'auth/invalid-email':    'Please enter a valid email.',
-      'auth/too-many-requests':'Too many attempts. Please wait a moment.',
+    console.error('Login error:', err.code, err.message);
+
+    // FIX 3: Firebase 9+ uses 'auth/invalid-credential' for wrong email/password
+    // Also handle older SDK codes and edge cases
+    const friendlyMsgs = {
+      'auth/invalid-credential':   'Incorrect email or password. Please try again.',
+      'auth/user-not-found':       'No account found with this email. Did you mean to register?',
+      'auth/wrong-password':       'Incorrect password. Try again or use "Forgot password".',
+      'auth/invalid-email':        'Please enter a valid email address.',
+      'auth/user-disabled':        'This account has been disabled. Contact support.',
+      'auth/too-many-requests':    'Too many failed attempts. Please wait a few minutes or reset your password.',
+      'auth/network-request-failed': 'Network error — check your internet connection.',
+      'auth/missing-password':     'Please enter your password.',  // FIX 5
+      'auth/missing-email':        'Please enter your email address.',
     };
-    showError(msgs[err.code] || 'Sign in failed. Please try again.');
-    setLoading('log-btn', false, 'Sign In →');
+
+    showError(friendlyMsgs[err.code] || 'Sign in failed. Please try again.');
+    document.getElementById('log-pass').value = '';
+
+    // Highlight the password field on credential errors
+    if (['auth/invalid-credential','auth/wrong-password'].includes(err.code)) {
+      const passEl = document.getElementById('log-pass');
+      passEl.classList.add('err');
+      setTimeout(() => passEl.classList.remove('err'), 2500);
+    }
+
+    document.getElementById('log-btn').disabled = false;
+    document.getElementById('log-btn').innerHTML = '<span id="log-btn-text">Sign In →</span>';
   }
 }
 
-// ── Reset Password ─────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  PASSWORD RESET
+// ══════════════════════════════════════════════════════════════
 async function resetPassword() {
+  clearMsgs();
   const email = document.getElementById('log-email').value.trim();
-  if (!email) { showError('Enter your email address above first.'); return; }
+  if (!email) {
+    showError('Enter your email address in the field above first.');
+    document.getElementById('log-email').focus();
+    return;
+  }
   try {
     await auth.sendPasswordResetEmail(email);
-    showSuccess('Password reset email sent — check your inbox.');
+    showSuccess('Password reset email sent — check your inbox (and spam folder).');
   } catch(err) {
-    showError('Could not send reset email. Check the address.');
+    const msgs = {
+      'auth/user-not-found': 'No account found with that email address.',
+      'auth/invalid-email':  'Please enter a valid email address.',
+    };
+    showError(msgs[err.code] || 'Could not send reset email. Please try again.');
   }
 }
 </script>
