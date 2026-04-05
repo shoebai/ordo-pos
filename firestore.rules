@@ -15,7 +15,7 @@ service cloud.firestore {
     function isSuperAdmin() {
       // Admin email: yshoeb52@gmail.com
       // Get your UID: Firebase Console → Auth → Users → copy UID next to yshoeb52@gmail.com
-      return request.auth.uid == "PASTE_YOUR_ADMIN_UID_HERE";
+      return request.auth.uid == "mwz0F01sufMu4AZ7OblEBmSLlgz1";
     }
 
     function tenantIsActive() {
