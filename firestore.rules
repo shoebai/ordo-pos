@@ -1,0 +1,67 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ───────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function isSuperAdmin() {
+      // Admin email: yshoeb52@gmail.com
+      // Get your UID: Firebase Console → Auth → Users → copy UID next to yshoeb52@gmail.com
+      return request.auth.uid == "PASTE_YOUR_ADMIN_UID_HERE";
+    }
+
+    function tenantIsActive() {
+      let tenant = get(/databases/$(database)/documents/tenants/$(request.auth.uid)).data;
+      return tenant.status == 'active' || (
+        tenant.status == 'trial' &&
+        tenant.trialEnd > request.time
+      );
+    }
+
+    // ── /tenants/{uid} ────────────────────────────────────
+    // Each restaurant owner can read/write their own tenant doc.
+    // Super admin can read/write all.
+    match /tenants/{uid} {
+      allow read:  if isSignedIn() && (isOwner(uid) || isSuperAdmin());
+      allow write: if isSignedIn() && (isOwner(uid) || isSuperAdmin());
+
+      // ── /tenants/{uid}/app/{doc} ──────────────────────
+      // Tenant's scoped app data (orders, tables, menu, etc.)
+      // Only the tenant owner (and admin) can access.
+      match /app/{document} {
+        allow read, write: if isSignedIn() && (isOwner(uid) || isSuperAdmin());
+      }
+    }
+
+    // ── /licenses/{key} ───────────────────────────────────
+    // Anyone can READ a license to verify it (needed for downloaded app).
+    // Only super admin can CREATE or UPDATE license records.
+    match /licenses/{key} {
+      allow read:   if true;   // Public read — key is already secret
+      allow create,
+            update,
+            delete: if isSignedIn() && isSuperAdmin();
+    }
+
+    // ── /app/version ──────────────────────────────────────
+    // Public read — so downloaded apps can check for updates.
+    // Only super admin can publish new versions.
+    match /app/{document} {
+      allow read:   if true;
+      allow write:  if isSignedIn() && isSuperAdmin();
+    }
+
+    // ── Deny everything else ──────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
