@@ -9,7 +9,7 @@ service firebase.storage {
     match /releases/{filename} {
       allow read:  if true;
       allow write: if request.auth != null
-                   && request.auth.uid == "PASTE_YOUR_ADMIN_UID_HERE" // UID for yshoeb52@gmail.com;
+                   && request.auth.uid == "mwz0F01sufMu4AZ7OblEBmSLlgz1" // UID for yshoeb52@gmail.com;
     }
 
     // ── Deny everything else ──────────────────────────────
