@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#0d0d14"/>
@@ -10,13 +10,13 @@
 <link rel="manifest" href="manifest.json"/>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- Firebase (loaded only when cloud sync is configured) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
 :root{
@@ -33,10 +33,26 @@
   --nav:60px;--bot:62px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;overflow:hidden;}
-body{font-family:'Sora','Cairo',sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;}
+html{height:100%;height:-webkit-fill-available;}
+body{
+  font-family:'Sora','Cairo',sans-serif;
+  background:var(--bg);color:var(--t1);
+  -webkit-font-smoothing:antialiased;
+  /* Fill the full screen including under system nav bar */
+  min-height:100vh;
+  min-height:-webkit-fill-available;
+  min-height:100dvh;
+  overflow:hidden;
+  /* Push ALL content above system nav bar */
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
 body[dir=rtl]{font-family:'Cairo','Sora',sans-serif;}
-#root{height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+#root{
+  /* dvh = dynamic viewport height — shrinks when system nav bar appears */
+  height:100vh;
+  height:100dvh;
+  display:flex;flex-direction:column;overflow:hidden;
+}
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
@@ -97,7 +113,7 @@ textarea.input{resize:none;}
 .nav-tabs{display:flex;gap:2px;background:var(--card);border-radius:var(--rs);padding:3px;overflow-x:auto;}
 .nav-tab{padding:6px 11px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t2);display:flex;align-items:center;gap:5px;white-space:nowrap;border:none;background:none;transition:all .18s;}
 .nav-tab.active{background:var(--primary);color:#0d0d14;}
-.bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:var(--bot);background:var(--surface);border-top:1px solid var(--border);z-index:99;}
+.bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:calc(var(--bot) + env(safe-area-inset-bottom, 0px));background:var(--surface);border-top:1px solid var(--border);z-index:99;padding-bottom:env(safe-area-inset-bottom, 0px);}
 .bot-inner{display:flex;height:100%;align-items:center;justify-content:space-around;}
 .bot-tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 10px;cursor:pointer;color:var(--t3);font-size:10px;font-weight:600;border:none;background:none;min-width:46px;border-radius:8px;}
 .bot-tab.active{color:var(--primary);}
@@ -181,20 +197,147 @@ html.light .overlay{background:rgba(0,0,0,.55);}
 
 /* --- ANIMATIONS --- */
 @keyframes slideUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes slideUpSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.3)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* --- RESPONSIVE --- */
+/* ─── SAFE AREA INSETS ─── */
+/* --extra-bottom is injected by JS below for browser toolbar support */
+:root{
+  --sab:       env(safe-area-inset-bottom, 0px);
+  --sal:       env(safe-area-inset-left,   0px);
+  --sar:       env(safe-area-inset-right,  0px);
+  --extra-bot: 0px; /* overridden by JS on mobile browsers */
+  /* Combined bottom clearance: hardware safe area + browser toolbar */
+  --safe-bot:  max(var(--sab), var(--extra-bot));
+}
+
+/* Bottom nav */
+.bot-nav{
+  padding-bottom: var(--safe-bot);
+  height: calc(var(--bot) + var(--safe-bot));
+}
+
+/* Any fixed bottom action bar */
+.fixed-bottom{
+  padding-bottom: calc(var(--safe-bot) + 8px) !important;
+}
+
+/* Scrollable areas need room for nav + safe area */
+.mb-pad{
+  padding-bottom: calc(var(--bot) + var(--safe-bot) + 16px) !important;
+}
+
+/* Bottom-sheet modals */
+.modal{
+  padding-bottom: calc(22px + var(--safe-bot));
+}
+
+/* Nav bar left/right insets */
+.nav-bar{
+  padding-left:  calc(14px + var(--sal));
+  padding-right: calc(14px + var(--sar));
+}
+
+/* ─── RESPONSIVE BASE ─── */
 @media print{.no-print{display:none!important;}body{background:#fff;color:#000;overflow:auto;}#root{height:auto;}}
+
+/* ═══ TABLET (768px – 1024px) ═══ */
+@media(min-width:769px) and (max-width:1024px){
+  :root{--nav:56px;--bot:0px;}
+  .nav-tab{padding:5px 9px;font-size:11px;}
+  .tbl-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;}
+  .tbl-card{padding:10px;}
+  .tbl-num{font-size:15px;}
+  .stat-v{font-size:22px;}
+  .m-img,.m-emoji{height:90px;}
+  .theme-tog span{display:none;}
+}
+
+/* ═══ MOBILE (≤768px) ═══ */
 @media(max-width:768px){
+  :root{--nav:52px;--bot:60px;}
+
+  /* Nav */
   .nav-tabs,.hide-sm{display:none!important;}
-  .bot-nav{display:flex;}
-  .mb-pad{padding-bottom:calc(var(--bot) + 16px)!important;}
+  .nav-bar{padding:0 calc(10px + var(--sal)) 0 calc(10px + var(--sar));}
+  .nav-logo{font-size:13px;}
+  .theme-tog{padding:4px 8px;font-size:11px;}
+  .theme-tog span{display:none;}
+
+  /* Bottom nav — always above system nav */
+  .bot-nav{
+    display:flex;
+    padding-bottom:var(--safe-bot);
+    height:calc(var(--bot) + var(--safe-bot));
+  }
+  .bot-inner{align-items:flex-start;padding-top:4px;}
+  .mb-pad{padding-bottom:calc(var(--bot) + var(--safe-bot) + 12px)!important;}
+  .bot-tab{font-size:9px;padding:5px 8px;min-width:40px;}
+  .bot-tab i{font-size:18px;}
+
+  /* Modals → full-screen bottom sheet */
+  .overlay{align-items:flex-end;padding:0;}
+  .modal{
+    max-width:100% !important;
+    width:100%;
+    border-radius:20px 20px 0 0;
+    max-height:92vh;
+    animation:slideUpSheet .3s ease;
+    padding:20px 16px calc(20px + var(--safe-bot));
+  }
+  .modal-lg{max-width:100%!important;}
+
+  /* Split screen (order screen) */
   .order-panel{width:100%!important;border:none!important;}
   .split{flex-direction:column!important;}
-  .split>.left-pane{height:55%!important;flex:none!important;}
-  .split>.order-panel{height:45%!important;}
+  .split>.left-pane{height:58%!important;flex:none!important;}
+  .split>.order-panel{height:42%!important;}
+
+  /* Tables grid — 3 columns on mobile */
+  .tbl-grid{grid-template-columns:repeat(3,1fr);gap:8px;}
+  .tbl-card{padding:10px 6px;border-radius:10px;}
+  .tbl-num{font-size:14px;}
+  .tbl-card .sdot{width:7px;height:7px;top:7px;right:7px;}
+
+  /* Menu cards — 2 columns on mobile */
+  .m-grid-2{grid-template-columns:repeat(2,1fr)!important;}
+  .m-img,.m-emoji{height:90px;}
+  .m-emoji{font-size:34px;}
+
+  /* Buttons */
+  .btn{font-size:12px;padding:9px 14px;}
+  .btn-lg{padding:13px 20px;font-size:14px;}
+  .btn-icon{width:36px;height:36px;}
+
+  /* Cards */
+  .card{padding:14px;}
+
+  /* Chips — more touch-friendly */
+  .chip{padding:6px 13px;font-size:12px;}
+
+  /* Stats grid */
+  .stat-card{padding:14px;}
+  .stat-v{font-size:22px;}
+
+  /* Kitchen cards */
+  .kit-card{padding:12px;}
+
+  /* Input / forms */
+  .input{font-size:14px;padding:11px 13px;}
+
+  /* Scroll padding fix */
+  .scroll-y{-webkit-overflow-scrolling:touch;}
+}
+
+/* ═══ SMALL PHONES (≤380px) ═══ */
+@media(max-width:380px){
+  :root{--bot:56px;}
+  .tbl-grid{grid-template-columns:repeat(2,1fr);}
+  .bot-tab{font-size:8.5px;min-width:36px;}
+  .stat-v{font-size:19px;}
+  .btn-lg{font-size:13px;}
 }
 </style>
 </head>
@@ -239,15 +382,130 @@ async function hashPw(pw){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('ORDO2_'+pw));
   return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
 }
+// ── Client-namespaced storage ──────────────────────────────────────────────
+const getCID=()=>localStorage.getItem('ordo_clientId')||'';
+const nsKey=k=>{const c=getCID();return c?c+'::'+k:k;};
 const LS={
-  g:(k,d=null)=>{try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d;}catch{return d;}},
-  s:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}},
-  rm:k=>localStorage.removeItem(k)
+  g:(k,d=null)=>{try{const v=localStorage.getItem(nsKey(k));return v!=null?JSON.parse(v):d;}catch{return d;}},
+  s:(k,v)=>{try{localStorage.setItem(nsKey(k),JSON.stringify(v));}catch{}},
+  rm:k=>localStorage.removeItem(nsKey(k))
+};
+// ── Firebase cloud sync helper ───────────────────────────────────────────────
+const FB={
+  _db:null, _ref:null,
+  init(cfg,cid){
+    try{
+      if(!cfg||!cfg.apiKey)return false;
+      if(!firebase.apps.length)firebase.initializeApp(cfg);
+      else firebase.app(); // reuse
+      this._db=firebase.firestore();
+      this._ref=this._db.collection('ordo_clients').doc(cid);
+      this._db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+      return true;
+    }catch(e){console.warn('Firebase init failed:',e);return false;}
+  },
+  async save(col,data){
+    if(!this._ref)return;
+    try{await this._ref.collection(col).doc('__data__').set({v:data,ts:Date.now()});}
+    catch(e){console.warn('FB save failed:',e);}
+  },
+  async load(col){
+    if(!this._ref)return null;
+    try{
+      const d=await this._ref.collection(col).doc('__data__').get();
+      return d.exists?d.data().v:null;
+    }catch(e){return null;}
+  },
+  get ready(){return!!this._ref;}
 };
 const fmt=(n,cur='SAR')=>`${cur} ${Number(n).toFixed(2)}`;
 const fmtInt=n=>Number(n).toFixed(0);
 const today=()=>new Date().toDateString();
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ══════════════════════════════════════════════════════════════
+   LICENSE ENGINE
+══════════════════════════════════════════════════════════════ */
+// Split secret to resist trivial grep — joined at runtime
+const _S=['ORDO','_LIC','_2K2','5_XK','7Q9Z'];
+const LIC_SECRET=_S.join('');
+
+async function _sha256(msg){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+// Encode payload → base64url
+function _b64e(str){return btoa(str).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');}
+function _b64d(str){return atob(str.replace(/-/g,'+').replace(/_/g,'/'));}
+
+async function generateLicenseKey({email='',phone='',plan='basic',days=365,forClientId='*'}){
+  const payload=JSON.stringify({e:email.toLowerCase().trim(),m:phone.replace(/\s/g,''),p:plan,x:Date.now()+days*864e5,c:forClientId,i:Date.now()});
+  const b64=_b64e(payload);
+  const sig=(await _sha256(LIC_SECRET+b64)).slice(0,12);
+  const raw=(b64+'.'+sig).toUpperCase();
+  // Format as groups of 5
+  const flat=raw.replace(/\./g,'D').replace(/[^A-Z0-9]/g,'');
+  return flat.match(/.{1,5}/g).join('-');
+}
+
+async function validateLicenseKey(rawKey){
+  try{
+    if(!rawKey)return{valid:false,reason:'No license key'};
+    const flat=rawKey.replace(/-/g,'').toUpperCase().replace(/D/g,'.');
+    const dotIdx=flat.lastIndexOf('.');
+    if(dotIdx<0)return{valid:false,reason:'Invalid format'};
+    const b64=flat.slice(0,dotIdx).toLowerCase().replace(/\./g,'');
+    const keySig=flat.slice(dotIdx+1).toLowerCase();
+    const expectedSig=(await _sha256(LIC_SECRET+b64)).slice(0,12);
+    if(keySig!==expectedSig)return{valid:false,reason:'Invalid license key — signature mismatch'};
+    const payload=JSON.parse(_b64d(b64));
+    if(Date.now()>payload.x)return{valid:false,expired:true,payload,reason:'License expired on '+new Date(payload.x).toLocaleDateString()};
+    const cid=getCID();
+    if(payload.c&&payload.c!=='*'&&payload.c!==cid)return{valid:false,reason:'License is for client "'+payload.c+'" — your ID is "'+cid+'"'};
+    return{valid:true,payload,daysLeft:Math.ceil((payload.x-Date.now())/864e5)};
+  }catch(e){return{valid:false,reason:'License parse error: '+e.message};}
+}
+
+function getLicenseState(){
+  const raw=localStorage.getItem('ordo_license_key');
+  if(!raw)return null;
+  return LS.g('ordo_license_cache');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LOGIN LOCKOUT
+══════════════════════════════════════════════════════════════ */
+const LOCK_KEY=u=>'lockout::'+u;
+const LOCK_MAX=5;const LOCK_MINS=15;
+function getLockout(username){
+  try{
+    const v=localStorage.getItem(LOCK_KEY(username));
+    if(!v)return null;
+    const l=JSON.parse(v);
+    if(Date.now()>l.until){localStorage.removeItem(LOCK_KEY(username));return null;}
+    return l;
+  }catch{return null;}
+}
+function recordBadAttempt(username){
+  const l=getLockout(username)||{attempts:0,until:0};
+  l.attempts++;
+  if(l.attempts>=LOCK_MAX)l.until=Date.now()+LOCK_MINS*60000;
+  localStorage.setItem(LOCK_KEY(username),JSON.stringify(l));
+  return l;
+}
+function clearLockout(username){localStorage.removeItem(LOCK_KEY(username));}
+
+/* ══════════════════════════════════════════════════════════════
+   AUDIT LOG
+══════════════════════════════════════════════════════════════ */
+function writeAudit(action,detail,username){
+  try{
+    const key=nsKey('audit_log');
+    const logs=JSON.parse(localStorage.getItem(key)||'[]');
+    logs.unshift({action,detail:detail||'',user:username||'—',at:new Date().toISOString(),id:uid()});
+    localStorage.setItem(key,JSON.stringify(logs.slice(0,500)));
+  }catch{}
+}
 
 /* ======================================================
    TRANSLATIONS
@@ -341,7 +599,17 @@ const DEF_SETTINGS={
   phone:'+966 50 000 0000',crNumber:'1234567890',vatNumber:'300000000000003',
   vatRate:15,currency:'SAR',
   enableTips:true,enableDelivery:true,kitchenSound:true,sessionTimeout:480,
-  receiptFooter:'Thank you for dining with us!',receiptFooterAr:'شكراً لزيارتكم!'
+  receiptFooter:'Thank you for dining with us!',receiptFooterAr:'شكراً لزيارتكم!',
+  autoPrintKitchen:true,kitchenPrintCopies:1,
+  firebaseApiKey:'',firebaseProjectId:'',firebaseAppId:'',
+  globalExtras:[
+    {id:'ge1',name:'Extra Spicy',nameAr:'حار جداً',adj:0,emoji:'🌶️'},
+    {id:'ge2',name:'Mild / Not Spicy',nameAr:'غير حار',adj:0,emoji:'🌿'},
+    {id:'ge3',name:'Extra Masala',nameAr:'مسالة إضافية',adj:2,emoji:'🫙'},
+    {id:'ge4',name:'No Onion',nameAr:'بدون بصل',adj:0,emoji:'🚫'},
+    {id:'ge5',name:'Extra Sauce',nameAr:'صلصة إضافية',adj:3,emoji:'🥫'},
+    {id:'ge6',name:'Well Done',nameAr:'مطبوخ جيداً',adj:0,emoji:'✅'}
+  ]
 };
 const DEF_STAFF=[
   {id:1,name:'Ahmed Admin',nameAr:'أحمد المدير',username:'admin',hash:'',role:'admin',pin:'1234',active:true},
@@ -375,11 +643,123 @@ const DEF_ITEMS=[
 const DEF_TABLES=Array.from({length:20},(_,i)=>({id:i+1,num:`T${i+1}`,status:'available',orderId:null,seats:i<5?8:i<12?6:4,area:'Main'}));
 
 /* ======================================================
+   KITCHEN TICKET PRINTER
+====================================================== */
+function printKitchenTicket(order,settings,copies){
+  if(!settings.autoPrintKitchen)return;
+  const n=Math.max(1,copies||settings.kitchenPrintCopies||1);
+  for(let i=0;i<n;i++){
+    const w=window.open('','_blank','width=340,height=620,left=99999,top=99999');
+    if(!w)return;
+    const items=(order.items||[]).map(it=>`
+      <tr>
+        <td style="font-size:22px;font-weight:900;padding:4px 8px 4px 0;vertical-align:top">${it.qty}×</td>
+        <td style="padding:4px 0;vertical-align:top">
+          <div style="font-size:15px;font-weight:700">${it.nameAr||it.name}</div>
+          ${it.name!==it.nameAr&&it.nameAr?`<div style="font-size:12px;color:#555">${it.name}</div>`:''}
+          ${Object.keys(it.selectedMods||{}).length>0?`<div style="font-size:11px;color:#333;margin-top:1px">↳ options applied</div>`:''}
+          ${it.itemNote?`<div style="font-size:11px;font-style:italic;margin-top:1px">📝 ${it.itemNote}</div>`:''}
+        </td>
+      </tr>`).join('');
+    w.document.write(`<!DOCTYPE html><html dir="rtl"><head>
+      <meta charset="UTF-8"/>
+      <title>KT-${order.id.slice(-6)}</title>
+      <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Courier New',monospace;width:280px;padding:10px;background:#fff;color:#000;}
+        .dashed{border-top:2px dashed #000;margin:8px 0;}
+        .center{text-align:center;}
+        .rest{font-size:13px;font-weight:bold;}
+        .tbl{font-size:28px;font-weight:900;margin:2px 0;}
+        .meta{font-size:11px;color:#444;}
+        .rush{background:#000;color:#fff;text-align:center;padding:5px 0;font-size:14px;font-weight:900;letter-spacing:2px;margin:6px 0;}
+        table{width:100%;border-collapse:collapse;}
+        .note-box{border:2px dashed #000;padding:6px 8px;margin-top:8px;font-size:12px;}
+        .footer{text-align:center;font-size:10px;margin-top:8px;}
+        @media print{@page{size:80mm auto;margin:0;}body{width:72mm;padding:4mm;}}
+      </style>
+    </head><body>
+      <div class="center">
+        <div class="rest">${settings.restaurantName||'Kitchen'}</div>
+        <div class="tbl">🪑 ${order.tableNum||order.orderType||'Takeaway'}</div>
+        <div class="meta">${new Date(order.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false})} &nbsp;|&nbsp; #${order.id.slice(-8)}</div>
+        ${order.waiterName?`<div class="meta">Waiter: ${order.waiterName}</div>`:''}
+      </div>
+      ${order.priority==='rush'?'<div class="rush">⚡ RUSH / عاجل ⚡</div>':''}
+      <div class="dashed"></div>
+      <table>${items}</table>
+      ${order.note?('<div class="note-box">📝 '+order.note+'</div>'):''}
+      <div class="dashed"></div>
+      <div class="footer">— Kitchen Copy | نسخة المطبخ —</div>
+      <script>
+        window.onload=function(){
+          window.print();
+          setTimeout(function(){window.close();},2500);
+        };
+      <\/script>
+    </body></html>`);
+    w.document.close();
+  }
+}
+
+/* ======================================================
    CONTEXT
 ====================================================== */
-const safeArr=(k,def)=>{try{const v=localStorage.getItem(k);if(!v)return def;const p=JSON.parse(v);return Array.isArray(p)?p:def;}catch{return def;}};
+const safeArr=(k,def)=>{try{const v=localStorage.getItem(nsKey(k));if(!v)return def;const p=JSON.parse(v);return Array.isArray(p)?p:def;}catch{return def;}};
 const Ctx=createContext(null);
 const useApp=()=>useContext(Ctx);
+
+/* ======================================================
+   CLIENT SETUP MODAL  (first-run)
+====================================================== */
+function ClientSetupModal({onSave}){
+  const[id,setId]=useState('');
+  const[err,setErr]=useState('');
+  const clean=v=>v.trim().toLowerCase().replace(/[^a-z0-9_-]/g,'');
+  const save=()=>{
+    const c=clean(id);
+    if(c.length<3){setErr('ID must be at least 3 characters (letters, numbers, - or _)');return;}
+    onSave(c);
+  };
+  return(
+    <div style={{position:'fixed',inset:0,background:'linear-gradient(135deg,#0d0d14,#1a1a2e)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:20}}>
+      <div style={{width:'100%',maxWidth:420,background:'var(--card)',borderRadius:20,padding:28,border:'1px solid var(--border)'}}>
+        <div style={{textAlign:'center',marginBottom:24}}>
+          <div style={{fontSize:48,marginBottom:8}}>🏪</div>
+          <div style={{fontSize:20,fontWeight:800,background:'linear-gradient(135deg,var(--primary),#fb923c)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+            Welcome to Ordo POS
+          </div>
+          <div style={{fontSize:12,color:'var(--t2)',marginTop:6}}>
+            Set a unique Client ID for your restaurant. This keeps your data isolated from other clients on the same app.
+          </div>
+        </div>
+        <div style={{background:'var(--elevated)',borderRadius:12,padding:16,marginBottom:16,fontSize:12,color:'var(--t2)'}}>
+          <div style={{fontWeight:700,color:'var(--primary)',marginBottom:6}}>📋 What is a Client ID?</div>
+          <div style={{lineHeight:1.7}}>
+            A short unique slug for your restaurant, e.g. <strong style={{color:'var(--t1)'}}>al-nakheel</strong>, <strong style={{color:'var(--t1)'}}>pizza-hub-medina</strong>, or <strong style={{color:'var(--t1)'}}>cafe123</strong>.
+            All your orders, menu, and settings are stored under this ID. If you use cloud sync, this is also your cloud folder name.
+          </div>
+        </div>
+        <div className="form-g">
+          <label className="form-lbl">Client ID (letters, numbers, - or _ only)</label>
+          <input className="input" value={id} onChange={e=>setId(clean(e.target.value))}
+            onKeyDown={e=>e.key==='Enter'&&save()}
+            placeholder="e.g. my-restaurant"
+            style={{fontSize:15,fontWeight:700,letterSpacing:1}}
+          />
+          {id&&<div style={{fontSize:11,color:'var(--t3)',marginTop:2}}>Will use: <strong style={{color:'var(--primary)'}}>{clean(id)||'…'}</strong></div>}
+        </div>
+        {err&&<div style={{color:'var(--red)',fontSize:12,padding:'6px 10px',background:'var(--red-dim)',borderRadius:6,marginBottom:10}}>{err}</div>}
+        <button className="btn btn-primary btn-block btn-lg" onClick={save} disabled={clean(id).length<3}>
+          <i className="fa fa-check"/> Set Client ID &amp; Start
+        </button>
+        <div style={{marginTop:12,fontSize:11,color:'var(--t3)',textAlign:'center'}}>
+          You can change this later in Settings → Data
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Provider({children}){
   const[lang,setLangS]=useState(()=>LS.g('lang','en'));
@@ -394,119 +774,14 @@ function Provider({children}){
   const[pwaEvt,setPwaEvt]=useState(null);
   const[ready,setReady]=useState(false);
   const[theme,setThemeS]=useState(()=>LS.g('theme','dark'));
-  const[fbMode,setFbMode]=useState(false);
-  const[fbConnected,setFbConnected]=useState(false);
-  // SaaS tenant state
-  const[tenant,setTenant]=useState(null);  // { uid, plan, status, trialEnd, restaurantName, ... }
-  const[trialDaysLeft,setTrialDaysLeft]=useState(null);
-  const[showPaywall,setShowPaywall]=useState(false);
-  const fbRef=useRef(null);
-  const tenantId=useRef(null);
-
-  // ── Firebase Config — PASTE YOURS HERE ────────────
-  const FIREBASE_CONFIG={
-    apiKey:            "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
-    authDomain:        "pos-ordo.firebaseapp.com",
-    projectId:         "pos-ordo",
-    storageBucket:     "pos-ordo.firebasestorage.app",
-    messagingSenderId: "575923763514",
-    appId:             "1:575923763514:web:f81283d99aafd2460f3803"
-  };
-
-  // ── Init Firebase once ─────────────────────────────
-  useEffect(()=>{
-    let app;
-try {
-  app = window.firebase.apps.length
-    ? window.firebase.app()
-    : window.firebase.initializeApp(FIREBASE_CONFIG);
-} catch (e) {
-  console.warn("Firebase init failed, running offline mode");
-  setFbMode(false);
-  setReady(true);
-  return;
-}
-      const fs=window.firebase.firestore(app);
-      fs.enablePersistence({synchronizeTabs:true}).catch(()=>{});
-      fbRef.current=fs;
-      setFbMode(true);
-      setFbConnected(true);
-    }catch(e){console.error('[pos ordo] Firebase init error:',e);}
-  },[]);
-
-  // ── Auth listener — resolve tenant on login ────────
-  useEffect(()=>{
-    if(!fbMode)return;
-    const auth=window.firebase.auth();
-    const unsub=auth.onAuthStateChanged(async fbUser=>{
-      if(!fbUser){
-        // Not logged in — redirect to register
-        window.location.href='register.html';
-        return;
-      }
-      tenantId.current=fbUser.uid;
-      const snap=await fbRef.current.collection('tenants').doc(fbUser.uid).get();
-      if(!snap.exists){window.location.href='register.html';return;}
-      const t=snap.data();
-      setTenant(t);
-
-      // Trial / paywall logic
-      if(t.status==='trial'){
-        const daysLeft=Math.ceil((new Date(t.trialEnd)-new Date())/86400000);
-        setTrialDaysLeft(Math.max(0,daysLeft));
-        if(daysLeft<=0){setShowPaywall(true);}
-      }else if(t.status==='expired'){
-        setShowPaywall(true);
-      }
-
-      // Load tenant settings into app
-      const settingsSnap=await fbRef.current.collection('tenants').doc(fbUser.uid).collection('app').doc('settings').get();
-      if(settingsSnap.exists){
-        const s=settingsSnap.data();
-        setSettingsS(prev=>({...prev,...s}));
-      }
-
-      setReady(true);
-    });
-    return()=>unsub();
-  },[fbMode]);
-
-  // ── Tenant-scoped Firestore path ───────────────────
-  const tenantDoc=(col)=>{
-    if(!fbRef.current||!tenantId.current)return null;
-    return fbRef.current.collection('tenants').doc(tenantId.current).collection('app').doc(col);
-  };
-
-  // ── Firestore real-time listeners per tenant ───────
-  useEffect(()=>{
-    if(!fbMode||!tenant)return;
-    const unsubs=[];
-    const listen=(col,setter)=>{
-      const ref=tenantDoc(col);
-      if(!ref)return;
-      unsubs.push(ref.onSnapshot(snap=>{
-        if(snap.exists){
-          const d=snap.data()?.data;
-          if(Array.isArray(d)&&d.length)setter(d);
-          else if(d&&typeof d==='object'&&!Array.isArray(d))setter(s=>({...s,...d}));
-        }
-      }));
-    };
-    listen('orders',  setOrders);
-    listen('tables',  setTables);
-    listen('cats',    setCats);
-    listen('items',   setItems);
-    listen('staff',   setStaff);
-    return()=>unsubs.forEach(u=>u());
-  },[fbMode,tenant]);
-
-  // ── Write to tenant's scoped collection ───────────
-  const fbWrite=useCallback((col,value)=>{
-    LS.s(col,value);
-    const ref=tenantDoc(col);
-    if(!ref||!fbMode)return;
-    ref.set({data:value,updatedAt:new Date().toISOString()},{merge:false}).catch(()=>{});
-  },[fbMode,tenant]);
+  const[clientId,setClientIdS]=useState(()=>localStorage.getItem('ordo_clientId')||'');
+  const[fbReady,setFbReady]=useState(false);
+  const[showClientSetup,setShowClientSetup]=useState(()=>!localStorage.getItem('ordo_clientId'));
+  const[license,setLicense]=useState(null); // {valid,payload,daysLeft,reason}
+  const[licenseChecked,setLicenseChecked]=useState(false);
+  const[inactiveWarning,setInactiveWarning]=useState(false);
+  const _inactiveTimer=useRef(null);
+  const _warnTimer=useRef(null);
 
   // Apply theme class to html element
   useEffect(()=>{
@@ -514,6 +789,102 @@ try {
     LS.s('theme',theme);
   },[theme]);
   const toggleTheme=useCallback(()=>setThemeS(t=>t==='dark'?'light':'dark'),[]);
+
+  // ── License validation ─────────────────────────────────────────────────────
+  useEffect(()=>{
+    (async()=>{
+      const raw=localStorage.getItem('ordo_license_key');
+      if(!raw){
+        // Check trial period
+        let trial=LS.g('trial_start');
+        if(!trial){trial=Date.now();LS.s('trial_start',trial);}
+        const trialDays=30;
+        const daysLeft=Math.ceil((trial+trialDays*864e5-Date.now())/864e5);
+        if(daysLeft>0){
+          setLicense({valid:true,trial:true,daysLeft,reason:null});
+        }else{
+          setLicense({valid:false,trial:true,expired:true,reason:'Trial expired '+Math.abs(daysLeft)+' days ago'});
+        }
+      }else{
+        const result=await validateLicenseKey(raw);
+        if(result.valid){
+          LS.s('ordo_license_cache',result);
+          writeAudit('LICENSE_OK','plan='+result.payload.p+' daysLeft='+result.daysLeft,'system');
+        }else{
+          writeAudit('LICENSE_FAIL',result.reason,'system');
+        }
+        setLicense(result);
+      }
+      setLicenseChecked(true);
+    })();
+  },[]);
+
+  // ── Inactivity auto-logout ───────────────────────────────────────────────
+  const resetInactivity=useCallback(()=>{
+    if(!settings.sessionTimeout)return;
+    const ms=(settings.sessionTimeout||480)*60000;
+    const warnMs=ms-60000; // warn 1 min before
+    clearTimeout(_inactiveTimer.current);
+    clearTimeout(_warnTimer.current);
+    setInactiveWarning(false);
+    if(warnMs>0){
+      _warnTimer.current=setTimeout(()=>setInactiveWarning(true),warnMs);
+    }
+    _inactiveTimer.current=setTimeout(()=>{
+      setInactiveWarning(false);
+      LS.rm('session');setUser(null);
+      writeAudit('AUTO_LOGOUT','Session timeout','system');
+    },ms);
+  },[settings.sessionTimeout]);
+
+  useEffect(()=>{
+    if(!user)return;
+    resetInactivity();
+    const events=['mousedown','keydown','touchstart','scroll'];
+    events.forEach(e=>window.addEventListener(e,resetInactivity,{passive:true}));
+    return()=>{
+      events.forEach(e=>window.removeEventListener(e,resetInactivity));
+      clearTimeout(_inactiveTimer.current);
+      clearTimeout(_warnTimer.current);
+    };
+  },[user,resetInactivity]);
+
+  // ── Set client ID and reinitialise storage namespace
+  const setClientId=useCallback((id)=>{
+    const clean=id.trim().toLowerCase().replace(/[^a-z0-9_-]/g,'');
+    if(!clean)return false;
+    localStorage.setItem('ordo_clientId',clean);
+    setClientIdS(clean);
+    setShowClientSetup(false);
+    window.location.reload(); // reload so all state re-reads from correct namespace
+    return true;
+  },[]);
+
+  // Firebase init whenever firebaseApiKey/projectId changes
+  useEffect(()=>{
+    const cfg=LS.g('settings');
+    if(cfg&&cfg.firebaseApiKey&&cfg.firebaseProjectId&&getCID()){
+      const ok=FB.init({
+        apiKey:cfg.firebaseApiKey,
+        projectId:cfg.firebaseProjectId,
+        appId:cfg.firebaseAppId||''
+      },getCID());
+      setFbReady(ok);
+      if(ok){
+        // Try to load latest data from cloud on startup
+        Promise.all([
+          FB.load('orders'),FB.load('items'),FB.load('cats'),
+          FB.load('tables'),FB.load('settings')
+        ]).then(([fo,fi,fc,ft,fs])=>{
+          if(fo&&Array.isArray(fo))setOrders(fo);
+          if(fi&&Array.isArray(fi))setItems(fi);
+          if(fc&&Array.isArray(fc))setCats(fc);
+          if(ft&&Array.isArray(ft))setTables(ft);
+          if(fs&&typeof fs==='object')setSettingsS(s=>Object.assign({},s,fs));
+        }).catch(()=>{});
+      }
+    }
+  },[]);
 
   // Hash default passwords on first boot — force rehash if upgrading from old prefix
   useEffect(()=>{
@@ -550,13 +921,13 @@ try {
     return()=>window.removeEventListener('beforeinstallprompt',h);
   },[]);
 
-  // Persist locally + sync to Firestore
-  useEffect(()=>{fbWrite('tables',tables);},[tables]);
-  useEffect(()=>{fbWrite('orders',orders);},[orders]);
-  useEffect(()=>{fbWrite('cats',cats);},[cats]);
-  useEffect(()=>{fbWrite('items',items);},[items]);
-  useEffect(()=>{fbWrite('staff',staff);},[staff]);
-  useEffect(()=>{fbWrite('settings',settings);},[settings]);
+  // Persist
+  useEffect(()=>{LS.s('tables',tables);if(FB.ready)FB.save('tables',tables);},[tables]);
+  useEffect(()=>{LS.s('orders',orders);if(FB.ready)FB.save('orders',orders);},[orders]);
+  useEffect(()=>{LS.s('cats',cats);if(FB.ready)FB.save('cats',cats);},[cats]);
+  useEffect(()=>{LS.s('items',items);if(FB.ready)FB.save('items',items);},[items]);
+  useEffect(()=>{LS.s('staff',staff);},[staff]);
+  useEffect(()=>{LS.s('settings',settings);if(FB.ready)FB.save('settings',settings);},[settings]);
   useEffect(()=>{
     LS.s('lang',lang);
     document.documentElement.lang=lang;
@@ -590,17 +961,34 @@ try {
   },[settings.kitchenSound]);
 
   const login=useCallback(async(username,pw)=>{
+    const uname=username.trim().toLowerCase();
+    // Check lockout
+    const lock=getLockout(uname);
+    if(lock&&lock.until>Date.now()){
+      const mins=Math.ceil((lock.until-Date.now())/60000);
+      return{locked:true,mins};
+    }
     const allStaff=LS.g('staff')||staff;
-    const s=allStaff.find(s=>s.username===username.trim().toLowerCase()&&s.active);
-    if(!s)return false;
+    const s=allStaff.find(s=>s.username===uname&&s.active);
+    if(!s){recordBadAttempt(uname);writeAudit('LOGIN_FAIL','Unknown user: '+uname,'—');return false;}
     const h=await hashPw(pw);
-    if(h!==s.hash)return false;
+    if(h!==s.hash){
+      const l=recordBadAttempt(uname);
+      writeAudit('LOGIN_FAIL','Bad password for '+uname+' (attempt '+l.attempts+')','—');
+      if(l.attempts>=LOCK_MAX)return{locked:true,mins:LOCK_MINS};
+      return{failed:true,attemptsLeft:LOCK_MAX-l.attempts};
+    }
+    clearLockout(uname);
     const exp=Date.now()+(settings.sessionTimeout||480)*60000;
     LS.s('session',{uid:s.id,exp});
-    setUser(s);return true;
+    writeAudit('LOGIN_OK','Role: '+s.role,uname);
+    setUser(s);return{ok:true};
   },[staff,settings.sessionTimeout]);
 
-  const logout=useCallback(()=>{LS.rm('session');setUser(null);},[]);
+  const logout=useCallback(()=>{
+    if(user)writeAudit('LOGOUT','Manual logout',user.username);
+    LS.rm('session');setUser(null);
+  },[user]);
 
   // Calc order total
   const calcTotal=useCallback((order)=>{
@@ -622,9 +1010,11 @@ try {
       createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
     setOrders(p=>[...p,order]);
     if(tableId)setTables(p=>p.map(tb=>tb.id===tableId?{...tb,status:'ordered',orderId:id}:tb));
+    writeAudit('ORDER_NEW','Table:'+tableNum+' Items:'+itemsList.length,user?.username);
     toast(t('orderSent'),'success');beep();
+    setTimeout(()=>printKitchenTicket(order,settings),100);
     return id;
-  },[t,toast,beep]);
+  },[t,toast,beep,settings,user]);
 
   const addItemsToOrder=useCallback((orderId,newItems,note)=>{
     setOrders(p=>p.map(o=>{
@@ -635,24 +1025,31 @@ try {
         const idx=merged.findIndex(m=>m.id+'_'+(m.selectedMods?JSON.stringify(m.selectedMods):'')===key);
         if(idx>=0){merged[idx]={...merged[idx],qty:merged[idx].qty+ni.qty};}else{merged.push({...ni});}
       });
-      return{...o,items:merged,note:note||o.note,updatedAt:new Date().toISOString(),status:'new'};
+      const updated={...o,items:merged,note:note||o.note,updatedAt:new Date().toISOString(),status:'new'};
+      setTimeout(()=>printKitchenTicket({...updated,items:newItems},settings),100);
+      return updated;
     }));
     toast('Items added to order','success');beep();
-  },[toast,beep]);
+  },[toast,beep,settings]);
 
   const updateOrder=useCallback((orderId,updates)=>{
     setOrders(p=>p.map(o=>{
       if(o.id!==orderId)return o;
       const upd={...o,...updates,updatedAt:new Date().toISOString()};
-      if(updates.status==='paid'||updates.status==='voided'){
+      if(updates.status==='paid'){
         setTables(tt=>tt.map(tb=>tb.id===o.tableId?{...tb,status:'available',orderId:null}:tb));
+        writeAudit('ORDER_PAID','Order:'+orderId+' Method:'+(updates.paymentMethod||'?'),user?.username);
+      }
+      if(updates.status==='voided'){
+        setTables(tt=>tt.map(tb=>tb.id===o.tableId?{...tb,status:'available',orderId:null}:tb));
+        writeAudit('ORDER_VOIDED','Order:'+orderId+' Reason:'+(updates.voidReason||'none'),user?.username);
       }
       if(updates.status==='billed'){
         setTables(tt=>tt.map(tb=>tb.id===o.tableId?{...tb,status:'bill'}:tb));
       }
       return upd;
     }));
-  },[]);
+  },[user]);
 
   const _confirmResolve=React.useRef(null);
   const[_confirmState,_setConfirmState]=useState({show:false,msg:''});
@@ -673,10 +1070,24 @@ try {
       staff,setStaff,settings,setSettings,
       toasts,toast,createOrder,addItemsToOrder,updateOrder,calcTotal,beep,confirm,
       pwaEvt,pwaInstall,theme,toggleTheme,
-      fbMode,fbConnected,tenant,trialDaysLeft,showPaywall,setShowPaywall
+      clientId,setClientId,fbReady,showClientSetup,setShowClientSetup,
+      license,licenseChecked,inactiveWarning,setInactiveWarning,resetInactivity,writeAudit
     }}>
       {children}
       <ToastContainer/>
+      {showClientSetup&&<ClientSetupModal onSave={setClientId}/>}
+      {inactiveWarning&&user&&(
+        <div className="overlay" style={{zIndex:9997}}>
+          <div className="modal" style={{maxWidth:340,textAlign:'center'}}>
+            <div style={{fontSize:40,marginBottom:12}}>⏱️</div>
+            <h3 style={{marginBottom:8}}>Session Expiring</h3>
+            <p style={{fontSize:13,color:'var(--t2)',marginBottom:20}}>You will be logged out in <strong style={{color:'var(--yellow)'}}>60 seconds</strong> due to inactivity.</p>
+            <button className="btn btn-primary btn-block btn-lg" onClick={()=>{setInactiveWarning(false);resetInactivity();}}>
+              <i className="fa fa-check"/> Stay Logged In
+            </button>
+          </div>
+        </div>
+      )}
       {_confirmState.show&&(
         <div className="overlay" style={{zIndex:9998}} onClick={function(e){if(e.target===e.currentTarget)_resolveConfirm(false);}}>
           <div className="modal" style={{maxWidth:360}}>
@@ -725,18 +1136,36 @@ function KitTimer({at}){
    LOGIN SCREEN
 ====================================================== */
 function LoginScreen(){
-  const{t,login,lang,setLang,pwaEvt,pwaInstall,ready,theme,toggleTheme}=useApp();
+  const{t,login,lang,setLang,pwaEvt,pwaInstall,ready,theme,toggleTheme,license}=useApp();
   const[u,setU]=useState('');const[p,setP]=useState('');
   const[err,setErr]=useState('');const[loading,setLoad]=useState(false);
+  const[lockMins,setLockMins]=useState(0);
+
+  // Update lockout countdown
+  useEffect(()=>{
+    if(!lockMins)return;
+    const t=setInterval(()=>{
+      const l=getLockout(u.trim().toLowerCase());
+      if(!l)setLockMins(0);
+      else setLockMins(Math.ceil((l.until-Date.now())/60000));
+    },5000);
+    return()=>clearInterval(t);
+  },[lockMins,u]);
+
   const go=async()=>{
     if(!u.trim()||!p.trim()){setErr('Please enter username and password');return;}
+    // Pre-check lockout
+    const lock=getLockout(u.trim().toLowerCase());
+    if(lock&&lock.until>Date.now()){setLockMins(Math.ceil((lock.until-Date.now())/60000));return;}
     setLoad(true);setErr('');
-    const ok=await login(u,p);
-    if(!ok)setErr(lang==='ar'?'اسم المستخدم أو كلمة المرور غير صحيحة':'Invalid username or password');
+    const result=await login(u,p);
+    if(!result)setErr(lang==='ar'?'اسم المستخدم أو كلمة المرور غير صحيحة':'Invalid username or password');
+    else if(result.locked){setLockMins(result.mins);setErr('');}
+    else if(result.failed){setErr('Wrong password. '+result.attemptsLeft+' attempt'+(result.attemptsLeft===1?'':'s')+' remaining before lockout.');}
     setLoad(false);
   };
   return(
-    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',padding:20,background:'var(--bg)'}}>
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100dvh',padding:20,background:'var(--bg)'}}>
       {/* top-right theme toggle */}
       <div style={{position:'absolute',top:14,right:14,display:'flex',gap:6}}>
         <button className="theme-tog" onClick={toggleTheme}>
@@ -768,8 +1197,13 @@ function LoginScreen(){
                 <label className="form-lbl">{t('password')}</label>
                 <input className="input" type="password" value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==='Enter'&&go()} placeholder="••••••••" autoComplete="current-password"/>
               </div>
-              {err&&<div style={{color:'var(--red)',fontSize:12,marginBottom:8,padding:'6px 10px',background:'var(--red-dim)',borderRadius:6}}>{err}</div>}
-              <button className="btn btn-primary btn-block btn-lg" onClick={go} disabled={loading||!u||!p}>
+              {lockMins>0&&(
+                <div style={{color:'var(--red)',fontSize:12,marginBottom:8,padding:'10px',background:'var(--red-dim)',borderRadius:6,textAlign:'center'}}>
+                  <i className="fa fa-lock"/> Account locked — try again in <strong>{lockMins} minute{lockMins===1?'':'s'}</strong>
+                </div>
+              )}
+              {!lockMins&&err&&<div style={{color:'var(--red)',fontSize:12,marginBottom:8,padding:'6px 10px',background:'var(--red-dim)',borderRadius:6}}>{err}</div>}
+              <button className="btn btn-primary btn-block btn-lg" onClick={go} disabled={loading||!u||!p||lockMins>0}>
                 {loading?<i className="fa fa-spinner" style={{animation:'spin 1s linear infinite'}}/>:<i className="fa fa-sign-in-alt"/>}
                 {' '}{t('login')}
               </button>
@@ -779,6 +1213,12 @@ function LoginScreen(){
         <div style={{display:'flex',justifyContent:'center',gap:8,marginTop:12}}>
           {pwaEvt&&<button className="btn btn-ghost btn-sm" onClick={pwaInstall}><i className="fa fa-download"/> {t('installApp')}</button>}
         </div>
+        {license&&license.trial&&license.valid&&(
+          <div style={{marginTop:10,padding:'8px 12px',background:'rgba(245,158,11,.12)',border:'1px solid rgba(245,158,11,.3)',borderRadius:8,fontSize:11,color:'var(--yellow)',textAlign:'center'}}>
+            ⏳ Trial — <strong>{license.daysLeft} day{license.daysLeft===1?'':'s'} remaining</strong>
+            {' · Contact your reseller to activate a full license.'}
+          </div>
+        )}
         <div style={{marginTop:14,padding:10,background:'var(--elevated)',borderRadius:8,fontSize:10,color:'var(--t3)',textAlign:'center',lineHeight:1.8}}>
           {t('loginHint')}:<br/>admin / admin123 · cashier / cash123<br/>waiter / wait123 · kitchen / kitchen123
         </div>
@@ -791,7 +1231,7 @@ function LoginScreen(){
    HEADER
 ====================================================== */
 function Header({screen,setScreen,allowed}){
-  const{t,user,logout,lang,setLang,settings,pwaEvt,pwaInstall,theme,toggleTheme,fbConnected,fbMode}=useApp();
+  const{t,user,logout,lang,setLang,settings,pwaEvt,pwaInstall,theme,toggleTheme}=useApp();
   const ic={dashboard:'fa-chart-pie',tables:'fa-border-all',orders:'fa-receipt',menu:'fa-utensils',kitchen:'fa-fire-flame-curved',reports:'fa-chart-bar',settings:'fa-cog'};
   return(
     <header className="nav-bar no-print">
@@ -804,19 +1244,13 @@ function Header({screen,setScreen,allowed}){
         ))}
       </div>
       <div style={{display:'flex',gap:6,alignItems:'center'}}>
-        {fbMode&&(
-          <div style={{display:'flex',alignItems:'center',gap:5,padding:'4px 9px',borderRadius:99,background:'var(--elevated)',border:'1px solid var(--border)',fontSize:11,fontWeight:600}}>
-            <span style={{width:7,height:7,borderRadius:'50%',background:fbConnected?'var(--green)':'var(--yellow)',boxShadow:fbConnected?'0 0 5px var(--green)':undefined,flexShrink:0}}/>
-            <span style={{color:'var(--t2)'}} className="hide-sm">{fbConnected?'Firebase ✓':'Syncing…'}</span>
-          </div>
-        )}
-        <button className="theme-tog" onClick={toggleTheme}>
-          {theme==='dark'?<><i className="fa fa-sun"/><span className="hide-sm"> Day</span></>:<><i className="fa fa-moon"/><span className="hide-sm"> Night</span></>}
+        <button className="theme-tog" onClick={toggleTheme} title={theme==='dark'?'Day mode':'Night mode'}>
+          {theme==='dark'?<><i className="fa fa-sun"/> <span className="hide-sm">Day</span></>:<><i className="fa fa-moon"/> <span className="hide-sm">Night</span></>}
         </button>
         <button className="btn btn-ghost btn-sm" style={{padding:'4px 9px',fontSize:11}} onClick={()=>setLang(lang==='ar'?'en':'ar')}>{lang==='ar'?'EN':'ع'}</button>
-        {pwaEvt&&<button className="btn btn-ghost btn-sm btn-icon hide-sm" onClick={pwaInstall}><i className="fa fa-download"/></button>}
+        {pwaEvt&&<button className="btn btn-ghost btn-sm btn-icon hide-sm" onClick={pwaInstall} title={t('installApp')}><i className="fa fa-download"/></button>}
         <span style={{fontSize:15}}>{user?.role==='admin'?'👨‍💼':user?.role==='cashier'?'💳':user?.role==='waiter'?'🧑‍🍳':'👨‍🍳'}</span>
-        <button className="btn btn-ghost btn-sm btn-icon" onClick={logout}><i className="fa fa-sign-out-alt"/></button>
+        <button className="btn btn-ghost btn-sm btn-icon" onClick={logout} title={t('logout')}><i className="fa fa-sign-out-alt"/></button>
       </div>
     </header>
   );
@@ -947,43 +1381,120 @@ function Dashboard(){
 }
 
 /* ======================================================
-   MODIFIER MODAL
+   MODIFIER MODAL  (with Global Extras)
 ====================================================== */
 function ModModal({item,lang,onConfirm,onClose}){
   const{settings}=useApp();
   const cur=(settings&&settings.currency)||'SAR';
-  const[sel,setSel]=useState({});const[itemNote,setNote]=useState('');
+  const globalExtras=(settings&&settings.globalExtras)||[];
+  const[sel,setSel]=useState({});
+  const[checkedExtras,setCheckedExtras]=useState({});
+  const[itemNote,setNote]=useState('');
   const groups=item.modifiers||[];
   const canConfirm=groups.filter(g=>g.required).every(g=>!!sel[g.id]);
-  const adj=groups.reduce((s,g)=>{const o=g.opts?.find(o=>o.id===sel[g.id]);return s+(o?.adj||0);},0);
+  const modAdj=groups.reduce((s,g)=>{const o=g.opts?.find(o=>o.id===sel[g.id]);return s+(o?.adj||0);},0);
+  const extraAdj=globalExtras.reduce((s,e)=>s+(checkedExtras[e.id]?Number(e.adj||0):0),0);
+  const totalAdj=modAdj+extraAdj;
+  const toggleExtra=id=>setCheckedExtras(p=>({...p,[id]:!p[id]}));
+  const extraLabels=globalExtras.filter(e=>checkedExtras[e.id]).map(e=>lang==='ar'?e.nameAr:e.name);
+  const finalNote=[itemNote,...extraLabels].filter(Boolean).join(' · ');
   return(
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="modal">
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-          <h3 style={{fontSize:15}}>{lang==='ar'?item.nameAr:item.name}</h3>
-          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}><i className="fa fa-times"/></button>
+      <div className="modal" style={{maxWidth:500}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
+          <div style={{flex:1,minWidth:0}}>
+            <h3 style={{fontSize:16,fontWeight:800,marginBottom:3}}>{lang==='ar'?item.nameAr:item.name}</h3>
+            <div style={{fontSize:12,color:'var(--t2)'}}>
+              {cur} {item.price.toFixed(2)}
+              {totalAdj>0&&<span style={{color:'var(--primary)'}}> + {cur} {totalAdj.toFixed(2)}</span>}
+            </div>
+          </div>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose} style={{flexShrink:0}}><i className="fa fa-times"/></button>
         </div>
-        {groups.map(g=>(
-          <div key={g.id} className="form-g">
-            <label className="form-lbl">{lang==='ar'?g.nameAr:g.name} {g.required&&<span style={{color:'var(--red)'}}>*</span>}</label>
+
+        {/* Item-specific modifiers */}
+        {groups.length>0&&groups.map(g=>(
+          <div key={g.id} style={{marginBottom:16}}>
+            <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+              <span style={{fontSize:11,fontWeight:700,color:'var(--t2)',textTransform:'uppercase',letterSpacing:'.06em'}}>{lang==='ar'?g.nameAr:g.name}</span>
+              {g.required&&<span style={{fontSize:9,fontWeight:700,color:'var(--red)',background:'var(--red-dim)',padding:'1px 6px',borderRadius:99}}>Required</span>}
+            </div>
             <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
-              {(g.opts||[]).map(o=>(
-                <button key={o.id} className={`chip${sel[g.id]===o.id?' active':''}`} onClick={()=>setSel(p=>({...p,[g.id]:o.id}))}>
-                  {lang==='ar'?o.nameAr||o.name:o.name}
-                  {o.adj>0&&<span style={{fontSize:10}}> +{o.adj}</span>}
-                </button>
-              ))}
+              {(g.opts||[]).map(o=>{
+                const active=sel[g.id]===o.id;
+                return(
+                  <button key={o.id} onClick={()=>setSel(p=>({...p,[g.id]:o.id}))}
+                    style={{padding:'8px 14px',borderRadius:8,border:`1.5px solid ${active?'var(--primary)':'var(--border)'}`,
+                      background:active?'var(--primary-dim)':'var(--elevated)',
+                      color:active?'var(--primary)':'var(--t2)',
+                      fontWeight:active?700:500,fontSize:13,cursor:'pointer',
+                      display:'flex',alignItems:'center',gap:6,transition:'all .15s'}}>
+                    <span style={{width:14,height:14,borderRadius:'50%',border:`2px solid ${active?'var(--primary)':'var(--t3)'}`,
+                      background:active?'var(--primary)':'transparent',flexShrink:0,
+                      display:'flex',alignItems:'center',justifyContent:'center'}}>
+                      {active&&<span style={{width:6,height:6,borderRadius:'50%',background:'var(--bg)'}}/>}
+                    </span>
+                    {lang==='ar'&&o.nameAr||o.name}
+                    {o.adj>0&&<span style={{fontSize:10,color:'var(--primary)'}}> +{cur} {o.adj}</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ))}
-        <div className="form-g">
-          <label className="form-lbl">Special instructions</label>
-          <input className="input" placeholder="e.g. no onions, well done…" value={itemNote} onChange={e=>setNote(e.target.value)}/>
+
+        {/* Global Extras */}
+        {globalExtras.length>0&&(
+          <div style={{marginBottom:16}}>
+            {groups.length>0&&<div style={{height:1,background:'var(--border)',margin:'4px 0 16px'}}/>}
+            <div style={{fontSize:11,fontWeight:700,color:'var(--t2)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:10}}>
+              {lang==='ar'?'إضافات وتخصيص':'Extras & Preferences'}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+              {globalExtras.map(e=>{
+                const checked=!!checkedExtras[e.id];
+                return(
+                  <button key={e.id} onClick={()=>toggleExtra(e.id)}
+                    style={{padding:'10px 12px',borderRadius:10,
+                      border:`1.5px solid ${checked?'var(--primary)':'var(--border)'}`,
+                      background:checked?'var(--primary-dim)':'var(--elevated)',
+                      cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:9,transition:'all .15s'}}>
+                    <span style={{width:18,height:18,borderRadius:5,flexShrink:0,
+                      border:`2px solid ${checked?'var(--primary)':'var(--t3)'}`,
+                      background:checked?'var(--primary)':'transparent',
+                      display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}}>
+                      {checked&&<i className="fa fa-check" style={{fontSize:9,color:'var(--bg)'}}/>}
+                    </span>
+                    <span style={{fontSize:14,flexShrink:0}}>{e.emoji}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,fontWeight:checked?700:500,color:checked?'var(--t1)':'var(--t2)',lineHeight:1.2}}>
+                        {lang==='ar'?e.nameAr:e.name}
+                      </div>
+                      {e.adj>0&&<div style={{fontSize:10,color:'var(--primary)',marginTop:2}}>+{cur} {Number(e.adj).toFixed(2)}</div>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Special instructions */}
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:700,color:'var(--t2)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:7}}>
+            {lang==='ar'?'ملاحظة خاصة':'Special Instructions'}
+          </div>
+          <textarea className="input" rows={2}
+            placeholder={lang==='ar'?'مثال: بدون ثوم، مطبوخ جيداً…':'e.g. no garlic, extra crispy…'}
+            value={itemNote} onChange={e=>setNote(e.target.value)}
+            style={{fontSize:13,resize:'none'}}/>
         </div>
-        <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:8}}>
-          <button className="btn btn-ghost" onClick={onClose}>{lang==='ar'?'إلغاء':'Cancel'}</button>
-          <button className="btn btn-primary" disabled={!canConfirm} onClick={()=>onConfirm({...item,selectedMods:sel,modAdj:adj,itemNote})}>
-            {lang==='ar'?'إضافة':'Add'} · {cur} {(item.price+adj).toFixed(2)}
+
+        <div style={{display:'flex',gap:8}}>
+          <button className="btn btn-ghost" style={{flex:1,justifyContent:'center'}} onClick={onClose}>{lang==='ar'?'إلغاء':'Cancel'}</button>
+          <button className="btn btn-primary btn-lg" style={{flex:2,justifyContent:'center'}} disabled={!canConfirm}
+            onClick={()=>onConfirm({...item,selectedMods:sel,modAdj:totalAdj,itemNote:finalNote})}>
+            <i className="fa fa-plus"/> {lang==='ar'?'إضافة':'Add'} · {cur} {(item.price+totalAdj).toFixed(2)}
           </button>
         </div>
       </div>
@@ -1012,8 +1523,7 @@ function OrderScreen({table,existingOrder,onBack}){
   };
   const tryAdd=item=>{
     if(!item.available)return;
-    if(item.modifiers?.length>0){setModItem(item);}
-    else insert({...item,selectedMods:{},modAdj:0,itemNote:''});
+    setModItem(item); // always show modal for global extras
   };
   const chQty=(k,d)=>setCart(p=>p.map(c=>cartKey(c)===k?{...c,qty:Math.max(0,c.qty+d)}:c).filter(c=>c.qty>0));
   const cartTotal=cart.reduce((s,c)=>s+(c.price+(c.modAdj||0))*c.qty,0);
@@ -1072,7 +1582,7 @@ function OrderScreen({table,existingOrder,onBack}){
               </div>
             </div>
           )}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:9}}>
+          <div className="m-grid-2" style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:9}}>
             {filtered.map(item=>(
               <div key={item.id} className={`m-card${!item.available?' unavailable':''}${cart.some(c=>c.id===item.id)?' incart':''}`} onClick={()=>tryAdd(item)}>
                 {item.imageData?<img src={item.imageData} className="m-img" alt=""/>:item.imageUrl?<img src={item.imageUrl} className="m-img" alt=""/>:<div className="m-emoji">{item.emoji}</div>}
@@ -1103,7 +1613,7 @@ function OrderScreen({table,existingOrder,onBack}){
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:11,fontWeight:600,lineHeight:1.3}}>{lang==='ar'?c.nameAr:c.name}</div>
                   {c.modAdj>0&&<div style={{fontSize:10,color:'var(--t3)'}}>+{c.modAdj} options</div>}
-                  {c.itemNote&&<div style={{fontSize:9,color:'var(--t3)',marginTop:1}}>📝 {c.itemNote}</div>}
+                  {c.itemNote&&<div style={{fontSize:10,color:'var(--primary)',marginTop:1,opacity:.85}}>📝 {c.itemNote}</div>}
                   <div style={{fontSize:11,color:'var(--primary)',fontWeight:700}}>{cur} {((c.price+(c.modAdj||0))*c.qty).toFixed(2)}</div>
                 </div>
                 <div style={{display:'flex',gap:3,alignItems:'center',flexShrink:0}}>
@@ -2095,10 +2605,88 @@ function MenuManagement(){
 }
 
 /* ======================================================
+   LICENSE STATUS CARD
+======================================================*/
+function LicenseStatusCard(){
+  const{license}=useApp();
+  if(!license)return null;
+  const col=license.valid?(license.trial?'var(--yellow)':'var(--green)'):'var(--red)';
+  const icon=license.valid?(license.trial?'fa-clock':'fa-check-circle'):'fa-times-circle';
+  return(
+    <div style={{padding:'10px 14px',background:'var(--elevated)',borderRadius:10,display:'flex',gap:10,alignItems:'center',marginBottom:14}}>
+      <i className={`fa ${icon}`} style={{color:col,fontSize:18}}/>
+      <div style={{flex:1}}>
+        <div style={{fontWeight:700,fontSize:13,color:col}}>
+          {license.valid?(license.trial?'Trial Mode':'Licensed — '+((license.payload&&license.payload.p)||'').toUpperCase()):'License Invalid'}
+        </div>
+        <div style={{fontSize:11,color:'var(--t2)',marginTop:2}}>
+          {license.valid
+            ?<>{license.daysLeft} days remaining{license.payload&&license.payload.e?' · '+license.payload.e:''}{license.payload&&license.payload.m?' · '+license.payload.m:''}</>
+            :license.reason
+          }
+        </div>
+      </div>
+      {!license.valid&&(
+        <button className="btn btn-warning btn-sm" onClick={()=>{
+          const k=prompt('Enter your license key:');
+          if(k){localStorage.setItem('ordo_license_key',k.trim().toUpperCase());window.location.reload();}
+        }}>Activate</button>
+      )}
+    </div>
+  );
+}
+
+/* ======================================================
+   AUDIT LOG VIEWER
+======================================================*/
+function AuditLogViewer(){
+  const[logs,setLogs]=useState([]);
+  const[open,setOpen]=useState(false);
+  useEffect(()=>{
+    if(!open)return;
+    try{
+      const raw=localStorage.getItem(nsKey('audit_log'));
+      setLogs(JSON.parse(raw||'[]'));
+    }catch{setLogs([]);}
+  },[open]);
+  const colors={LOGIN_OK:'var(--green)',LOGIN_FAIL:'var(--red)',AUTO_LOGOUT:'var(--yellow)',
+    LOGOUT:'var(--t2)',ORDER_NEW:'var(--blue)',ORDER_PAID:'var(--green)',ORDER_VOIDED:'var(--red)',
+    LICENSE_OK:'var(--green)',LICENSE_FAIL:'var(--red)',LICENSE_GENERATED:'var(--purple)'};
+  return(
+    <div style={{marginTop:16}}>
+      <div className="row-between" style={{marginBottom:10}}>
+        <span className="section-hdr" style={{margin:0}}>📋 Audit Log</span>
+        <button className="btn btn-ghost btn-sm" onClick={()=>setOpen(o=>!o)}>
+          <i className={`fa fa-chevron-${open?'up':'down'}`}/> {open?'Hide':'Show'}
+        </button>
+      </div>
+      {open&&(
+        <div className="card" style={{padding:0,maxHeight:320,overflowY:'auto'}}>
+          {!logs.length&&<div style={{padding:20,textAlign:'center',color:'var(--t3)',fontSize:12}}>No audit records yet</div>}
+          {logs.map((l,i)=>(
+            <div key={l.id||i} style={{display:'flex',gap:8,padding:'8px 12px',borderBottom:'1px solid var(--border)',alignItems:'flex-start',fontSize:11}}>
+              <div style={{width:10,height:10,borderRadius:'50%',background:colors[l.action]||'var(--t3)',marginTop:2,flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,color:'var(--t1)'}}>{l.action}</div>
+                <div style={{color:'var(--t2)',marginTop:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.detail}</div>
+              </div>
+              <div style={{flexShrink:0,textAlign:'right'}}>
+                <div style={{color:'var(--t3)'}}>{l.user}</div>
+                <div style={{color:'var(--t3)'}}>{new Date(l.at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ======================================================
    SETTINGS
 ====================================================== */
 function Settings(){
-  const{t,lang,settings,setSettings,staff,setStaff,tables,setTables,toast,logout,confirm}=useApp();
+  const{t,lang,settings,setSettings,staff,setStaff,tables,setTables,toast,logout,confirm,clientId,fbReady,setShowClientSetup}=useApp();
   const[tab,setTab]=useState('restaurant');
   const[staffModal,setStaffModal]=useState(false);
   const[editStaff,setEditStaff]=useState(null);
@@ -2145,7 +2733,7 @@ function Settings(){
   return(
     <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
       <div style={{padding:'8px 12px',borderBottom:'1px solid var(--border)',display:'flex',gap:5,flexShrink:0,overflowX:'auto'}}>
-        {[['restaurant','🏪 Restaurant'],['security','🔐 Security'],['staff','👥 Staff'],['tables','🪑 Tables'],['data','💾 Data']].map(([k,l])=>(
+        {[['restaurant','🏪 Restaurant'],['security','🔐 Security'],['staff','👥 Staff'],['tables','🪑 Tables'],['printers','🖨️ Printers'],['cloud','☁️ Cloud'],['license','🔑 License'],['data','💾 Data']].map(([k,l])=>(
           <button key={k} className={`chip${tab===k?' active':''}`} style={{fontSize:11,whiteSpace:'nowrap'}} onClick={()=>setTab(k)}>{l}</button>
         ))}
       </div>
@@ -2178,6 +2766,52 @@ function Settings(){
               <Tog k="enableTips" label="Enable Tips"/>
               <Tog k="enableDelivery" label="Enable Delivery Orders"/>
             </div>
+
+            <div className="section-hdr" style={{marginTop:16}}>🧂 Global Extras & Preferences</div>
+            <div className="card">
+              <div style={{fontSize:12,color:'var(--t2)',marginBottom:12,lineHeight:1.6}}>
+                These appear as <strong style={{color:'var(--t1)'}}>checkboxes</strong> on every item when ordering —
+                spicy level, extra sauce, no onion, etc. Customers and waiters can tick any combination.
+              </div>
+              {(settings.globalExtras||[]).map((e,idx)=>(
+                <div key={e.id} style={{display:'grid',gridTemplateColumns:'40px 1fr 1fr 70px 36px',gap:6,alignItems:'center',marginBottom:8}}>
+                  <input className="input" value={e.emoji}
+                    onChange={ev=>setSettings({globalExtras:(settings.globalExtras||[]).map((x,i)=>i===idx?{...x,emoji:ev.target.value}:x)})}
+                    style={{padding:'7px 6px',textAlign:'center',fontSize:16}}/>
+                  <input className="input" value={e.name} placeholder="English"
+                    onChange={ev=>setSettings({globalExtras:(settings.globalExtras||[]).map((x,i)=>i===idx?{...x,name:ev.target.value}:x)})}
+                    style={{padding:'7px 10px',fontSize:12}}/>
+                  <input className="input" value={e.nameAr} placeholder="عربي" dir="rtl"
+                    onChange={ev=>setSettings({globalExtras:(settings.globalExtras||[]).map((x,i)=>i===idx?{...x,nameAr:ev.target.value}:x)})}
+                    style={{padding:'7px 10px',fontSize:12}}/>
+                  <input type="number" className="input" value={e.adj} min={0} placeholder="+price"
+                    onChange={ev=>setSettings({globalExtras:(settings.globalExtras||[]).map((x,i)=>i===idx?{...x,adj:+ev.target.value}:x)})}
+                    style={{padding:'7px 8px',fontSize:12}}/>
+                  <button className="btn btn-danger btn-icon btn-sm"
+                    onClick={()=>setSettings({globalExtras:(settings.globalExtras||[]).filter((_,i)=>i!==idx)})}>
+                    <i className="fa fa-trash" style={{fontSize:11}}/>
+                  </button>
+                </div>
+              ))}
+              <div style={{fontSize:10,color:'var(--t3)',marginBottom:10}}>Emoji · Name (EN) · Name (AR) · Extra Price (+SAR)</div>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setSettings({globalExtras:[...(settings.globalExtras||[]),{id:'ge'+Date.now(),name:'',nameAr:'',adj:0,emoji:'✅'}]})}>
+                <i className="fa fa-plus"/> Add Extra Option
+              </button>
+            </div>
+            <div className="section-hdr">📋 Digital Menu</div>
+            <div className="card" style={{marginBottom:12,background:'linear-gradient(135deg,rgba(251,191,36,.06),rgba(251,191,36,.02))',border:'1px solid rgba(251,191,36,.2)'}}>
+              <div style={{display:'flex',gap:14,alignItems:'center'}}>
+                <div style={{fontSize:38}}>📱</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:14,marginBottom:3}}>Share Menu via QR</div>
+                  <div style={{fontSize:12,color:'var(--t2)',lineHeight:1.5}}>Generate a QR code for customers to scan and view your menu. View-only with Day & Night mode.</div>
+                </div>
+              </div>
+              <button className="btn btn-primary" style={{marginTop:12,width:'100%',justifyContent:'center'}} onClick={()=>setShowShareQR(true)}>
+                <i className="fa fa-qrcode"/> Generate Menu QR Code
+              </button>
+            </div>
+            {showShareQR&&<ShareMenuQR onClose={()=>setShowShareQR(false)}/>}
             <div className="section-hdr">🧾 Receipt</div>
             <div className="card" style={{marginBottom:12}}>
               <div className="form-g">
@@ -2217,7 +2851,9 @@ function Settings(){
               </div>
               <Tog k="kitchenSound" label={t('kitchenSound')}/>
             </div>
-            <div className="section-hdr">🔑 Change My Password</div>
+            <div className="section-hdr">📋 License Status</div>
+            <LicenseStatusCard/>
+            <div className="section-hdr" style={{marginTop:16}}>🔑 Change My Password</div>
             <div className="card">
               <div className="form-g"><label className="form-lbl">{t('currentPass')}</label><input className="input" type="password" value={passForm.cur} onChange={e=>setPassForm(p=>({...p,cur:e.target.value}))}/></div>
               <div className="form-g"><label className="form-lbl">{t('newPass')}</label><input className="input" type="password" value={passForm.nw} onChange={e=>setPassForm(p=>({...p,nw:e.target.value}))}/></div>
@@ -2323,9 +2959,125 @@ function Settings(){
           </div>
         )}
 
+        {/* Printers */}
+        {tab==='printers'&&(
+          <div>
+            <div className="section-hdr">🖨️ Kitchen Printer</div>
+            <div className="card" style={{marginBottom:12}}>
+              <Tog k="autoPrintKitchen" label="Auto-print kitchen ticket when order is sent"/>
+              <div className="form-g" style={{marginTop:12}}>
+                <label className="form-lbl">Kitchen Ticket Copies</label>
+                <div style={{display:'flex',gap:6}}>
+                  {[1,2,3].map(n=>(
+                    <button key={n} className={`chip${(settings.kitchenPrintCopies||1)===n?' active':''}`} onClick={()=>setSettings({kitchenPrintCopies:n})}>{n}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="card" style={{marginBottom:12}}>
+              <div className="section-hdr">How Printing Works</div>
+              <div style={{fontSize:12,color:'var(--t2)',lineHeight:1.8}}>
+                <div>1. When a waiter sends an order, a kitchen ticket window opens and prints automatically.</div>
+                <div style={{marginTop:6}}>2. For <strong style={{color:'var(--t1)'}}>thermal printers (80mm)</strong>: Set your printer as default and select "No margins" in print settings.</div>
+                <div style={{marginTop:6}}>3. For <strong style={{color:'var(--t1)'}}>silent auto-print</strong> (no dialog): Install <a href="https://qz.io" target="_blank" style={{color:'var(--primary)'}}>QZ Tray</a> on the POS device.</div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="section-hdr">Test Print</div>
+              <p style={{fontSize:12,color:'var(--t2)',marginBottom:10}}>Print a sample kitchen ticket to test your printer setup.</p>
+              <button className="btn btn-ghost btn-sm" onClick={()=>{
+                printKitchenTicket({
+                  id:'ORD-TEST001',tableNum:'T1 (Test)',orderType:'dine-in',
+                  items:[
+                    {name:'Grilled Chicken',nameAr:'دجاج مشوي',qty:2,price:55,modAdj:0,selectedMods:{},itemNote:'Extra sauce'},
+                    {name:'Fresh Juice',nameAr:'عصير طازج',qty:1,price:20,modAdj:3,selectedMods:{},itemNote:''}
+                  ],
+                  note:'Test order — please ignore',waiterName:'Test Waiter',
+                  priority:'normal',createdAt:new Date().toISOString()
+                },{...settings,autoPrintKitchen:true},1);
+              }}>
+                <i className="fa fa-print"/> Print Test Ticket
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* License */}
+        {tab==='license'&&(
+          <div>
+            {user.role==='admin'?<LicenseGenerator/>:(
+              <div style={{textAlign:'center',padding:40,color:'var(--t3)'}}>Admin access required</div>
+            )}
+          </div>
+        )}
+
+        {/* Cloud Sync */}
+        {tab==='cloud'&&(
+          <div>
+            <div className="section-hdr">☁️ Firebase Cloud Sync</div>
+            <div className="card" style={{marginBottom:12}}>
+              <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:12}}>
+                <div style={{width:10,height:10,borderRadius:'50%',background:fbReady?'var(--green)':'var(--t3)',boxShadow:fbReady?'0 0 6px var(--green)':'none'}}/>
+                <span style={{fontSize:13,fontWeight:600,color:fbReady?'var(--green)':'var(--t2)'}}>
+                  {fbReady?'Connected to Firebase':'Not connected'}
+                </span>
+              </div>
+              <div style={{fontSize:12,color:'var(--t2)',marginBottom:14,lineHeight:1.7}}>
+                Add your Firebase config below to enable real-time cloud sync. Your data stays in <strong style={{color:'var(--t1)'}}>your own Firebase project</strong> — Ordo never sees it.
+              </div>
+              {[
+                ['firebaseApiKey','API Key','AIzaSy…'],
+                ['firebaseProjectId','Project ID','my-project-12345'],
+                ['firebaseAppId','App ID (optional)','1:123…web:abc']
+              ].map(([k,l,ph])=>(
+                <div key={k} className="form-g">
+                  <label className="form-lbl">{l}</label>
+                  <input className="input" value={settings[k]||''} onChange={e=>setSettings({[k]:e.target.value})} placeholder={ph} style={{fontFamily:'monospace',fontSize:12}}/>
+                </div>
+              ))}
+              <button className="btn btn-primary btn-sm" onClick={()=>{
+                const ok=FB.init({apiKey:settings.firebaseApiKey,projectId:settings.firebaseProjectId,appId:settings.firebaseAppId||''},getCID());
+                if(ok){toast('Firebase connected!','success');}
+                else{toast('Firebase init failed — check your config','error');}
+              }}>
+                <i className="fa fa-plug"/> Connect Firebase
+              </button>
+            </div>
+            <div className="card" style={{marginBottom:12}}>
+              <div className="section-hdr">How to set up Firebase (free)</div>
+              <ol style={{fontSize:12,color:'var(--t2)',lineHeight:2,paddingLeft:16}}>
+                <li>Go to <a href="https://console.firebase.google.com" target="_blank" style={{color:'var(--primary)'}}>console.firebase.google.com</a></li>
+                <li>Create a new project (free Spark plan)</li>
+                <li>Add a Web App and copy the config</li>
+                <li>Go to Firestore Database → Create database</li>
+                <li>Paste the API Key and Project ID above</li>
+              </ol>
+            </div>
+            <div className="card">
+              <div className="section-hdr">Your Client ID</div>
+              <div style={{fontSize:13,padding:'8px 12px',background:'var(--elevated)',borderRadius:8,fontFamily:'monospace',fontWeight:700,color:'var(--primary)',letterSpacing:1,marginBottom:8}}>
+                {clientId||'(not set)'}
+              </div>
+              <div style={{fontSize:11,color:'var(--t2)'}}>This is your cloud folder. All data is stored under <code>ordo_clients/{clientId}</code> in Firestore.</div>
+            </div>
+          </div>
+        )}
+
         {/* Data */}
         {tab==='data'&&(
           <div>
+            <div className="section-hdr">🏪 Client Identity</div>
+            <div className="card" style={{marginBottom:12}}>
+              <div style={{fontSize:12,color:'var(--t2)',marginBottom:10}}>Your current Client ID. Changing it will reload the app and use a fresh data namespace.</div>
+              <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                <div style={{flex:1,padding:'8px 12px',background:'var(--elevated)',borderRadius:8,fontFamily:'monospace',fontWeight:700,color:'var(--primary)',letterSpacing:1,fontSize:14}}>
+                  {clientId||'(not set)'}
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={()=>setShowClientSetup(true)}>
+                  <i className="fa fa-edit"/> Change
+                </button>
+              </div>
+            </div>
             <div className="section-hdr">💾 Data Management</div>
             <div className="card" style={{marginBottom:12}}>
               <p style={{fontSize:13,color:'var(--t2)',marginBottom:14}}>Export a full JSON backup of all orders, settings, and menu data.</p>
@@ -2334,14 +3086,6 @@ function Settings(){
                 const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
                 a.download=`ordo-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
               }}><i className="fa fa-download"/> {t('exportData')}</button>
-            </div>
-            <div className="card" style={{marginBottom:12,border:'1px solid rgba(59,130,246,.25)'}}>
-              <div className="section-hdr" style={{marginBottom:8}}>🔥 Firebase Connection</div>
-              <p style={{fontSize:13,color:'var(--t2)',marginBottom:12}}>Disconnect Firebase to re-enter a different config or switch to offline mode.</p>
-              <button className="btn btn-ghost" onClick={()=>{
-                localStorage.removeItem('fbConfig');
-                window.location.reload();
-              }}><i className="fa fa-unlink"/> Disconnect Firebase</button>
             </div>
             <div className="card" style={{border:'1px solid rgba(239,68,68,.3)'}}>
               <p style={{fontSize:13,color:'var(--t2)',marginBottom:14}}>⚠️ This will permanently delete ALL orders, settings, and menu data. This cannot be undone.</p>
@@ -2584,12 +3328,12 @@ function CustomerQR({tableNum}){
 
   const cartKey=c=>c.id+'|'+(c.selectedMods?JSON.stringify(c.selectedMods):'{}');
   const insert=item=>setCart(p=>{const k=cartKey(item);const ex=p.find(c=>cartKey(c)===k);return ex?p.map(c=>cartKey(c)===k?{...c,qty:c.qty+1}:c):[...p,{...item,qty:1}];});
-  const tryAdd=item=>{if(!item.available)return;if(item.modifiers?.length>0){setModItem(item);}else insert({...item,selectedMods:{},modAdj:0});};
+  const tryAdd=item=>{if(!item.available)return;setModItem(item);};
   const chQty=(k,d)=>setCart(p=>p.map(c=>cartKey(c)===k?{...c,qty:Math.max(0,c.qty+d)}:c).filter(c=>c.qty>0));
   const total=cart.reduce((s,c)=>s+(c.price+(c.modAdj||0))*c.qty,0);
 
   if(done)return(
-    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',padding:24,textAlign:'center'}}>
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100dvh',padding:24,textAlign:'center'}}>
       <div style={{fontSize:64,marginBottom:16}}>✅</div>
       <h2 style={{marginBottom:8}}>{lang==='ar'?'تم تقديم طلبك!':'Your order has been placed!'}</h2>
       <p style={{color:'var(--t2)',fontSize:14}}>{lang==='ar'?'سيتم تحضيره قريباً':'The kitchen has received your order'}</p>
@@ -2598,7 +3342,7 @@ function CustomerQR({tableNum}){
   );
 
   return(
-    <div style={{display:'flex',flexDirection:'column',height:'100vh'}}>
+    <div style={{display:'flex',flexDirection:'column',height:'100dvh'}}>
       {modItem&&<ModModal item={modItem} lang={lang} onConfirm={itm=>{insert(itm);setModItem(null);}} onClose={()=>setModItem(null)}/>}
       <div style={{padding:'12px 14px',background:'var(--surface)',borderBottom:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
         <div>
@@ -2612,7 +3356,7 @@ function CustomerQR({tableNum}){
         {cats.map(c=><button key={c.id} className={`chip${selCat===c.id?' active':''}`} onClick={()=>setSelCat(c.id)}>{c.emoji} {lang==='ar'?c.nameAr:c.name}</button>)}
       </div>
       <div className="scroll-y" style={{flex:1,padding:12,paddingBottom:cart.length?150:20}}>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:10}}>
+        <div className="m-grid-2" style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(148px,1fr))',gap:10}}>
           {items.filter(i=>i.available&&(selCat===0||i.catId===selCat)).map(item=>(
             <div key={item.id} className={`m-card${cart.some(c=>c.id===item.id)?' incart':''}`} onClick={()=>tryAdd(item)}>
               {item.imageData||item.imageUrl?<img src={item.imageData||item.imageUrl} className="m-img" alt=""/>:<div className="m-emoji">{item.emoji}</div>}
@@ -2651,136 +3395,171 @@ function CustomerQR({tableNum}){
 }
 
 /* ======================================================
-   PAYWALL SCREEN
-====================================================== */
-function PaywallScreen(){
-  const{tenant,lang}=useApp();
-  const signOut=()=>{window.firebase.auth().signOut().then(()=>{window.location.href='register.html';});};
+   LICENSE SCREEN  (shown when license invalid/expired)
+======================================================*/
+function LicenseScreen({license}){
+  const[key,setKey]=useState('');
+  const[err,setErr]=useState(license.reason||'');
+  const[loading,setLoading]=useState(false);
+  const[success,setSuccess]=useState(false);
+
+  const activate=async()=>{
+    if(!key.trim()){setErr('Please enter a license key');return;}
+    setLoading(true);setErr('');
+    const result=await validateLicenseKey(key.trim());
+    if(result.valid){
+      localStorage.setItem('ordo_license_key',key.trim().toUpperCase());
+      setSuccess(true);
+      setTimeout(()=>window.location.reload(),1200);
+    }else{
+      setErr(result.reason||'Invalid key');
+    }
+    setLoading(false);
+  };
+
   return(
-    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',padding:24,background:'var(--bg)',textAlign:'center'}}>
-      <div style={{fontSize:52,marginBottom:16}}>⏰</div>
-      <h2 style={{fontSize:24,fontWeight:800,marginBottom:10,color:'var(--t1)'}}>
-        {lang==='ar'?'انتهت الفترة التجريبية':'Your free trial has ended'}
-      </h2>
-      <p style={{color:'var(--t2)',fontSize:14,maxWidth:400,lineHeight:1.7,marginBottom:32}}>
-        {lang==='ar'
-          ?`شكراً ${tenant?.restaurantName||''} — للاستمرار يرجى اختيار خطة مناسبة`
-          :`Thanks for trying Ordo, ${tenant?.restaurantName||''}! Choose a plan to keep your data and continue.`}
-      </p>
-      <div style={{display:'flex',flexDirection:'column',gap:12,width:'100%',maxWidth:340,marginBottom:24}}>
-        {[
-          {plan:'monthly',  label:'Monthly Plan',  price:'SAR 199 / month', note:'Cancel anytime'},
-          {plan:'annual',   label:'Annual Plan',   price:'SAR 149 / month', note:'Save 25% · billed yearly'},
-          {plan:'lifetime', label:'Lifetime License',price:'SAR 1,999 once',note:'Pay once, own forever'},
-        ].map(p=>(
-          <button key={p.plan} style={{padding:'14px 20px',borderRadius:10,border:'1px solid var(--border)',background:'var(--card)',cursor:'pointer',textAlign:'left',display:'flex',justifyContent:'space-between',alignItems:'center'}}
-            onClick={()=>alert('Redirect to payment gateway for plan: '+p.plan+'\nIntegrate Moyasar or Stripe here.')}>
-            <div>
-              <div style={{fontWeight:700,fontSize:14,color:'var(--t1)'}}>{p.label}</div>
-              <div style={{fontSize:12,color:'var(--t3)',marginTop:2}}>{p.note}</div>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:'var(--bg)',padding:20}}>
+      <div style={{width:'100%',maxWidth:400}}>
+        <div style={{textAlign:'center',marginBottom:24}}>
+          <div style={{fontSize:48,marginBottom:8}}>{license.expired?'⏰':'🔐'}</div>
+          <div style={{fontSize:20,fontWeight:800,color:'var(--t1)'}}>{license.expired?'License Expired':'Activation Required'}</div>
+          <div style={{fontSize:12,color:'var(--t2)',marginTop:6,lineHeight:1.6}}>{license.reason}</div>
+        </div>
+        {success?(
+          <div style={{textAlign:'center',padding:20,background:'var(--green-dim)',borderRadius:12,color:'var(--green)',fontWeight:700}}>
+            <i className="fa fa-check-circle" style={{fontSize:24,display:'block',marginBottom:8}}/>
+            License activated! Reloading…
+          </div>
+        ):(
+          <div className="card">
+            <div className="form-g">
+              <label className="form-lbl">License Key</label>
+              <input className="input" value={key} onChange={e=>setKey(e.target.value.toUpperCase())}
+                onKeyDown={e=>e.key==='Enter'&&activate()}
+                placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
+                style={{fontFamily:'monospace',letterSpacing:2,fontSize:13}}/>
             </div>
-            <div style={{fontWeight:700,color:'var(--primary)',fontSize:13,whiteSpace:'nowrap',marginLeft:12}}>{p.price}</div>
-          </button>
-        ))}
+            {err&&<div style={{color:'var(--red)',fontSize:12,padding:'6px 10px',background:'var(--red-dim)',borderRadius:6,marginBottom:10}}>{err}</div>}
+            <button className="btn btn-primary btn-block" onClick={activate} disabled={loading}>
+              {loading?<i className="fa fa-spinner" style={{animation:'spin 1s linear infinite'}}/>:<i className="fa fa-unlock"/>}
+              {' '}Activate License
+            </button>
+            <div style={{marginTop:14,fontSize:11,color:'var(--t3)',textAlign:'center',lineHeight:1.8}}>
+              Contact your Ordo POS reseller to purchase or renew.<br/>
+              Your Client ID: <strong style={{color:'var(--primary)',fontFamily:'monospace'}}>{getCID()||'(not set)'}</strong>
+            </div>
+          </div>
+        )}
       </div>
-      <button onClick={signOut} style={{fontSize:12,color:'var(--t3)',background:'none',border:'none',cursor:'pointer',textDecoration:'underline'}}>
-        Sign out
-      </button>
     </div>
   );
 }
 
 /* ======================================================
-   TRIAL BANNER
-====================================================== */
-function TrialBanner(){
-  const{trialDaysLeft,lang}=useApp();
-  const[hidden,setHidden]=useState(false);
-  if(hidden||trialDaysLeft===null||trialDaysLeft>14)return null;
-  const urgent=trialDaysLeft<=3;
-  return(
-    <div style={{background:urgent?'var(--red-dim)':'var(--primary-dim)',borderBottom:`1px solid ${urgent?'rgba(239,68,68,.25)':'rgba(251,191,36,.2)'}`,padding:'7px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:12,flexShrink:0}}>
-      <span style={{color:urgent?'var(--red)':'var(--primary)',fontWeight:600}}>
-        {urgent?'⚠️':'⏳'} {lang==='ar'
-          ?`${trialDaysLeft} أيام متبقية في فترتك التجريبية`
-          :`${trialDaysLeft} day${trialDaysLeft!==1?'s':''} left in your free trial`}
-      </span>
-      <div style={{display:'flex',gap:10,alignItems:'center'}}>
-        <button style={{fontSize:12,fontWeight:700,color:urgent?'var(--red)':'var(--primary)',background:'none',border:`1px solid currentColor`,borderRadius:6,padding:'3px 10px',cursor:'pointer'}}
-          onClick={()=>alert('Redirect to pricing/payment page')}>
-          Upgrade →
-        </button>
-        <button onClick={()=>setHidden(true)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--t3)',fontSize:16',lineHeight:1}}>×</button>
-      </div>
-    </div>
-  );
-}
+   LICENSE GENERATOR  (admin tool — Settings → License)
+======================================================*/
+function LicenseGenerator(){
+  const{toast}=useApp();
+  const[email,setEmail]=useState('');
+  const[phone,setPhone]=useState('');
+  const[plan,setPlan]=useState('basic');
+  const[days,setDays]=useState(365);
+  const[forClient,setForClient]=useState('*');
+  const[generatedKey,setGeneratedKey]=useState('');
+  const[loading,setLoading]=useState(false);
 
-
-function FirebaseSetup(){
-  const{setFbConfig,lang}=useApp();
-  const[raw,setRaw]=useState('');
-  const[err,setErr]=useState('');
-
-  const save=()=>{
-    setErr('');
-    try{
-      // Accept either a raw JS object string or JSON
-      const cleaned=raw
-        .replace(/^[\s\S]*?firebaseConfig\s*=\s*/,'')
-        .replace(/;?\s*$/,'')
-        .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g,'$1"$2":')
-        .replace(/'/g,'"');
-      const cfg=JSON.parse(cleaned);
-      if(!cfg.apiKey||!cfg.projectId){setErr('Missing apiKey or projectId');return;}
-      setFbConfig(cfg);
-    }catch(e){
-      setErr('Invalid config — please paste the full firebaseConfig object');
-    }
+  const generate=async()=>{
+    if(!email&&!phone){toast('Enter email or phone','warning');return;}
+    setLoading(true);
+    const k=await generateLicenseKey({email,phone,plan,days,forClientId:forClient||'*'});
+    setGeneratedKey(k);
+    setLoading(false);
+    writeAudit('LICENSE_GENERATED','plan='+plan+' email='+email+' phone='+phone,'admin');
   };
 
+  const planColors={trial:'var(--yellow)',basic:'var(--blue)',pro:'var(--purple)',enterprise:'var(--green)'};
+
   return(
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',padding:20,background:'var(--bg)'}}>
-      <div style={{width:'100%',maxWidth:480}}>
-        <div style={{textAlign:'center',marginBottom:24}}>
-          <div style={{fontSize:44,marginBottom:8}}>🔥</div>
-          <div style={{fontSize:20,fontWeight:800,color:'var(--primary)'}}>Connect to Firebase</div>
-          <div style={{fontSize:12,color:'var(--t2)',marginTop:6,lineHeight:1.6}}>
-            Paste your Firebase config to enable real-time sync across all devices
+    <div>
+      <div className="section-hdr">🔑 Generate License Key</div>
+      <div className="card" style={{marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          <div className="form-g" style={{marginBottom:0}}>
+            <label className="form-lbl">Client Email</label>
+            <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="client@email.com"/>
+          </div>
+          <div className="form-g" style={{marginBottom:0}}>
+            <label className="form-lbl">Mobile Number</label>
+            <input className="input" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+966 5X XXX XXXX"/>
           </div>
         </div>
-        <div className="card" style={{padding:20,marginBottom:14}}>
-          <div className="form-g">
-            <label className="form-lbl">Firebase Config</label>
-            <textarea
-              className="input"
-              rows={8}
-              style={{fontFamily:'monospace',fontSize:11,lineHeight:1.5}}
-              placeholder={`const firebaseConfig = {\n  apiKey: "AIza...",\n  authDomain: "your-app.firebaseapp.com",\n  projectId: "your-app",\n  storageBucket: "...",\n  messagingSenderId: "...",\n  appId: "..."\n};`}
-              value={raw}
-              onChange={e=>setRaw(e.target.value)}
-            />
+        <div className="form-g" style={{marginTop:10}}>
+          <label className="form-lbl">Client ID Lock (leave * for any)</label>
+          <input className="input" value={forClient} onChange={e=>setForClient(e.target.value)} placeholder="* or specific-client-id" style={{fontFamily:'monospace'}}/>
+        </div>
+        <div className="form-g">
+          <label className="form-lbl">Plan</label>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {[['trial','Trial',30],['basic','Basic',365],['pro','Pro',365],['enterprise','Enterprise',730]].map(([k,l,d])=>(
+              <button key={k} className={`chip${plan===k?' active':''}`}
+                style={{fontSize:11,borderColor:plan===k?planColors[k]:'var(--border)',color:plan===k?'#0d0d14':planColors[k]}}
+                onClick={()=>{setPlan(k);setDays(d);}}>
+                {l}
+              </button>
+            ))}
           </div>
-          {err&&<div style={{color:'var(--red)',fontSize:12,padding:'6px 10px',background:'var(--red-dim)',borderRadius:6,marginBottom:8}}>{err}</div>}
-          <button className="btn btn-primary btn-block" onClick={save} disabled={!raw.trim()}>
-            <i className="fa fa-plug"/> Connect Firebase
-          </button>
         </div>
-        <div style={{fontSize:11,color:'var(--t3)',lineHeight:1.7,padding:'10px 14px',background:'var(--elevated)',borderRadius:10}}>
-          <strong style={{color:'var(--t2)'}}>How to get your config:</strong><br/>
-          1. Go to console.firebase.google.com<br/>
-          2. Your project → Project Settings → Your apps<br/>
-          3. Click ⋮ → SDK setup → Copy firebaseConfig<br/>
-          4. Paste above and click Connect
+        <div className="form-g" style={{marginBottom:12}}>
+          <label className="form-lbl">Duration (days)</label>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {[30,90,180,365,730].map(d=>(
+              <button key={d} className={`chip${days===d?' active':''}`} style={{fontSize:11}} onClick={()=>setDays(d)}>{d}d</button>
+            ))}
+            <input type="number" className="input" style={{width:80,padding:'5px 8px'}} value={days} onChange={e=>setDays(Math.max(1,+e.target.value))} min={1}/>
+          </div>
         </div>
+        <div style={{padding:'8px 12px',background:'var(--elevated)',borderRadius:8,fontSize:11,color:'var(--t2)',marginBottom:12}}>
+          Expires: <strong style={{color:'var(--t1)'}}>{new Date(Date.now()+days*864e5).toLocaleDateString()}</strong>
+          {' · '}Plan: <strong style={{color:planColors[plan]}}>{plan.toUpperCase()}</strong>
+          {forClient!=='*'&&<><br/>Locked to client: <strong style={{color:'var(--primary)',fontFamily:'monospace'}}>{forClient}</strong></>}
+        </div>
+        <button className="btn btn-primary btn-block" onClick={generate} disabled={loading}>
+          {loading?<i className="fa fa-spinner" style={{animation:'spin 1s linear infinite'}}/>:<i className="fa fa-key"/>}
+          {' '}Generate License Key
+        </button>
       </div>
+
+      {generatedKey&&(
+        <div className="card">
+          <div style={{fontSize:11,color:'var(--t2)',marginBottom:8}}>✅ Generated Key — copy and send to client:</div>
+          <div style={{padding:'12px 14px',background:'var(--elevated)',borderRadius:8,fontFamily:'monospace',fontSize:13,fontWeight:700,letterSpacing:1.5,wordBreak:'break-all',color:'var(--primary)',marginBottom:10}}>
+            {generatedKey}
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-ghost btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>{
+              navigator.clipboard.writeText(generatedKey).catch(()=>{});
+              toast('Copied!','success');
+            }}><i className="fa fa-copy"/> Copy Key</button>
+            <button className="btn btn-ghost btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>{
+              const body=`Your Ordo POS License Key:\n\n${generatedKey}\n\nPlan: ${plan.toUpperCase()}\nExpires: ${new Date(Date.now()+days*864e5).toLocaleDateString()}\n\nTo activate: open the app → enter this key when prompted.`;
+              window.open('mailto:'+email+'?subject=Your Ordo POS License&body='+encodeURIComponent(body));
+            }}><i className="fa fa-envelope"/> Email</button>
+            <button className="btn btn-ghost btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>{
+              const msg=`Ordo POS License:\n${generatedKey}\nPlan: ${plan.toUpperCase()} | Expires: ${new Date(Date.now()+days*864e5).toLocaleDateString()}`;
+              window.open('https://wa.me/'+phone.replace(/[^0-9]/g,'')+'?text='+encodeURIComponent(msg));
+            }}><i className="fa fa-whatsapp"/> WhatsApp</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-
+/* ======================================================
+   MAIN APP
+====================================================== */
 function MainApp(){
-  const{user,showPaywall,ready}=useApp();
+  const{user}=useApp();
   const[screen,setScreen]=useState('tables');
   const[qrTable,setQrTable]=useState(null);
   const[menuView,setMenuView]=useState(false);
@@ -2805,21 +3584,19 @@ function MainApp(){
     if(role&&!allowed.includes(screen))setScreen(allowed[0]);
   },[role]);
 
-  if(menuView)return<MenuViewOnly/>;
-  if(qrTable)return<CustomerQR tableNum={qrTable}/>;
+  const{licenseChecked,license}=useApp();
 
-  // Show loading while Firebase Auth resolves
-  if(!ready)return(
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',flexDirection:'column',gap:14,background:'var(--bg)'}}>
-      <div style={{fontSize:36,fontWeight:900,letterSpacing:'-2px',background:'linear-gradient(135deg,var(--primary),#fb923c)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Ordo</div>
-      <div style={{fontSize:12,color:'var(--t3)'}}>Loading your restaurant…</div>
+  if(!licenseChecked)return(
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',flexDirection:'column',gap:12,background:'var(--bg)'}}>
+      <i className="fa fa-spinner" style={{fontSize:28,animation:'spin 1s linear infinite',color:'var(--primary)'}}/>
+      <div style={{fontSize:13,color:'var(--t2)'}}>Verifying license…</div>
     </div>
   );
 
-  // Trial expired / unpaid
-  if(showPaywall)return<PaywallScreen/>;
+  if(license&&!license.valid)return<LicenseScreen license={license}/>;
 
-  // Staff login (within tenant)
+  if(menuView)return<MenuViewOnly/>;
+  if(qrTable)return<CustomerQR tableNum={qrTable}/>;
   if(!user)return<LoginScreen/>;
 
   const panels={
@@ -2833,8 +3610,7 @@ function MainApp(){
   };
 
   return(
-    <div style={{display:'flex',flexDirection:'column',height:'100vh',overflow:'hidden'}}>
-      <TrialBanner/>
+    <div style={{display:'flex',flexDirection:'column',height:'100dvh',overflow:'hidden'}}>
       <Header screen={screen} setScreen={setScreen} allowed={allowed}/>
       <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>{panels[screen]||panels[allowed[0]]}</div>
       <BotNav screen={screen} setScreen={setScreen} allowed={allowed}/>
@@ -2852,6 +3628,35 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   });
 }
+</script>
+
+<script>
+/* ── Safe-area / browser-toolbar detector ──────────────────
+   Measures the gap between the visual viewport and the layout
+   viewport — that gap IS the browser toolbar or system nav bar.
+   Writes it into --extra-bot so all CSS picks it up.          */
+(function(){
+  var root=document.documentElement;
+  function update(){
+    var gap=0;
+    if(window.visualViewport){
+      gap=Math.max(0,
+        window.innerHeight
+        - window.visualViewport.height
+        - window.visualViewport.offsetTop
+      );
+    }
+    root.style.setProperty('--extra-bot', Math.ceil(gap)+'px');
+  }
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',update);
+    window.visualViewport.addEventListener('scroll',update);
+  }
+  window.addEventListener('resize',update);
+  update();
+  setTimeout(update,300);
+  setTimeout(update,800);
+})();
 </script>
 </body>
 </html>
