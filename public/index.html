@@ -1,111 +1,299 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="theme-color" content="#0d0d14"/>
-<title>Ordo POS</title>
-<link rel="manifest" href="manifest.json"/>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<!-- Firebase (loaded only when cloud sync is configured) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ordo POS — Restaurant Management Built for Speed</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
+*{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --bg:#0d0d14;--surface:#13131f;--card:#1a1a2e;--elevated:#1f1f35;
-  --border:rgba(255,255,255,0.07);
-  --primary:#fbbf24;--primary-dim:rgba(251,191,36,0.12);--primary-dark:#d97706;
-  --red:#ef4444;--red-dim:rgba(239,68,68,0.12);
-  --green:#10b981;--green-dim:rgba(16,185,129,0.12);
-  --yellow:#f59e0b;--yellow-dim:rgba(245,158,11,0.12);
-  --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.12);
-  --purple:#8b5cf6;--orange:#f97316;
-  --t1:#f1f1f8;--t2:#9898b0;--t3:#5a5a72;
-  --r:14px;--rs:8px;--rl:20px;
-  --nav:60px;--bot:62px;
+  --ink:#0a0a0f;--ink2:#1a1a24;--ink3:#2a2a38;
+  --gold:#c9a84c;--gold2:#e8c97a;--gold-dim:rgba(201,168,76,.12);
+  --cream:#f5f0e8;--cream2:#ede6d6;
+  --t1:#f5f0e8;--t2:#9a9080;--t3:#5a5448;
+  --border:rgba(201,168,76,.15);
+  --r:12px;
 }
-/* ======================================================
-   PAYMENT SCREEN RESPONSIVE FIXES
-   ====================================================== */
+html{scroll-behavior:smooth;}
+body{background:var(--ink);color:var(--t1);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;overflow-x:hidden;}
 
-/* Payment screen - desktop default */
-.payment-screen {
-  display: flex;
-  height: 100%;
-  overflow: hidden;
-}
+/* ── Noise texture overlay ── */
+body::before{content:'';position:fixed;inset:0;opacity:.035;pointer-events:none;z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");}
 
-/* Left panel - table list */
-.payment-left {
-  width: 280px;
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: var(--surface);
-}
+/* ── Nav ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 6%;display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(to bottom,rgba(10,10,15,.95),transparent);backdrop-filter:blur(12px);}
+.nav-logo{font-family:'Instrument Serif',serif;font-size:22px;color:var(--gold2);letter-spacing:-.5px;}
+.nav-logo span{font-size:11px;font-family:'DM Sans',sans-serif;color:var(--t2);letter-spacing:2px;text-transform:uppercase;display:block;margin-top:-4px;}
+.nav-links{display:flex;gap:28px;align-items:center;}
+.nav-links a{color:var(--t2);text-decoration:none;font-size:13px;font-weight:500;transition:.2s;letter-spacing:.3px;}
+.nav-links a:hover{color:var(--t1);}
+.nav-cta{background:var(--gold);color:var(--ink);padding:9px 20px;border-radius:6px;font-weight:600;font-size:13px;text-decoration:none;transition:.2s;}
+.nav-cta:hover{background:var(--gold2);transform:translateY(-1px);}
 
-/* Right panel - payment form */
-.payment-right {
-  flex: 1;
-  overflow: auto;
-  padding: 16px;
-  min-width: 0;
-}
+/* ── Hero ── */
+.hero{min-height:100vh;display:flex;align-items:center;padding:120px 6% 80px;position:relative;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;background:
+  radial-gradient(ellipse 80% 60% at 50% 0%,rgba(201,168,76,.08) 0%,transparent 70%),
+  radial-gradient(ellipse 40% 40% at 80% 60%,rgba(201,168,76,.05) 0%,transparent 60%),
+  linear-gradient(180deg,var(--ink) 0%,#0d0d16 100%);}
+.hero-grid{position:absolute;inset:0;opacity:.04;
+  background-image:linear-gradient(var(--gold) 1px,transparent 1px),linear-gradient(90deg,var(--gold) 1px,transparent 1px);
+  background-size:60px 60px;}
+.hero-content{position:relative;max-width:680px;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border:1px solid var(--border);border-radius:99px;font-size:11px;color:var(--gold);font-weight:500;letter-spacing:.5px;text-transform:uppercase;margin-bottom:28px;background:var(--gold-dim);}
+.hero-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold);}
+h1{font-family:'Instrument Serif',serif;font-size:clamp(48px,7vw,82px);line-height:1.05;letter-spacing:-2px;color:var(--cream);margin-bottom:22px;}
+h1 em{font-style:italic;color:var(--gold2);}
+.hero-sub{font-size:17px;color:var(--t2);max-width:480px;line-height:1.7;margin-bottom:38px;font-weight:300;}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+.btn-primary{background:var(--gold);color:var(--ink);padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:.2s;letter-spacing:.2px;}
+.btn-primary:hover{background:var(--gold2);transform:translateY(-2px);box-shadow:0 8px 30px rgba(201,168,76,.3);}
+.btn-secondary{color:var(--t2);padding:14px 24px;border-radius:8px;font-weight:500;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:.2s;border:1px solid var(--border);}
+.btn-secondary:hover{color:var(--t1);border-color:var(--gold);}
+.hero-trial{font-size:12px;color:var(--t3);margin-top:14px;}
+.hero-trial strong{color:var(--gold);}
 
-/* Payment card container */
-.payment-card {
-  max-width: 540px;
-  margin: 0 auto;
-}
+/* ── Floating app preview ── */
+.hero-visual{position:absolute;right:-2%;top:50%;transform:translateY(-50%);width:48%;max-width:600px;opacity:.85;}
+.app-frame{background:var(--ink2);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,.8),0 0 0 1px rgba(201,168,76,.08);transform:perspective(1200px) rotateY(-8deg) rotateX(3deg);}
+.app-topbar{background:#13131f;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:8px;}
+.dot{width:10px;height:10px;border-radius:50%;}
+.app-body{padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.mini-card{background:var(--ink3);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:12px;aspect-ratio:1.2;}
+.mini-card.gold{border-color:rgba(201,168,76,.3);}
+.mini-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:8px;}
+.mini-bar.fill{background:var(--gold);width:65%;}
+.mini-bar.fill2{background:rgba(201,168,76,.4);width:40%;margin-top:4px;}
+.mini-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold);}
 
-/* Table item styles */
-.table-item {
-  transition: all 0.15s ease;
-  cursor: pointer;
-}
+/* ── Social proof ── */
+.proof{padding:40px 6%;border-top:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.01);}
+.proof-inner{display:flex;align-items:center;gap:40px;flex-wrap:wrap;justify-content:center;}
+.proof-stat{text-align:center;}
+.proof-num{font-family:'Instrument Serif',serif;font-size:32px;color:var(--gold2);}
+.proof-lbl{font-size:12px;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;}
+.proof-div{width:1px;height:40px;background:var(--border);}
 
-.table-item:hover {
-  background: var(--primary-dim);
-}
+/* ── Sections ── */
+section{padding:100px 6%;}
+.section-tag{font-size:11px;color:var(--gold);font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.section-tag::before{content:'';width:20px;height:1px;background:var(--gold);}
+h2{font-family:'Instrument Serif',serif;font-size:clamp(34px,5vw,54px);line-height:1.1;letter-spacing:-1.5px;color:var(--cream);margin-bottom:16px;}
+h2 em{font-style:italic;color:var(--gold2);}
+.section-sub{font-size:16px;color:var(--t2);max-width:520px;line-height:1.7;font-weight:300;}
 
-.table-item.active {
-  background: var(--primary-dim);
-  border-left: 3px solid var(--primary);
-}
+/* ── Features ── */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2px;margin-top:60px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.feat{padding:32px;background:var(--ink2);transition:.2s;border:1px solid transparent;}
+.feat:hover{background:var(--ink3);border-color:var(--border);}
+.feat-icon{font-size:28px;margin-bottom:16px;}
+.feat-title{font-weight:600;font-size:15px;color:var(--cream);margin-bottom:8px;}
+.feat-desc{font-size:13px;color:var(--t2);line-height:1.6;}
 
-.table-num {
-  font-weight: 700;
-  font-size: 15px;
-}
+/* ── How it works ── */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:40px;margin-top:60px;position:relative;}
+.steps::before{content:'';position:absolute;top:28px;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);}
+.step{text-align:center;}
+.step-num{width:56px;height:56px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-family:'Instrument Serif',serif;font-size:22px;color:var(--gold2);}
+.step-title{font-weight:600;color:var(--cream);margin-bottom:8px;}
+.step-desc{font-size:13px;color:var(--t2);line-height:1.6;}
 
-.order-amount {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--primary);
-}
+/* ── Pricing ── */
+.pricing{background:linear-gradient(180deg,var(--ink) 0%,var(--ink2) 50%,var(--ink) 100%);}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:60px;max-width:1100px;margin-left:auto;margin-right:auto;}
+.plan{background:var(--ink2);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative;transition:.3s;}
+.plan.featured{border-color:var(--gold);background:linear-gradient(135deg,var(--ink3),var(--ink2));box-shadow:0 0 60px rgba(201,168,76,.12);}
+.plan-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--ink);font-size:11px;font-weight:700;padding:4px 14px;border-radius:99px;letter-spacing:.5px;white-space:nowrap;}
+.plan-name{font-size:13px;font-weight:600;color:var(--t2);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;}
+.plan-price{font-family:'Instrument Serif',serif;font-size:52px;color:var(--cream);letter-spacing:-2px;line-height:1;}
+.plan-price sup{font-size:20px;font-family:'DM Sans',sans-serif;vertical-align:top;margin-top:10px;display:inline-block;color:var(--t2);}
+.plan-price sub{font-size:15px;font-family:'DM Sans',sans-serif;color:var(--t2);font-weight:300;}
+.plan-period{font-size:12px;color:var(--t3);margin:6px 0 22px;}
+.plan-divider{height:1px;background:var(--border);margin:22px 0;}
+.plan-features{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:28px;}
+.plan-features li{font-size:13px;color:var(--t2);display:flex;gap:10px;align-items:flex-start;}
+.plan-features li::before{content:'✓';color:var(--gold);font-weight:700;flex-shrink:0;margin-top:1px;}
+.plan-features li.no::before{content:'–';color:var(--t3);}
+.plan-features li.no{color:var(--t3);}
+.plan-btn{display:block;text-align:center;padding:13px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;transition:.2s;}
+.plan-btn-outline{border:1px solid var(--border);color:var(--t2);}
+.plan-btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+.plan-btn-gold{background:var(--gold);color:var(--ink);}
+.plan-btn-gold:hover{background:var(--gold2);transform:translateY(-1px);}
+.plan-trial{font-size:11px;color:var(--t3);text-align:center;margin-top:10px;}
 
-.multi-order-badge {
-  background: var(--purple);
-  color: white;
-  border-radius: 99px;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
-  display: inline-block;
-  margin-top: 4px;
-}
+/* ── Testimonials ── */
+.testimonials{background:rgba(255,255,255,.01);}
+.testi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-top:60px;}
+.testi{background:var(--ink2);border:1px solid var(--border);border-radius:12px;padding:28px;}
+.testi-text{font-family:'Instrument Serif',serif;font-style:italic;font-size:17px;color:var(--cream);line-height:1.6;margin-bottom:20px;}
+.testi-author{display:flex;align-items:center;gap:12px;}
+.testi-avatar{width:40px;height:40px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.testi-name{font-weight:600;font-size:13px;color:var(--cream);}
+.testi-role{font-size:12px;color:var(--t3);}
 
-/* Payment tabs (multi-order) */
+/* ── CTA ── */
+.cta-section{text-align:center;padding:120px 6%;background:linear-gradient(135deg,rgba(201,168,76,.06) 0%,transparent 60%);}
+.cta-section h2{margin-bottom:16px;}
+.cta-section p{font-size:16px;color:var(--t2);margin-bottom:40px;font-weight:300;}
+
+/* ── Footer ── */
+footer{padding:40px 6%;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;}
+.footer-logo{font-family:'Instrument Serif',serif;font-size:18px;color:var(--gold2);}
+.footer-links{display:flex;gap:24px;}
+.footer-links a{font-size:12px;color:var(--t3);text-decoration:none;transition:.2s;}
+.footer-links a:hover{color:var(--t2);}
+.footer-copy{font-size:12px;color:var(--t3);}
+
+/* ── Animations ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes float{0%,100%{transform:perspective(1200px) rotateY(-8deg) rotateX(3deg) translateY(0)} 50%{transform:perspective(1200px) rotateY(-8deg) rotateX(3deg) translateY(-12px)}}
+.hero-content>*{animation:fadeUp .7s ease both;}
+.hero-badge{animation-delay:.1s}
+h1{animation-delay:.2s}
+.hero-sub{animation-delay:.3s}
+.hero-actions{animation-delay:.4s}
+.hero-trial{animation-delay:.5s}
+.hero-visual{animation:float 6s ease-in-out infinite;}
+@media(max-width:900px){.hero-visual{display:none;}.hero-content{max-width:100%}}
+@media(max-width:600px){nav .nav-links{display:none;} h1{font-size:42px;}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Ordo<span>Point of Sale</span></div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#how">How it works</a>
+    <a href="register.html" class="nav-cta">Start Free Trial →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge">Now available for restaurants</div>
+    <h1>The POS that runs as fast as your <em>kitchen</em></h1>
+    <p class="hero-sub">Ordo is a complete restaurant management system — orders, tables, kitchen, reports, and QR menus — all in one tab.</p>
+    <div class="hero-actions">
+      <a href="register.html" class="btn-primary">Start 14-Day Free Trial <span>→</span></a>
+      <a href="#features" class="btn-secondary">See features</a>
+    </div>
+    <p class="hero-trial"><strong>No credit card required.</strong> Full access for 14 days.</p>
+  </div>
+  <div class="hero-visual">
+    <div class="app-frame">
+      <div class="app-topbar">
+        <div class="dot" style="background:#ff5f56"></div>
+        <div class="dot" style="background:#ffbd2e"></div>
+        <div class="dot" style="background:#27c93f"></div>
+        <div style="flex:1;text-align:center;font-size:11px;color:#5a5a72">✦ Ordo POS</div>
+      </div>
+      <div class="app-body">
+        <div class="mini-card gold"><div class="mini-dot"></div><div class="mini-bar fill" style="margin-top:20px"></div><div class="mini-bar fill2"></div></div>
+        <div class="mini-card"><div class="mini-bar" style="width:60%;background:rgba(255,255,255,.12)"></div><div class="mini-bar fill" style="width:80%;margin-top:10px"></div></div>
+        <div class="mini-card"><div style="font-size:20px">🪑</div><div class="mini-bar fill2" style="margin-top:12px;width:55%"></div></div>
+        <div class="mini-card"><div class="mini-bar fill" style="width:90%"></div><div class="mini-bar fill2" style="width:50%"></div></div>
+        <div class="mini-card gold"><div style="font-size:20px">📊</div><div class="mini-bar fill" style="margin-top:14px"></div></div>
+        <div class="mini-card"><div class="mini-bar" style="width:70%;background:rgba(255,255,255,.12)"></div><div class="mini-bar fill2" style="width:40%;margin-top:10px"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROOF -->
+<div class="proof">
+  <div class="proof-inner">
+    <div class="proof-stat"><div class="proof-num">14</div><div class="proof-lbl">Day Free Trial</div></div>
+    <div class="proof-div"></div>
+    <div class="proof-stat"><div class="proof-num">7+</div><div class="proof-lbl">Devices at once</div></div>
+    <div class="proof-div"></div>
+    <div class="proof-stat"><div class="proof-num">AR / EN</div><div class="proof-lbl">Bilingual</div></div>
+    <div class="proof-div"></div>
+    <div class="proof-stat"><div class="proof-num">100%</div><div class="proof-lbl">Works Offline</div></div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-tag">Everything included</div>
+  <h2>One system for the <em>whole restaurant</em></h2>
+  <p class="section-sub">From the front door to the kitchen pass — every role, every screen, one tab.</p>
+  <div class="features-grid">
+    <div class="feat"><div class="feat-icon">🪑</div><div class="feat-title">Table Management</div><div class="feat-desc">Visual floor plan, real-time status, timer per table. Know exactly what's happening at every seat.</div></div>
+    <div class="feat"><div class="feat-icon">📋</div><div class="feat-title">Smart Orders</div><div class="feat-desc">Waiter app, modifiers, split bills, discounts, void with reason. Everything a busy floor needs.</div></div>
+    <div class="feat"><div class="feat-icon">🔥</div><div class="feat-title">Kitchen Display</div><div class="feat-desc">Rush flags, timers, live status updates. Kitchen and floor stay in sync in real time.</div></div>
+    <div class="feat"><div class="feat-icon">📱</div><div class="feat-title">QR Menu</div><div class="feat-desc">Generate a QR code. Customers scan and see your full menu with day/night mode and Arabic support.</div></div>
+    <div class="feat"><div class="feat-icon">📊</div><div class="feat-title">Reports & Analytics</div><div class="feat-desc">Daily revenue, top items, transaction history. Charts that actually tell you something useful.</div></div>
+    <div class="feat"><div class="feat-icon">💳</div><div class="feat-title">Cashier & Payments</div><div class="feat-desc">Cash, card, Mada. VAT calculation, receipt printing, tips, split payments.</div></div>
+    <div class="feat"><div class="feat-icon">👥</div><div class="feat-title">Staff Roles</div><div class="feat-desc">Admin, cashier, waiter, kitchen — each role sees only what they need. Secure password hashing.</div></div>
+    <div class="feat"><div class="feat-icon">☀️🌙</div><div class="feat-title">Day & Night Mode</div><div class="feat-desc">System-wide light and dark theme. Works on all screens including the customer-facing QR menu.</div></div>
+    <div class="feat"><div class="feat-icon">🔄</div><div class="feat-title">Real-Time Sync</div><div class="feat-desc">Firebase cloud sync. Every device updates instantly — waiter, cashier, kitchen all see the same thing.</div></div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" style="background:rgba(255,255,255,.01)">
+  <div class="section-tag">Simple setup</div>
+  <h2>From signup to <em>first order</em> in minutes</h2>
+  <p class="section-sub">No installations. No IT team. No complicated setup. Just a browser.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Create your account</div>
+      <div class="step-desc">Register with your email. Your restaurant gets its own private workspace instantly.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">Set up your menu</div>
+      <div class="step-desc">Add categories, items, prices, photos. Import your existing menu in minutes.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">Add your staff</div>
+      <div class="step-desc">Create accounts for each role. Each person gets a tailored view — waiter, cashier, kitchen.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title">Open on any device</div>
+      <div class="step-desc">Share the link. Open on tablets, phones, PCs. No installation — works in any browser.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" class="pricing">
+  <div style="text-align:center">
+    <div class="section-tag" style="justify-content:center">Simple pricing</div>
+    <h2>Start free, <em>grow as you go</em></h2>
+    <p class="section-sub" style="margin:0 auto">All plans include the full system. Pay only when you're ready.</p>
+  </div>
+  <div class="plans">
+
+    <!-- Free Trial -->
+    <div class="plan">
+      <div class="plan-name">Free Trial</div>
+      <div class="plan-price"><sup>SAR</sup>0</div>
+      <div class="plan-period">14 days, no credit card</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>Full access to all features</li>
+        <li>Up to 7 devices</li>
+        <li>Firebase real-time sync</li>
+        <li>QR menu &amp; customer ordering</li>
+        <li class="no">Priority support</li>
+        <li class="no">Custom branding</li>
+      </ul>
+      <a href="register.html" class="plan-btn plan-btn-outline">Start Free Trial</a>
+      <p c/* Payment tabs (multi-order) */
 .payment-tabs {
   display: flex;
   gap: 6px;
