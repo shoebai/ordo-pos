@@ -554,147 +554,9 @@ input,select,textarea{-webkit-appearance:none;appearance:none;border-radius:var(
   /* Wider cashier left panel on big screens */
   .cashier-left{width:280px!important;}
 }
-[dir=rtl] .toast-wrap{right:auto;left:14px;}
-.toast{background:var(--elevated);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;display:flex;align-items:center;gap:10px;animation:slideUp .3s ease;}
 
-/* --- NAVIGATION --- */
-.nav-bar{display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:var(--nav);background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
-.nav-logo{font-size:14px;font-weight:800;background:linear-gradient(135deg,var(--primary),#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;}
-.nav-tabs{display:flex;gap:2px;background:var(--card);border-radius:var(--rs);padding:3px;overflow-x:auto;}
-.nav-tab{padding:6px 11px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t2);display:flex;align-items:center;gap:5px;white-space:nowrap;border:none;background:none;transition:all .18s;}
-.nav-tab.active{background:var(--primary);color:#0d0d14;}
-.bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:calc(var(--bot) + env(safe-area-inset-bottom, 0px));background:var(--surface);border-top:1px solid var(--border);z-index:99;padding-bottom:env(safe-area-inset-bottom, 0px);}
-.bot-inner{display:flex;height:100%;align-items:center;justify-content:space-around;}
-.bot-tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 10px;cursor:pointer;color:var(--t3);font-size:10px;font-weight:600;border:none;background:none;min-width:46px;border-radius:8px;}
-.bot-tab.active{color:var(--primary);}
-.bot-tab i{font-size:16px;}
-
-/* --- TABLES --- */
-.tbl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:10px;}
-.tbl-card{background:var(--card);border:2px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;transition:all .2s;text-align:center;position:relative;}
-.tbl-card.available{border-color:rgba(16,185,129,.35);}
-.tbl-card.ordered{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.04);}
-.tbl-card.bill{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.04);}
-.tbl-card:hover{transform:translateY(-2px);border-color:var(--primary);}
-.tbl-num{font-size:17px;font-weight:700;margin-top:5px;}
-.sdot{width:9px;height:9px;border-radius:50%;position:absolute;top:10px;right:10px;}
-[dir=rtl] .sdot{right:auto;left:10px;}
-.available .sdot{background:var(--green);box-shadow:0 0 5px var(--green);}
-.ordered .sdot{background:var(--yellow);}
-.bill .sdot{background:var(--red);}
-
-/* --- MENU CARDS --- */
-.m-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .2s;}
-.m-card:hover{border-color:var(--primary);transform:translateY(-2px);}
-.m-card.unavailable{opacity:.4;cursor:not-allowed;}
-.m-card.incart{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary-dim);}
-.m-img{width:100%;height:110px;object-fit:cover;}
-.m-emoji{width:100%;height:110px;display:flex;align-items:center;justify-content:center;font-size:42px;background:linear-gradient(135deg,#1a1a2e,#0d0d14);}
-
-/* --- ORDER PANEL --- */
-.order-panel{display:flex;flex-direction:column;height:100%;background:var(--surface);border-left:1px solid var(--border);}
-[dir=rtl] .order-panel{border-left:none;border-right:1px solid var(--border);}
-
-/* --- KITCHEN --- */
-.kit-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;transition:all .2s;}
-.kit-card.rush{border-color:rgba(239,68,68,.6);animation:pulse 2s infinite;}
-
-/* --- STATS --- */
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;}
-.stat-v{font-size:26px;font-weight:800;margin-top:6px;}
-.stat-l{font-size:12px;color:var(--t2);margin-top:3px;}
-
-/* --- TOGGLE --- */
-.tog{position:relative;width:42px;height:23px;border-radius:99px;background:var(--elevated);border:1px solid var(--border);cursor:pointer;transition:.2s;flex-shrink:0;}
-.tog.on{background:var(--primary);border-color:var(--primary);}
-.tog-thumb{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:.2s;pointer-events:none;}
-.tog.on .tog-thumb{left:21px;}
-
-/* --- LIGHT MODE GLOBAL THEME --- */
-html.light{
-  --bg:#f0f0ea;--surface:#ffffff;--card:#e8e8e2;--elevated:#deded8;
-  --border:rgba(0,0,0,.09);
-  --primary:#d97706;--primary-dim:rgba(217,119,6,.13);--primary-dark:#b45309;
-  --red:#dc2626;--red-dim:rgba(220,38,38,.10);
-  --green:#059669;--green-dim:rgba(5,150,105,.10);
-  --yellow:#d97706;--yellow-dim:rgba(217,119,6,.10);
-  --blue:#2563eb;--blue-dim:rgba(37,99,235,.10);
-  --purple:#7c3aed;--orange:#ea580c;
-  --t1:#111827;--t2:#4b5563;--t3:#9ca3af;
-}
-html.light body{background:var(--bg);color:var(--t1);}
-html.light .btn-primary{color:#fff;}
-html.light .m-emoji{background:linear-gradient(135deg,#e8e8e2,#deded8)!important;}
-html.light select.input>option{background:#fff;}
-html.light .nav-bar,html.light .bot-nav{box-shadow:0 1px 8px rgba(0,0,0,.08);}
-html.light .modal{box-shadow:0 8px 40px rgba(0,0,0,.15);}
-html.light .overlay{background:rgba(0,0,0,.55);}
-*{transition:background-color .25s,border-color .2s,color .15s;}
-.btn,.chip,.badge,.nav-tab,.bot-tab,.tog,.input{transition:all .2s!important;}
-.theme-tog{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;border:1px solid var(--border);background:var(--elevated);cursor:pointer;font-size:12px;font-weight:600;color:var(--t2);}
-.theme-tog:hover{border-color:var(--primary);color:var(--primary);}
-
-
-.timer{font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;font-variant-numeric:tabular-nums;}
-.t-fresh{background:var(--green-dim);color:var(--green);}
-.t-warn{background:var(--yellow-dim);color:var(--yellow);}
-.t-hot{background:var(--red-dim);color:var(--red);}
-
-/* --- MISC --- */
-.scroll-y{overflow-y:auto;overflow-x:hidden;}
-.section-hdr{font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
-.row-between{display:flex;justify-content:space-between;align-items:center;}
-
-/* --- ANIMATIONS --- */
-@keyframes slideUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
-@keyframes slideUpSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.3)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* ─── SAFE AREA INSETS ─── */
-/* --extra-bottom is injected by JS below for browser toolbar support */
-:root{
-  --sab:       env(safe-area-inset-bottom, 0px);
-  --sal:       env(safe-area-inset-left,   0px);
-  --sar:       env(safe-area-inset-right,  0px);
-  --extra-bot: 0px; /* overridden by JS on mobile browsers */
-  /* Combined bottom clearance: hardware safe area + browser toolbar */
-  --safe-bot:  max(var(--sab), var(--extra-bot));
-}
-
-/* Bottom nav */
-.bot-nav{
-  padding-bottom: var(--safe-bot);
-  height: calc(var(--bot) + var(--safe-bot));
-}
-
-/* Any fixed bottom action bar */
-.fixed-bottom{
-  padding-bottom: calc(var(--safe-bot) + 8px) !important;
-}
-
-/* Scrollable areas need room for nav + safe area */
-.mb-pad{
-  padding-bottom: calc(var(--bot) + var(--safe-bot) + 16px) !important;
-}
-
-/* Bottom-sheet modals */
-.modal{
-  padding-bottom: calc(22px + var(--safe-bot));
-}
-
-/* Nav bar left/right insets */
-.nav-bar{
-  padding-left:  calc(14px + var(--sal));
-  padding-right: calc(14px + var(--sar));
-}
-
-/* ─── RESPONSIVE BASE ─── */
-@media print{.no-print{display:none!important;}body{background:#fff;color:#000;overflow:auto;}#root{height:auto;}}
-
-/* ═══ TABLET (768px – 1024px) ═══ */
-@media(min-width:769px) and (max-width:1024px){
+/* ═══ TABLET LANDSCAPE (900px – 1024px) ═══ */
+@media(min-width:900px) and (max-width:1024px){
   :root{--nav:56px;--bot:0px;}
   .nav-tab{padding:5px 9px;font-size:11px;}
   .tbl-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;}
@@ -705,90 +567,228 @@ html.light .overlay{background:rgba(0,0,0,.55);}
   .theme-tog span{display:none;}
 }
 
-/* ═══ MOBILE (≤768px) ═══ */
-@media(max-width:768px){
+/* ═══ TABLET PORTRAIT (600px – 899px) ═══ */
+@media(min-width:600px) and (max-width:899px){
+  :root{--nav:54px;--bot:0px;}
+  .nav-tab{padding:5px 10px;font-size:11px;}
+  .theme-tog span{display:none;}
+  .stat-v{font-size:22px;}
+  .tbl-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px;}
+  .m-img,.m-emoji{height:95px;}
+  /* Modals stay centered (not bottom sheet) on tablet */
+  .overlay{align-items:center;padding:20px;}
+  .modal{border-radius:var(--rl);animation:fadeIn .2s ease;max-height:90vh;}
+  /* Cashier split: narrower left list */
+  .cashier-left{width:200px!important;}
+}
+
+/* ═══ MOBILE (≤599px) ═══ */
+@media(max-width:599px){
   :root{--nav:52px;--bot:60px;}
 
-  /* Nav */
+  /* Nav bar */
   .nav-tabs,.hide-sm{display:none!important;}
   .nav-bar{padding:0 calc(10px + var(--sal)) 0 calc(10px + var(--sar));}
   .nav-logo{font-size:13px;}
   .theme-tog{padding:4px 8px;font-size:11px;}
   .theme-tog span{display:none;}
 
-  /* Bottom nav — always above system nav */
+  /* Bottom nav — always above system nav bar */
   .bot-nav{
     display:flex;
     padding-bottom:var(--safe-bot);
     height:calc(var(--bot) + var(--safe-bot));
   }
-  .bot-inner{align-items:flex-start;padding-top:4px;}
+  .bot-inner{
+    align-items:flex-start;
+    padding-top:4px;
+    overflow-x:auto;
+    justify-content:flex-start;
+    padding-left:4px;
+    padding-right:4px;
+    gap:0;
+    scrollbar-width:none;
+  }
+  .bot-inner::-webkit-scrollbar{display:none;}
   .mb-pad{padding-bottom:calc(var(--bot) + var(--safe-bot) + 12px)!important;}
-  .bot-tab{font-size:9px;padding:5px 8px;min-width:40px;}
+  .bot-tab{font-size:9px;padding:5px 8px;min-width:44px;flex-shrink:0;}
   .bot-tab i{font-size:18px;}
 
   /* Modals → full-screen bottom sheet */
   .overlay{align-items:flex-end;padding:0;}
   .modal{
-    max-width:100% !important;
+    max-width:100%!important;
     width:100%;
     border-radius:20px 20px 0 0;
-    max-height:92vh;
-    animation:slideUpSheet .3s ease;
+    max-height:93vh;
+    animation:slideUpSheet .28s cubic-bezier(.22,.61,.36,1);
     padding:20px 16px calc(20px + var(--safe-bot));
   }
   .modal-lg{max-width:100%!important;}
 
-  /* Split screen (order screen) */
+  /* Split screen (order/cashier) */
   .order-panel{width:100%!important;border:none!important;}
   .split{flex-direction:column!important;}
-  .split>.left-pane{height:58%!important;flex:none!important;}
-  .split>.order-panel{height:42%!important;}
+  .split>.left-pane{height:57%!important;flex:none!important;min-height:0;}
+  .split>.order-panel{height:43%!important;min-height:0;}
 
-  /* Tables grid — 3 columns on mobile */
+  /* Cashier — stack vertically */
+  .cashier-left{width:100%!important;border-right:none!important;border-bottom:1px solid var(--border)!important;max-height:180px;}
+
+  /* Tables grid — 3 columns */
   .tbl-grid{grid-template-columns:repeat(3,1fr);gap:8px;}
   .tbl-card{padding:10px 6px;border-radius:10px;}
   .tbl-num{font-size:14px;}
   .tbl-card .sdot{width:7px;height:7px;top:7px;right:7px;}
 
-  /* Menu cards — 2 columns on mobile */
+  /* Menu cards — 2 columns */
   .m-grid-2{grid-template-columns:repeat(2,1fr)!important;}
-  .m-img,.m-emoji{height:90px;}
+  .m-img,.m-emoji{height:88px;}
   .m-emoji{font-size:34px;}
 
-  /* Buttons */
+  /* Buttons — larger tap targets */
   .btn{font-size:12px;padding:9px 14px;}
   .btn-lg{padding:13px 20px;font-size:14px;}
-  .btn-icon{width:36px;height:36px;}
+  .btn-icon{width:38px;height:38px;}
 
   /* Cards */
   .card{padding:14px;}
 
-  /* Chips — more touch-friendly */
-  .chip{padding:6px 13px;font-size:12px;}
+  /* Chips — touch-friendly */
+  .chip{padding:7px 13px;font-size:12px;}
 
-  /* Stats grid */
+  /* Stats */
   .stat-card{padding:14px;}
   .stat-v{font-size:22px;}
 
   /* Kitchen cards */
   .kit-card{padding:12px;}
 
-  /* Input / forms */
-  .input{font-size:14px;padding:11px 13px;}
+  /* Inputs */
+  .input{font-size:16px;padding:11px 13px;}/* 16px prevents iOS zoom */
+}
 
-  /* Scroll padding fix */
-  .scroll-y{-webkit-overflow-scrolling:touch;}
+/* ═══ LANDSCAPE MOBILE (short height) ═══ */
+@media(max-width:899px) and (max-height:500px){
+  :root{--nav:44px;--bot:0px;}
+  .nav-tabs{display:flex!important;}
+  .hide-sm{display:none!important;}
+  .bot-nav{display:none!important;}
+  .mb-pad{padding-bottom:16px!important;}
+  .split>.left-pane{height:100%!important;flex:1!important;}
+  .split>.order-panel{height:100%!important;}
+  .split{flex-direction:row!important;}
+  .cashier-left{width:180px!important;max-height:none!important;border-right:1px solid var(--border)!important;border-bottom:none!important;}
+  .modal{max-height:96vh;border-radius:var(--rl);}
+  .overlay{align-items:center;padding:12px;}
 }
 
 /* ═══ SMALL PHONES (≤380px) ═══ */
 @media(max-width:380px){
   :root{--bot:56px;}
   .tbl-grid{grid-template-columns:repeat(2,1fr);}
-  .bot-tab{font-size:8.5px;min-width:36px;}
-  .stat-v{font-size:19px;}
-  .btn-lg{font-size:13px;}
+  .bot-tab{font-size:8.5px;min-width:38px;}
+  .stat-v{font-size:18px;}
+  .btn-lg{font-size:13px;padding:12px 16px;}
+  .input{font-size:16px;}
 }
+
+/* ═══ DASHBOARD — stack charts on mobile ═══ */
+@media(max-width:700px){
+  .dash-charts{grid-template-columns:1fr!important;}
+}
+
+/* ═══ CASHIER — stack on mobile ═══ */
+@media(max-width:599px){
+  .cashier-wrap{flex-direction:column!important;}
+}
+
+/* ═══ SETTINGS TABS — scrollable on any width ═══ */
+.settings-tabs{
+  display:flex;gap:5px;flex-shrink:0;
+  overflow-x:auto;padding:8px 12px;
+  border-bottom:1px solid var(--border);
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.settings-tabs::-webkit-scrollbar{display:none;}
+
+/* ═══ SAFE-AREA AWARE TOAST ═══ */
+@media(max-width:599px){
+  .toast-wrap{top:auto;bottom:calc(var(--bot) + var(--safe-bot) + 12px);right:10px;left:10px;}
+  .toast{justify-content:center;}
+}
+/* Main order panel structure */
+.order-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0; /* Critical for flex children to shrink properly */
+}
+
+/* Cart items container - scrollable area */
+.order-panel .cart-items {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 8px;
+}
+
+/* Cart footer - stays fixed at bottom */
+.order-panel .cart-footer {
+  flex-shrink: 0;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* Mobile devices - ensure cart doesn't get too small */
+@media(max-width: 599px) {
+  .order-panel {
+    height: 45% !important;
+    min-height: 200px;
+  }
+  
+  .order-panel .cart-items {
+    max-height: calc(100% - 140px);
+  }
+}
+
+/* Landscape mobile mode */
+@media(max-width: 899px) and (max-height: 500px) {
+  .order-panel {
+    height: 100% !important;
+    width: 280px !important;
+  }
+}
+
+/* Ensure the send button is visible above bottom nav */
+.order-panel .cart-footer .btn-block {
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 10;
+}
+
+/* Fix for split screen on mobile - cart area */
+@media(max-width: 599px) {
+  .split {
+    flex-direction: column !important;
+  }
+  
+  .split > .left-pane {
+    height: 55% !important;
+    flex: none !important;
+    min-height: 0;
+  }
+  
+  .split > .order-panel {
+    height: 45% !important;
+    flex: none !important;
+    min-height: 0;
+    width: 100% !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1050,7 +1050,7 @@ const DEF_SETTINGS={
   vatRate:15,currency:'SAR',
   enableTips:true,enableDelivery:true,kitchenSound:true,sessionTimeout:480,
   receiptFooter:'Thank you for dining with us!',receiptFooterAr:'شكراً لزيارتكم!',
-  autoPrintKitchen:true,kitchenPrintCopies:1,
+  autoPrintKitchen:true,kitchenPrintCopies:1,thermalPaper:'80mm',
   firebaseApiKey:'',firebaseProjectId:'',firebaseAppId:'',
   globalExtras:[
     {id:'ge1',name:'Extra Spicy',nameAr:'حار جداً',adj:0,emoji:'🌶️'},
@@ -1226,7 +1226,15 @@ function Provider({children}){
   const[theme,setThemeS]=useState(()=>LS.g('theme','dark'));
   const[clientId,setClientIdS]=useState(()=>localStorage.getItem('ordo_clientId')||'');
   const[fbReady,setFbReady]=useState(false);
-  const[showClientSetup,setShowClientSetup]=useState(()=>!localStorage.getItem('ordo_clientId'));
+  const[showClientSetup,setShowClientSetup]=useState(false);
+
+  // Auto-initialise clientId on first run — no welcome dialog needed
+  useEffect(()=>{
+    if(!localStorage.getItem('ordo_clientId')){
+      localStorage.setItem('ordo_clientId','ordo-main');
+      setClientIdS('ordo-main');
+    }
+  },[]);
   const[license,setLicense]=useState(null); // {valid,payload,daysLeft,reason}
   const[licenseChecked,setLicenseChecked]=useState(false);
   const[inactiveWarning,setInactiveWarning]=useState(false);
@@ -1712,7 +1720,7 @@ function BotNav({screen,setScreen,allowed}){
   return(
     <div className="bot-nav no-print">
       <div className="bot-inner">
-        {allowed.slice(0,5).map(s=>(
+        {allowed.map(s=>(
           <button key={s} className={`bot-tab${screen===s?' active':''}`} onClick={()=>setScreen(s)}>
             <i className={`fa ${ic[s]||'fa-circle'}`}/><span>{t(s)}</span>
           </button>
@@ -1797,7 +1805,7 @@ function Dashboard(){
           </div>
         ))}
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,2fr)',gap:12,marginBottom:12}}>
+      <div className="dash-charts" style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,2fr)',gap:12,marginBottom:12}}>
         <div className="card">
           <div style={{fontSize:11,color:'var(--t2)',marginBottom:8}}>🏆 {t('topItems')}</div>
           {topItems.length?<div style={{height:160}}><canvas ref={topRef}/></div>:<div style={{textAlign:'center',padding:24,color:'var(--t3)',fontSize:12}}>{t('noData')}</div>}
@@ -2075,56 +2083,224 @@ function OrderScreen({table,existingOrder,onBack}){
             );
           })}
         </div>
-        <div style={{padding:10,borderTop:'1px solid var(--border)',flexShrink:0}}>
-          <textarea className="input" placeholder={t('addNote')} value={note} onChange={e=>setNote(e.target.value)} rows={2} style={{marginBottom:8,fontSize:12}}/>
-          {cart.length>0&&(
-            <div className="row-between" style={{marginBottom:8}}>
-              <span style={{fontSize:12,color:'var(--t2)'}}>{t('total')}</span>
-              <span style={{fontWeight:700,color:'var(--primary)',fontSize:14}}>{cur} {cartTotal.toFixed(2)}</span>
-            </div>
-          )}
-          <button className="btn btn-primary btn-block" onClick={send} disabled={!cart.length}>
-            <i className={`fa ${isAdd?'fa-plus':'fa-paper-plane'}`}/> {isAdd?t('addToOrder'):t('sendKitchen')}
-          </button>
-        </div>
+    <div style={{padding:10,borderTop:'1px solid var(--border)',flexShrink:0, paddingBottom:'calc(12px + env(safe-area-inset-bottom, 0px) + 70px)'}}>
+  <textarea className="input" placeholder={t('addNote')} value={note} onChange={e=>setNote(e.target.value)} rows={2} style={{marginBottom:8,fontSize:12}}/>
+  {cart.length>0&&(
+    <div className="row-between" style={{marginBottom:8}}>
+      <span style={{fontSize:12,color:'var(--t2)'}}>{t('total')}</span>
+      <span style={{fontWeight:700,color:'var(--primary)',fontSize:14}}>{cur} {cartTotal.toFixed(2)}</span>
+    </div>
+  )}
+  <button className="btn btn-primary btn-block" onClick={send} disabled={!cart.length} style={{marginBottom:'10px'}}>
+    <i className={`fa ${isAdd?'fa-plus':'fa-paper-plane'}`}/> {isAdd?t('addToOrder'):t('sendKitchen')}
+  </button>
+</div>
       </div>
     </div>
   );
 }
 
 /* ======================================================
-   WAITER SCREEN
+   WAITER SCREEN - WITH ADD TO EXISTING ORDER FEATURE
 ====================================================== */
 function WaiterScreen(){
-  const{t,lang,tables,orders,confirm}=useApp();
-  const[selTbl,setSelTbl]=useState(null);const[addMode,setAddMode]=useState(false);
+  const{t,lang,tables,orders,setTables,confirm,toast}=useApp();
+  const[selTbl,setSelTbl]=useState(null);
+  const[addMode,setAddMode]=useState(false);
+  const[selectedOrderId,setSelectedOrderId]=useState(null); // Which order to add to
+  const[tableAction,setTableAction]=useState(null); // {table, activeOrders}
   const statusLbl={available:t('avail'),ordered:t('occupied'),bill:t('billReady')};
 
+  // If in order screen
   if(selTbl){
-    const existOrd=addMode?orders.find(o=>o.id===selTbl.orderId):null;
-    return<OrderScreen table={selTbl} existingOrder={existOrd} onBack={()=>{setSelTbl(null);setAddMode(false);}}/>;
+    const existingOrder = addMode && selectedOrderId 
+      ? orders.find(o => o.id === selectedOrderId)
+      : null;
+    return(
+      <OrderScreen 
+        table={selTbl} 
+        existingOrder={existingOrder} 
+        onBack={() => {
+          setSelTbl(null);
+          setAddMode(false);
+          setSelectedOrderId(null);
+        }} 
+      />
+    );
   }
+
+  // Handle table tap - shows modal with options
+  const handleTableTap = (tb) => {
+    if(tb.status === 'available'){
+      // Free table - start new order directly
+      setAddMode(false);
+      setSelectedOrderId(null);
+      setSelTbl(tb);
+    } else {
+      // Occupied table - show options
+      const activeOrders = orders.filter(o => 
+        o.tableId === tb.id && 
+        !['paid','voided','closed'].includes(o.status)
+      );
+      setTableAction({table: tb, activeOrders});
+    }
+  };
 
   return(
     <div className="scroll-y mb-pad" style={{padding:16,flex:1}}>
+      
+      {/* Modal for occupied table - shows order options */}
+      {tableAction && (
+        <div className="overlay" onClick={e => e.target === e.currentTarget && setTableAction(null)}>
+          <div className="modal" style={{maxWidth:400}}>
+            
+            {/* Header */}
+            <div className="row-between" style={{marginBottom:16}}>
+              <div>
+                <h3 style={{fontSize:18}}>🪑 {tableAction.table.num}</h3>
+                <div style={{fontSize:12,color:'var(--t2)',marginTop:2}}>
+                  {tableAction.activeOrders.length} active order{tableAction.activeOrders.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setTableAction(null)}>
+                <i className="fa fa-times"/>
+              </button>
+            </div>
+
+            {/* Existing orders list */}
+            {tableAction.activeOrders.length > 0 && (
+              <div style={{marginBottom:16}}>
+                <div className="section-hdr" style={{marginBottom:8}}>📋 EXISTING ORDERS</div>
+                {tableAction.activeOrders.map(order => {
+                  const orderTotal = (order.items || []).reduce((s, i) => s + (i.price + (i.modAdj || 0)) * i.qty, 0);
+                  const currency = 'SAR';
+                  return (
+                    <div 
+                      key={order.id} 
+                      style={{
+                        display:'flex',
+                        alignItems:'center',
+                        gap:10,
+                        padding:'10px 12px',
+                        background:'var(--elevated)',
+                        borderRadius:10,
+                        marginBottom:8,
+                        cursor:'pointer',
+                        border:'1px solid transparent',
+                        transition:'all .15s'
+                      }}
+                      onClick={() => {
+                        setSelectedOrderId(order.id);
+                        setAddMode(true);
+                        setSelTbl(tableAction.table);
+                        setTableAction(null);
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
+                    >
+                      <div style={{fontSize:28}}>🧾</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,fontSize:13}}>
+                          Order #{order.id.slice(-6)}
+                        </div>
+                        <div style={{fontSize:11,color:'var(--t2)'}}>
+                          {(order.items || []).length} items · {currency} {orderTotal.toFixed(2)}
+                        </div>
+                        <div style={{fontSize:10,color:'var(--t3)',marginTop:2}}>
+                          {new Date(order.createdAt).toLocaleTimeString()} · {order.orderType}
+                        </div>
+                      </div>
+                      <span className={`badge badge-${order.status === 'new' ? 'yellow' : order.status === 'in-progress' ? 'blue' : 'green'}`}>
+                        {order.status}
+                      </span>
+                      <i className="fa fa-chevron-right" style={{color:'var(--t3)',fontSize:12}}/>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="divider" />
+
+            {/* Action buttons */}
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              <button 
+                className="btn btn-primary btn-block btn-lg" 
+                style={{justifyContent:'center'}}
+                onClick={() => {
+                  setSelectedOrderId(null);
+                  setAddMode(false);
+                  setSelTbl(tableAction.table);
+                  setTableAction(null);
+                }}
+              >
+                <i className="fa fa-plus-circle"/> Start New Order on {tableAction.table.num}
+              </button>
+              
+              {tableAction.activeOrders.length === 0 && (
+                <div style={{textAlign:'center',padding:16,color:'var(--t3)',fontSize:12}}>
+                  No active orders on this table
+                </div>
+              )}
+              
+              <button 
+                className="btn btn-ghost btn-block" 
+                onClick={() => setTableAction(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tables Grid */}
       <div className="tbl-grid">
-        {tables.map(tb=>{
-          const ord=orders.find(o=>o.id===tb.orderId);
-          return(
-            <div key={tb.id} className={`tbl-card ${tb.status}`} onClick={()=>{
-              if(tb.status==='available'){setAddMode(false);setSelTbl(tb);}
-              else if(tb.status==='ordered'&&ord){
-                confirm(tb.num+' — Add more items to existing order?').then(function(yes){if(yes){setAddMode(true);setSelTbl(tb);}});
-              }
-            }}>
+        {tables.map(tb => {
+          const activeOrds = orders.filter(o => 
+            o.tableId === tb.id && 
+            !['paid','voided','closed'].includes(o.status)
+          );
+          const totalItems = activeOrds.reduce((sum, o) => sum + (o.items || []).length, 0);
+          
+          return (
+            <div 
+              key={tb.id} 
+              className={`tbl-card ${tb.status}`} 
+              onClick={() => handleTableTap(tb)}
+            >
               <div className="sdot"/>
               <span style={{fontSize:28}}>🪑</span>
               <div className="tbl-num">{tb.num}</div>
               <div style={{fontSize:10,color:'var(--t3)',marginTop:2}}>{tb.seats} seats</div>
+              
               <span className={`badge badge-${tb.status==='available'?'green':tb.status==='ordered'?'yellow':'red'}`} style={{marginTop:5,fontSize:10}}>
                 {statusLbl[tb.status]}
               </span>
-              {ord&&<KitTimer at={ord.createdAt}/>}
+              
+              {/* Show order count badge if multiple orders */}
+              {activeOrds.length > 0 && (
+                <div style={{marginTop:6}}>
+                  {activeOrds.length === 1 ? (
+                    <div style={{fontSize:10,color:'var(--t2)'}}>
+                      {activeOrds[0].items?.length || 0} items
+                    </div>
+                  ) : (
+                    <div style={{
+                      background:'var(--purple)',
+                      color:'#fff',
+                      borderRadius:99,
+                      fontSize:10,
+                      fontWeight:700,
+                      padding:'2px 8px',
+                      display:'inline-block'
+                    }}>
+                      {activeOrds.length} orders · {totalItems} items
+                    </div>
+                  )}
+                  <KitTimer at={activeOrds[0].createdAt}/>
+                </div>
+              )}
             </div>
           );
         })}
@@ -2162,7 +2338,7 @@ function KitchenScreen(){
       </div>
       <div className="scroll-y mb-pad" style={{flex:1,padding:12}}>
         {!shown.length&&<div style={{textAlign:'center',padding:40,color:'var(--t3)',fontSize:13}}>{lang==='ar'?'لا توجد طلبات نشطة':'No active orders'}</div>}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:10}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(min(100%,260px),1fr))',gap:10}}>
           {shown.map(order=>{
             const c=cols[order.status]||cols.new;
             const isRush=order.priority==='rush';
@@ -2464,38 +2640,91 @@ function CashierScreen(){
     const tip2=tip||0;
     const tot2=after2+vat2+tip2;
     const change2=received?Math.max(0,parseFloat(received)-tot2):0;
+    const paperW=settings.thermalPaper==='57mm'?'57mm':'80mm';
+    const bodyW=settings.thermalPaper==='57mm'?'50mm':'72mm';
     const w=window.open('','_blank','width=380,height=700');
     w.document.write(`<!DOCTYPE html><html><head><title>Receipt</title>
-    <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:monospace;font-size:13px;max-width:300px;margin:0 auto;padding:16px}
-    .c{text-align:center}.d{border-top:1px dashed #000;margin:8px 0}.r{display:flex;justify-content:space-between}
-    h2{font-size:16px}h3{font-size:14px}.big{font-size:17px;font-weight:bold}</style></head><body>
-    <div class="c"><h2>${settings.restaurantName}</h2>
-    <div>${settings.address||''}</div><div>${settings.phone||''}</div>
-    ${settings.vatNumber?`<div>VAT: ${settings.vatNumber}</div>`:''}
-    ${settings.crNumber?`<div>CR: ${settings.crNumber}</div>`:''}
-    <div>${new Date().toLocaleString()}</div></div>
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Courier New',Courier,monospace;font-size:12px;padding:6px}
+      .c{text-align:center}.d{border-top:1px dashed #000;margin:7px 0}.r{display:flex;justify-content:space-between;margin:2px 0}
+      h2{font-size:15px;margin-bottom:2px}.big{font-size:16px;font-weight:bold}
+      .logo{font-size:18px;font-weight:900;letter-spacing:1px}
+      .item-name{flex:1;padding-right:6px;word-break:break-word}
+      @media print{
+        @page{size:${paperW} auto;margin:0;}
+        body{width:${bodyW};padding:4px;}
+        .no-print{display:none!important;}
+      }
+    </style></head><body>
+    <div class="c">
+      <div class="logo">${settings.restaurantName||'Ordo POS'}</div>
+      ${settings.restaurantNameAr?`<div style="font-family:Arial;font-size:12px">${settings.restaurantNameAr}</div>`:''}
+      ${settings.address?`<div style="font-size:10px;margin-top:2px">${settings.address}</div>`:''}
+      ${settings.phone?`<div style="font-size:10px">📞 ${settings.phone}</div>`:''}
+      ${settings.vatNumber?`<div style="font-size:10px">VAT: ${settings.vatNumber}</div>`:''}
+      ${settings.crNumber?`<div style="font-size:10px">CR: ${settings.crNumber}</div>`:''}
+      <div style="font-size:10px;margin-top:3px">${new Date().toLocaleString()}</div>
+    </div>
     <div class="d"></div>
-    <div class="r"><span>Table: ${selTbl?.num}</span><span>Order: ${selOrder.id.slice(-8)}</span></div>
+    <div class="r"><span>Table: <strong>${selTbl?.num||'-'}</strong></span><span>Order: #${selOrder.id.slice(-8)}</span></div>
     <div class="r"><span>Type: ${selOrder.orderType||'dine-in'}</span><span>Staff: ${selOrder.waiterName||'-'}</span></div>
     <div class="d"></div>
-    ${(selOrder.items||[]).map(i=>`<div class="r"><span>${lang==='ar'?i.nameAr:i.name}${i.itemNote?` (${i.itemNote})`:''} x${i.qty}</span><span>${cur} ${((i.price+(i.modAdj||0))*i.qty).toFixed(2)}</span></div>`).join('')}
+    ${(selOrder.items||[]).map(i=>`
+      <div class="r">
+        <span class="item-name">${lang==='ar'?i.nameAr:i.name}${i.itemNote?' ('+i.itemNote+')':''} ×${i.qty}</span>
+        <span>${cur} ${((i.price+(i.modAdj||0))*i.qty).toFixed(2)}</span>
+      </div>`).join('')}
     <div class="d"></div>
     <div class="r"><span>Subtotal</span><span>${cur} ${sub2.toFixed(2)}</span></div>
-    ${discount>0?`<div class="r"><span>Discount ${discount}%</span><span>-${cur} ${disc2.toFixed(2)}</span></div>`:''}
+    ${discount>0?`<div class="r"><span>Discount ${discount}%</span><span>- ${cur} ${disc2.toFixed(2)}</span></div>`:''}
     <div class="r"><span>VAT ${settings.vatRate||15}%</span><span>${cur} ${vat2.toFixed(2)}</span></div>
     ${tip2>0?`<div class="r"><span>Tip</span><span>${cur} ${tip2.toFixed(2)}</span></div>`:''}
     <div class="d"></div>
     <div class="r big"><span>TOTAL</span><span>${cur} ${tot2.toFixed(2)}</span></div>
-    ${payMethod==='cash'&&received?`<div class="r"><span>Received</span><span>${cur} ${parseFloat(received).toFixed(2)}</span></div><div class="r"><span>Change</span><span>${cur} ${change2.toFixed(2)}</span></div>`:''}
+    ${payMethod==='cash'&&received?`
+      <div class="r"><span>Received</span><span>${cur} ${parseFloat(received).toFixed(2)}</span></div>
+      <div class="r" style="color:#059669"><span>Change</span><span>${cur} ${change2.toFixed(2)}</span></div>`:''}
+    ${payMethod!=='cash'?`<div class="r"><span>Paid by</span><span>${payMethod.toUpperCase()}</span></div>`:''}
     <div class="d"></div>
-    <div class="c"><p>${lang==='ar'?settings.receiptFooterAr:settings.receiptFooter}</p></div>
-    <div style="text-align:center;margin-top:18px"><button onclick="window.print()" style="padding:8px 20px;font-family:monospace">Print</button></div>
+    <div class="c" style="font-size:11px;line-height:1.6">${lang==='ar'?settings.receiptFooterAr:settings.receiptFooter}</div>
+    <div style="text-align:center;margin-top:14px" class="no-print">
+      <button onclick="window.print()" style="padding:8px 20px;font-family:monospace;cursor:pointer">🖨️ Print</button>
+    </div>
+    <script>window.onload=function(){window.print();setTimeout(function(){window.close();},3000);};<\/script>
+    </body></html>`);
+    w.document.close();
+  };
+
+  const printToken=()=>{
+    if(!selOrder)return;
+    const w=window.open('','_blank','width=340,height=400');
+    const tokenNum=selOrder.id.slice(-4).toUpperCase();
+    w.document.write(`<!DOCTYPE html><html><head><title>Token</title>
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Courier New',monospace;padding:10px;background:#fff;color:#000}
+      .center{text-align:center}
+      .rest{font-size:13px;font-weight:bold}
+      .dashed{border-top:2px dashed #000;margin:8px 0}
+      @media print{@page{size:80mm auto;margin:0;}body{width:72mm;padding:4mm;}}
+    </style></head><body>
+    <div class="center">
+      <div class="rest">${settings.restaurantName||'Ordo POS'}</div>
+      <div class="dashed"></div>
+      <div style="font-size:12px;color:#555">${selOrder.tableNum?'Table: '+selOrder.tableNum:'Takeaway'}</div>
+      <div style="font-size:64px;font-weight:900;margin:8px 0;letter-spacing:4px">${tokenNum}</div>
+      <div style="font-size:11px;color:#555">${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true})}</div>
+      <div class="dashed"></div>
+      <div style="font-size:11px">Please wait for your number to be called</div>
+    </div>
+    <script>window.onload=function(){window.print();setTimeout(function(){window.close();},2500);};<\/script>
     </body></html>`);
     w.document.close();
   };
 
   return(
-    <div style={{display:'flex',height:'100%',overflow:'hidden'}} className="split">
+    <div style={{display:'flex',height:'100%',overflow:'hidden'}} className="split cashier-wrap">
       {editOrder&&<EditOrderModal order={editOrder} onClose={()=>setEditOrder(null)}/>}
       {showSplit&&selOrder&&<SplitModal order={{...selOrder,discount,tip}} calcTotal={calcTotal} settings={settings} onClose={()=>setShowSplit(false)} onPay={(parts)=>{
         updateOrder(selOrder.id,{status:'paid',discount,tip,paymentMethod:'split',splits:parts,paidAt:new Date().toISOString()});
@@ -2522,7 +2751,7 @@ function CashierScreen(){
       )}
 
       {/* Left: table list */}
-      <div style={{width:240,borderRight:'1px solid var(--border)',display:'flex',flexDirection:'column',overflow:'hidden',flexShrink:0}}>
+      <div className="cashier-left" style={{width:240,borderRight:'1px solid var(--border)',display:'flex',flexDirection:'column',overflow:'hidden',flexShrink:0}}>
         <div style={{padding:'10px 12px',fontWeight:700,fontSize:13,borderBottom:'1px solid var(--border)',flexShrink:0}}>{t('tables')}</div>
         <div className="scroll-y" style={{flex:1}}>
           {!activeTables.length&&<div style={{padding:20,textAlign:'center',color:'var(--t3)',fontSize:12}}>No active tables</div>}
@@ -2544,7 +2773,7 @@ function CashierScreen(){
       </div>
 
       {/* Right: bill */}
-      <div style={{flex:1,overflow:'auto',padding:14}}>
+      <div style={{flex:1,overflow:'auto',padding:14,minWidth:0}}>
         {!selOrder?(
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--t3)',fontSize:13,flexDirection:'column',gap:10}}>
             <i className="fa fa-receipt" style={{fontSize:32,opacity:.3}}/>
@@ -2560,6 +2789,7 @@ function CashierScreen(){
               <div style={{display:'flex',gap:6}}>
                 <button className="btn btn-ghost btn-sm" onClick={()=>setEditOrder(selOrder)}><i className="fa fa-edit"/> Edit</button>
                 <button className="btn btn-ghost btn-sm" onClick={printReceipt}><i className="fa fa-print"/> {t('print')}</button>
+                <button className="btn btn-ghost btn-sm" onClick={printToken}><i className="fa fa-ticket"/> Token</button>
                 <button className="btn btn-danger btn-sm" onClick={()=>setVoidId(selOrder.id)}><i className="fa fa-ban"/> Void</button>
               </div>
             </div>
@@ -2652,16 +2882,18 @@ function CashierScreen(){
    ORDERS SCREEN
 ====================================================== */
 function OrdersScreen(){
-  const{t,lang,orders,tables,updateOrder,calcTotal,settings,toast}=useApp();
+  const{t,lang,orders,tables,updateOrder,calcTotal,settings,toast,user}=useApp();
   const[filter,setFilter]=useState('active');const[search,setSearch]=useState('');
   const[editOrder,setEditOrder]=useState(null);
+  const[showCloseDay,setShowCloseDay]=useState(false);
   const cur=settings.currency||'SAR';
 
   const shown=useMemo(()=>{
     let list=orders.slice().reverse();
-    if(filter==='active')list=list.filter(o=>!['paid','voided'].includes(o.status));
+    if(filter==='active')list=list.filter(o=>!['paid','voided','closed'].includes(o.status));
     if(filter==='paid')list=list.filter(o=>o.status==='paid');
     if(filter==='voided')list=list.filter(o=>o.status==='voided');
+    if(filter==='closed')list=list.filter(o=>o.status==='closed');
     if(search)list=list.filter(o=>(o.tableNum+o.id).toLowerCase().includes(search.toLowerCase()));
     return list;
   },[orders,filter,search]);
@@ -2669,19 +2901,25 @@ function OrdersScreen(){
   return(
     <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
       {editOrder&&<EditOrderModal order={editOrder} onClose={()=>setEditOrder(null)}/>}
+      {showCloseDay&&<CloseOrdersModal onClose={()=>setShowCloseDay(false)}/>}
       <div style={{padding:'9px 12px',borderBottom:'1px solid var(--border)',display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',flexShrink:0}}>
-        <div style={{display:'flex',gap:5}}>
-          {[['active',t('active')],['paid',t('paid')],['voided','Voided'],['all',t('all')]].map(([k,l])=>(
+        <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+          {[['active',t('active')],['paid',t('paid')],['voided','Voided'],['closed','Closed'],['all',t('all')]].map(([k,l])=>(
             <button key={k} className={`chip${filter===k?' active':''}`} style={{fontSize:11}} onClick={()=>setFilter(k)}>{l}</button>
           ))}
         </div>
         <div style={{flex:1,maxWidth:200,marginLeft:'auto'}}>
           <input className="input" placeholder={t('search')} value={search} onChange={e=>setSearch(e.target.value)} style={{padding:'6px 10px'}}/>
         </div>
+        {user?.role==='admin'&&(
+          <button className="btn btn-ghost btn-sm" style={{color:'var(--purple)',borderColor:'rgba(139,92,246,.3)'}} onClick={()=>setShowCloseDay(true)}>
+            <i className="fa fa-moon"/> Close Day
+          </button>
+        )}
       </div>
       <div className="scroll-y mb-pad" style={{flex:1,padding:12}}>
         {!shown.length&&<div style={{textAlign:'center',padding:40,color:'var(--t3)',fontSize:13}}>{t('noData')}</div>}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:10}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(min(100%,280px),1fr))',gap:10}}>
           {shown.map(order=>{
             const{total}=calcTotal(order);
             const stColors={new:'yellow','in-progress':'blue',ready:'green',billed:'orange',completed:'purple',paid:'green',voided:'red'};
@@ -3059,28 +3297,81 @@ function MenuManagement(){
 ======================================================*/
 function LicenseStatusCard(){
   const{license}=useApp();
+  const[showActivate,setShowActivate]=useState(false);
+  const[keyInput,setKeyInput]=useState('');
+  const[activateErr,setActivateErr]=useState('');
+  const[activating,setActivating]=useState(false);
+
   if(!license)return null;
   const col=license.valid?(license.trial?'var(--yellow)':'var(--green)'):'var(--red)';
   const icon=license.valid?(license.trial?'fa-clock':'fa-check-circle'):'fa-times-circle';
+  const planLabel=license.trial?'Trial':((license.payload&&license.payload.p)||'').toUpperCase();
+
+  const doActivate=async()=>{
+    if(!keyInput.trim()){setActivateErr('Please enter your license key');return;}
+    setActivating(true);setActivateErr('');
+    const result=await validateLicenseKey(keyInput.trim());
+    if(result.valid){
+      localStorage.setItem('ordo_license_key',keyInput.trim().toUpperCase());
+      setTimeout(()=>window.location.reload(),800);
+    }else{
+      setActivateErr(result.reason||'Invalid key');
+    }
+    setActivating(false);
+  };
+
   return(
-    <div style={{padding:'10px 14px',background:'var(--elevated)',borderRadius:10,display:'flex',gap:10,alignItems:'center',marginBottom:14}}>
-      <i className={`fa ${icon}`} style={{color:col,fontSize:18}}/>
-      <div style={{flex:1}}>
-        <div style={{fontWeight:700,fontSize:13,color:col}}>
-          {license.valid?(license.trial?'Trial Mode':'Licensed — '+((license.payload&&license.payload.p)||'').toUpperCase()):'License Invalid'}
+    <div style={{marginBottom:14}}>
+      {/* Status bar */}
+      <div style={{padding:'12px 14px',background:'var(--elevated)',borderRadius:10,display:'flex',gap:10,alignItems:'center'}}>
+        <i className={`fa ${icon}`} style={{color:col,fontSize:20}}/>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,fontSize:13,color:col}}>
+            {license.valid?(license.trial?'Trial Mode':'Licensed — '+planLabel):'License Invalid'}
+          </div>
+          {license.valid&&(
+            <div style={{fontSize:11,color:'var(--t2)',marginTop:3,display:'flex',flexDirection:'column',gap:2}}>
+              <span>{license.daysLeft} days remaining</span>
+              {license.payload?.e&&<span>📧 {license.payload.e}</span>}
+              {license.payload?.m&&<span>📱 {license.payload.m}</span>}
+              {license.payload?.c&&license.payload.c!=='*'&&<span>🏪 Locked to: <strong style={{color:'var(--primary)',fontFamily:'monospace'}}>{license.payload.c}</strong></span>}
+            </div>
+          )}
+          {!license.valid&&<div style={{fontSize:11,color:'var(--red)',marginTop:2}}>{license.reason}</div>}
         </div>
-        <div style={{fontSize:11,color:'var(--t2)',marginTop:2}}>
-          {license.valid
-            ?<>{license.daysLeft} days remaining{license.payload&&license.payload.e?' · '+license.payload.e:''}{license.payload&&license.payload.m?' · '+license.payload.m:''}</>
-            :license.reason
-          }
-        </div>
+        {license.valid&&!license.trial&&(
+          <span className="badge badge-green" style={{fontSize:10}}>✓ Active</span>
+        )}
+        {license.trial&&(
+          <button className="btn btn-warning btn-sm" onClick={()=>setShowActivate(s=>!s)}>
+            <i className="fa fa-unlock"/> Activate
+          </button>
+        )}
+        {!license.valid&&(
+          <button className="btn btn-danger btn-sm" onClick={()=>setShowActivate(s=>!s)}>
+            <i className="fa fa-key"/> Enter Key
+          </button>
+        )}
       </div>
-      {!license.valid&&(
-        <button className="btn btn-warning btn-sm" onClick={()=>{
-          const k=prompt('Enter your license key:');
-          if(k){localStorage.setItem('ordo_license_key',k.trim().toUpperCase());window.location.reload();}
-        }}>Activate</button>
+      {/* Inline activate form */}
+      {showActivate&&(
+        <div style={{marginTop:8,padding:'12px 14px',background:'var(--card)',border:'1px solid var(--border)',borderRadius:10}}>
+          <div className="form-g" style={{marginBottom:8}}>
+            <label className="form-lbl">License Key</label>
+            <input className="input" value={keyInput}
+              onChange={e=>setKeyInput(e.target.value.toUpperCase())}
+              onKeyDown={e=>e.key==='Enter'&&doActivate()}
+              placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
+              style={{fontFamily:'monospace',letterSpacing:2,fontSize:13}}/>
+          </div>
+          {activateErr&&<div style={{color:'var(--red)',fontSize:12,padding:'5px 9px',background:'var(--red-dim)',borderRadius:6,marginBottom:8}}>{activateErr}</div>}
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-ghost btn-sm" onClick={()=>setShowActivate(false)}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={doActivate} disabled={activating}>
+              {activating?<i className="fa fa-spinner" style={{animation:'spin 1s linear infinite'}}/>:<i className="fa fa-unlock"/>} Activate License
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -3136,7 +3427,7 @@ function AuditLogViewer(){
    SETTINGS
 ====================================================== */
 function Settings(){
-  const{t,lang,settings,setSettings,staff,setStaff,tables,setTables,toast,logout,confirm,clientId,fbReady,setShowClientSetup}=useApp();
+  const{t,lang,settings,setSettings,staff,setStaff,tables,setTables,toast,logout,confirm,clientId,fbReady,setShowClientSetup}=useApp();    
   const[tab,setTab]=useState('restaurant');
   const[staffModal,setStaffModal]=useState(false);
   const[editStaff,setEditStaff]=useState(null);
@@ -3182,7 +3473,7 @@ function Settings(){
 
   return(
     <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
-      <div style={{padding:'8px 12px',borderBottom:'1px solid var(--border)',display:'flex',gap:5,flexShrink:0,overflowX:'auto'}}>
+      <div className="settings-tabs">
         {[['restaurant','🏪 Restaurant'],['security','🔐 Security'],['staff','👥 Staff'],['tables','🪑 Tables'],['printers','🖨️ Printers'],['cloud','☁️ Cloud'],['license','🔑 License'],['data','💾 Data']].map(([k,l])=>(
           <button key={k} className={`chip${tab===k?' active':''}`} style={{fontSize:11,whiteSpace:'nowrap'}} onClick={()=>setTab(k)}>{l}</button>
         ))}
@@ -3248,20 +3539,6 @@ function Settings(){
                 <i className="fa fa-plus"/> Add Extra Option
               </button>
             </div>
-            <div className="section-hdr">📋 Digital Menu</div>
-            <div className="card" style={{marginBottom:12,background:'linear-gradient(135deg,rgba(251,191,36,.06),rgba(251,191,36,.02))',border:'1px solid rgba(251,191,36,.2)'}}>
-              <div style={{display:'flex',gap:14,alignItems:'center'}}>
-                <div style={{fontSize:38}}>📱</div>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:700,fontSize:14,marginBottom:3}}>Share Menu via QR</div>
-                  <div style={{fontSize:12,color:'var(--t2)',lineHeight:1.5}}>Generate a QR code for customers to scan and view your menu. View-only with Day & Night mode.</div>
-                </div>
-              </div>
-              <button className="btn btn-primary" style={{marginTop:12,width:'100%',justifyContent:'center'}} onClick={()=>setShowShareQR(true)}>
-                <i className="fa fa-qrcode"/> Generate Menu QR Code
-              </button>
-            </div>
-            {showShareQR&&<ShareMenuQR onClose={()=>setShowShareQR(false)}/>}
             <div className="section-hdr">🧾 Receipt</div>
             <div className="card" style={{marginBottom:12}}>
               <div className="form-g">
@@ -3410,53 +3687,141 @@ function Settings(){
         )}
 
         {/* Printers */}
-        {tab==='printers'&&(
-          <div>
-            <div className="section-hdr">🖨️ Kitchen Printer</div>
-            <div className="card" style={{marginBottom:12}}>
-              <Tog k="autoPrintKitchen" label="Auto-print kitchen ticket when order is sent"/>
-              <div className="form-g" style={{marginTop:12}}>
-                <label className="form-lbl">Kitchen Ticket Copies</label>
-                <div style={{display:'flex',gap:6}}>
-                  {[1,2,3].map(n=>(
-                    <button key={n} className={`chip${(settings.kitchenPrintCopies||1)===n?' active':''}`} onClick={()=>setSettings({kitchenPrintCopies:n})}>{n}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="card" style={{marginBottom:12}}>
-              <div className="section-hdr">How Printing Works</div>
-              <div style={{fontSize:12,color:'var(--t2)',lineHeight:1.8}}>
-                <div>1. When a waiter sends an order, a kitchen ticket window opens and prints automatically.</div>
-                <div style={{marginTop:6}}>2. For <strong style={{color:'var(--t1)'}}>thermal printers (80mm)</strong>: Set your printer as default and select "No margins" in print settings.</div>
-                <div style={{marginTop:6}}>3. For <strong style={{color:'var(--t1)'}}>silent auto-print</strong> (no dialog): Install <a href="https://qz.io" target="_blank" style={{color:'var(--primary)'}}>QZ Tray</a> on the POS device.</div>
-              </div>
-            </div>
-            <div className="card">
-              <div className="section-hdr">Test Print</div>
-              <p style={{fontSize:12,color:'var(--t2)',marginBottom:10}}>Print a sample kitchen ticket to test your printer setup.</p>
-              <button className="btn btn-ghost btn-sm" onClick={()=>{
-                printKitchenTicket({
-                  id:'ORD-TEST001',tableNum:'T1 (Test)',orderType:'dine-in',
-                  items:[
-                    {name:'Grilled Chicken',nameAr:'دجاج مشوي',qty:2,price:55,modAdj:0,selectedMods:{},itemNote:'Extra sauce'},
-                    {name:'Fresh Juice',nameAr:'عصير طازج',qty:1,price:20,modAdj:3,selectedMods:{},itemNote:''}
-                  ],
-                  note:'Test order — please ignore',waiterName:'Test Waiter',
-                  priority:'normal',createdAt:new Date().toISOString()
-                },{...settings,autoPrintKitchen:true},1);
-              }}>
-                <i className="fa fa-print"/> Print Test Ticket
-              </button>
-            </div>
-          </div>
-        )}
+  {tab==='printers'&&(
+  <div>
+    
+    {/* Cashier / Receipt Printer */}
+    <div className="section-hdr">🧾 Cashier Receipt Printer</div>
+    <div className="card" style={{marginBottom:12}}>
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:12,color:'var(--t2)',marginBottom:8}}>
+          Configure printer for customer receipts and bills.
+        </div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          <button className="btn btn-ghost btn-sm" onClick={() => configurePrinter('cashier', 'usb')}>
+            <i className="fa fa-usb"/> USB Printer
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => {
+            const ip = prompt('Enter printer IP address (e.g., 192.168.1.100):');
+            if (ip) configurePrinter('cashier', 'network', ip);
+          }}>
+            <i className="fa fa-network-wired"/> Network Printer
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={() => testPrinter('cashier')}>
+            <i className="fa fa-print"/> Test Print
+          </button>
+        </div>
+      </div>
+      <div style={{fontSize:11,color:'var(--t3)',padding:'8px 0 0 0',borderTop:'1px solid var(--border)'}}>
+        <i className="fa fa-info-circle"/> USB: Plug & play auto-detection. Network: Requires IP address (port 9100)
+      </div>
+    </div>
+
+    {/* Kitchen Printer */}
+    <div className="section-hdr">🍳 Kitchen Printer</div>
+    <div className="card" style={{marginBottom:12}}>
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:12,color:'var(--t2)',marginBottom:8}}>
+          Configure printer for kitchen order tickets.
+        </div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          <button className="btn btn-ghost btn-sm" onClick={() => configurePrinter('kitchen', 'usb')}>
+            <i className="fa fa-usb"/> USB Printer
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => {
+            const ip = prompt('Enter printer IP address (e.g., 192.168.1.101):');
+            if (ip) configurePrinter('kitchen', 'network', ip);
+          }}>
+            <i className="fa fa-network-wired"/> Network Printer
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={() => testPrinter('kitchen')}>
+            <i className="fa fa-print"/> Test Print
+          </button>
+        </div>
+      </div>
+      <Tog k="autoPrintKitchen" label="Auto-print kitchen ticket when order is sent"/>
+      <div className="form-g" style={{marginTop:12}}>
+        <label className="form-lbl">Kitchen Ticket Copies</label>
+        <div style={{display:'flex',gap:6}}>
+          {[1,2,3].map(n=>(
+            <button key={n} className={`chip${(settings.kitchenPrintCopies||1)===n?' active':''}`} onClick={()=>setSettings({kitchenPrintCopies:n})}>{n}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/* Paper Size Setting */}
+    <div className="section-hdr">📄 Paper Size</div>
+    <div className="card" style={{marginBottom:12}}>
+      <div className="form-g">
+        <label className="form-lbl">Receipt Paper Size</label>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          {[['80mm','80mm Thermal (standard)'],['57mm','57mm Thermal (mini)']].map(([v,l])=>(
+            <button key={v} className={`chip${(settings.thermalPaper||'80mm')===v?' active':''}`} style={{fontSize:11}} onClick={()=>setSettings({thermalPaper:v})}>{l}</button>
+          ))}
+        </div>
+        <div style={{fontSize:11,color:'var(--t3)',marginTop:5}}>
+          In your browser print dialog: set <strong style={{color:'var(--t1)'}}>Margins → None</strong> and select matching paper size.
+        </div>
+      </div>
+    </div>
+
+    {/* Test Print Section */}
+    <div className="section-hdr">🖨️ Test Prints</div>
+    <div className="card" style={{marginBottom:12}}>
+      <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+        <button className="btn btn-ghost btn-sm" onClick={() => {
+          printTestTicket();
+        }}>
+          <i className="fa fa-print"/> Test Receipt
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => {
+          printKitchenTicket({
+            id:'TEST-'+Date.now(),
+            tableNum:'TEST',
+            orderType:'dine-in',
+            items:[
+              {name:'Test Item',nameAr:'عنصر اختبار',qty:1,price:10,modAdj:0},
+              {name:'Another Item',nameAr:'عنصر آخر',qty:2,price:15,modAdj:0}
+            ],
+            note:'Test order',
+            createdAt:new Date().toISOString()
+          },settings,1);
+        }}>
+          <i className="fa fa-fire-flame-curved"/> Test Kitchen Ticket
+        </button>
+      </div>
+    </div>
+
+    {/* Printer Help */}
+    <div className="card">
+      <div className="section-hdr">🖨️ Printer Setup Guide</div>
+      <div style={{fontSize:12,color:'var(--t2)',lineHeight:1.8}}>
+        <div><strong>USB Printers:</strong> Connect via USB, drivers auto-detected.</div>
+        <div style={{marginTop:6}}><strong>Network Printers:</strong> Requires IP address. Common ports: 9100 (RAW), 631 (IPP)</div>
+        <div style={{marginTop:6}}><strong>Recommended:</strong> Epson TM-T20, TM-T88, or any ESC/POS compatible printer.</div>
+        <div style={{marginTop:6}}><strong>Test:</strong> After configuring, click "Test Print" to verify.</div>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* License */}
         {tab==='license'&&(
           <div>
-            {user.role==='admin'?<LicenseGenerator/>:(
-              <div style={{textAlign:'center',padding:40,color:'var(--t3)'}}>Admin access required</div>
+            <div className="section-hdr">🔑 License Status</div>
+            <LicenseStatusCard/>
+            {user.role==='admin'&&(
+              <>
+                <div className="divider"/>
+                <LicenseGenerator/>
+              </>
+            )}
+            {user.role!=='admin'&&(
+              <div style={{textAlign:'center',padding:24,color:'var(--t3)',fontSize:12}}>
+                <i className="fa fa-lock" style={{fontSize:24,marginBottom:8,display:'block'}}/>
+                Contact your admin to manage licenses.
+              </div>
             )}
           </div>
         )}
@@ -4006,6 +4371,102 @@ function LicenseGenerator(){
 }
 
 /* ======================================================
+   CLOSE ORDERS (END OF DAY) — admin only
+====================================================== */
+function CloseOrdersModal({onClose}){
+  const{orders,setOrders,tables,setTables,calcTotal,settings,toast,user,writeAudit}=useApp();
+  const cur=settings.currency||'SAR';
+
+  const paid=orders.filter(o=>o.status==='paid');
+  const voided=orders.filter(o=>o.status==='voided');
+  const active=orders.filter(o=>!['paid','voided','closed'].includes(o.status));
+  const archived=orders.filter(o=>o.status==='closed');
+
+  const totalRevenue=paid.reduce((s,o)=>s+calcTotal(o).total,0);
+  const todayPaid=paid.filter(o=>new Date(o.paidAt||o.updatedAt).toDateString()===new Date().toDateString());
+  const todayRevenue=todayPaid.reduce((s,o)=>s+calcTotal(o).total,0);
+
+  const closeDay=()=>{
+    // Mark all paid/voided as 'closed', free any stuck tables
+    const now=new Date().toISOString();
+    setOrders(prev=>prev.map(o=>
+      ['paid','voided'].includes(o.status)?{...o,status:'closed',closedAt:now}:o
+    ));
+    // Free any tables that might be stuck
+    setTables(prev=>prev.map(tb=>{
+      const order=orders.find(o=>o.id===tb.orderId);
+      if(!order||['paid','voided','closed'].includes(order.status)){
+        return{...tb,status:'available',orderId:null};
+      }
+      return tb;
+    }));
+    writeAudit('DAY_CLOSED',`Revenue: ${cur} ${todayRevenue.toFixed(2)} | Orders: ${todayPaid.length}`,user?.username);
+    toast(`Day closed — ${todayPaid.length} orders archived`,'success');
+    onClose();
+  };
+
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal" style={{maxWidth:420}}>
+        <div className="row-between" style={{marginBottom:16}}>
+          <div>
+            <h3 style={{fontSize:16}}>🌙 Close Orders / End of Day</h3>
+            <div style={{fontSize:11,color:'var(--t2)',marginTop:2}}>Archive all paid &amp; voided orders</div>
+          </div>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}><i className="fa fa-times"/></button>
+        </div>
+
+        {/* Today's summary */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:14}}>
+          <div style={{padding:'12px 14px',background:'var(--green-dim)',borderRadius:10}}>
+            <div style={{fontSize:11,color:'var(--green)',fontWeight:700,marginBottom:4}}>Today's Revenue</div>
+            <div style={{fontSize:20,fontWeight:800,color:'var(--green)'}}>{cur} {todayRevenue.toFixed(2)}</div>
+          </div>
+          <div style={{padding:'12px 14px',background:'var(--blue-dim)',borderRadius:10}}>
+            <div style={{fontSize:11,color:'var(--blue)',fontWeight:700,marginBottom:4}}>Today's Orders</div>
+            <div style={{fontSize:20,fontWeight:800,color:'var(--blue)'}}>{todayPaid.length}</div>
+          </div>
+        </div>
+
+        {/* Status breakdown */}
+        <div style={{padding:'10px 14px',background:'var(--elevated)',borderRadius:10,marginBottom:14}}>
+          {[
+            ['Active (open orders)',active.length,'var(--yellow)'],
+            ['Paid (will be archived)',paid.length,'var(--green)'],
+            ['Voided (will be archived)',voided.length,'var(--red)'],
+            ['Already archived',archived.length,'var(--t3)'],
+          ].map(([label,count,col])=>(
+            <div key={label} className="row-between" style={{padding:'4px 0',fontSize:12}}>
+              <span style={{color:'var(--t2)'}}>{label}</span>
+              <span style={{fontWeight:700,color:col}}>{count}</span>
+            </div>
+          ))}
+        </div>
+
+        {active.length>0&&(
+          <div style={{padding:'8px 12px',background:'var(--yellow-dim)',borderRadius:8,fontSize:12,color:'var(--yellow)',marginBottom:12,display:'flex',gap:8,alignItems:'flex-start'}}>
+            <i className="fa fa-triangle-exclamation" style={{marginTop:1}}/>
+            <span><strong>{active.length} order(s) are still open.</strong> Close them first or they will remain active after end-of-day.</span>
+          </div>
+        )}
+
+        <div style={{fontSize:11,color:'var(--t3)',marginBottom:14}}>
+          Closing archives all paid &amp; voided orders. Active orders stay open. All tables with closed orders will be freed.
+        </div>
+
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary btn-lg" style={{flex:1,justifyContent:'center'}} onClick={closeDay}
+            disabled={paid.length===0&&voided.length===0}>
+            <i className="fa fa-moon"/> Close Day — Archive {paid.length+voided.length} Orders
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ======================================================
    MAIN APP
 ====================================================== */
 function MainApp(){
@@ -4022,7 +4483,7 @@ function MainApp(){
   },[]);
 
   const roleScreens={
-    admin:['dashboard','tables','orders','menu','kitchen','reports','settings'],
+    admin:['dashboard','tables','orders','menu','kitchen','reports','settings','payments'],
     cashier:['tables','orders','reports'],
     waiter:['tables'],
     kitchen:['kitchen']
@@ -4053,6 +4514,7 @@ function MainApp(){
     dashboard:<Dashboard/>,
     tables:role==='cashier'?<CashierScreen/>:<WaiterScreen/>,
     orders:<OrdersScreen/>,
+    payments: <CashierScreen />,
     menu:<MenuManagement/>,
     kitchen:<KitchenScreen/>,
     reports:<Reports/>,
