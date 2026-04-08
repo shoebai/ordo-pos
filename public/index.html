@@ -49,7 +49,7 @@ h1{font-family:'Instrument Serif',serif;font-size:clamp(48px,7vw,82px);line-heig
 h1 em{font-style:italic;color:var(--gold2);}
 .hero-sub{font-size:17px;color:var(--t2);max-width:480px;line-height:1.7;margin-bottom:38px;font-weight:300;}
 .hero-actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
-.btn-primary{background:var(--gold);color:var(--ink);padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:.2s;letter-spacing:.2px;cursor:pointer;}
+.btn-primary{background:var(--gold);color:var(--ink);padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:.2s;letter-spacing:.2px;}
 .btn-primary:hover{background:var(--gold2);transform:translateY(-2px);box-shadow:0 8px 30px rgba(201,168,76,.3);}
 .btn-secondary{color:var(--t2);padding:14px 24px;border-radius:8px;font-weight:500;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:.2s;border:1px solid var(--border);}
 .btn-secondary:hover{color:var(--t1);border-color:var(--gold);}
@@ -118,8 +118,8 @@ h2 em{font-style:italic;color:var(--gold2);}
 .plan-features li::before{content:'✓';color:var(--gold);font-weight:700;flex-shrink:0;margin-top:1px;}
 .plan-features li.no::before{content:'–';color:var(--t3);}
 .plan-features li.no{color:var(--t3);}
-.plan-btn{display:block;text-align:center;padding:13px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;transition:.2s;cursor:pointer;}
-.plan-btn-outline{border:1px solid var(--border);color:var(--t2);background:transparent;}
+.plan-btn{display:block;text-align:center;padding:13px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;transition:.2s;}
+.plan-btn-outline{border:1px solid var(--border);color:var(--t2);}
 .plan-btn-outline:hover{border-color:var(--gold);color:var(--gold);}
 .plan-btn-gold{background:var(--gold);color:var(--ink);}
 .plan-btn-gold:hover{background:var(--gold2);transform:translateY(-1px);}
@@ -148,83 +148,6 @@ footer{padding:40px 6%;border-top:1px solid var(--border);display:flex;justify-c
 .footer-links a:hover{color:var(--t2);}
 .footer-copy{font-size:12px;color:var(--t3);}
 
-/* Login Modal Styles */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.95);
-    backdrop-filter: blur(12px);
-    z-index: 10000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-}
-.modal-content {
-    background: var(--ink2);
-    padding: 40px;
-    border-radius: 24px;
-    max-width: 420px;
-    width: 90%;
-    border: 1px solid var(--gold);
-    box-shadow: 0 30px 50px rgba(0,0,0,0.5);
-}
-.modal-content h2 {
-    color: var(--cream);
-    margin-bottom: 24px;
-    text-align: center;
-}
-.modal-input {
-    width: 100%;
-    margin: 12px 0;
-    padding: 14px;
-    background: var(--ink3);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: white;
-    font-size: 14px;
-}
-.modal-input:focus {
-    outline: none;
-    border-color: var(--gold);
-}
-.modal-btn {
-    background: var(--gold);
-    color: var(--ink);
-    padding: 14px;
-    width: 100%;
-    border: none;
-    border-radius: 10px;
-    font-weight: bold;
-    font-size: 14px;
-    cursor: pointer;
-    margin-top: 10px;
-}
-.modal-btn:hover {
-    background: var(--gold2);
-}
-.modal-cancel {
-    background: none;
-    color: var(--t2);
-    border: 1px solid var(--border);
-    margin-top: 10px;
-}
-.modal-cancel:hover {
-    border-color: var(--gold);
-    color: var(--gold);
-}
-.modal-demo {
-    text-align: center;
-    font-size: 11px;
-    color: var(--t3);
-    margin-top: 16px;
-}
-.modal-demo strong {
-    color: var(--gold);
-}
-
 /* ── Animations ── */
 @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @keyframes float{0%,100%{transform:perspective(1200px) rotateY(-8deg) rotateX(3deg) translateY(0)} 50%{transform:perspective(1200px) rotateY(-8deg) rotateX(3deg) translateY(-12px)}}
@@ -241,29 +164,14 @@ h1{animation-delay:.2s}
 </head>
 <body>
 
-<!-- Login Modal -->
-<div id="loginModal" class="modal-overlay">
-    <div class="modal-content">
-        <h2>🔐 Sign In to Ordo POS</h2>
-        <input type="email" id="loginEmail" class="modal-input" placeholder="Email address" autocomplete="email">
-        <input type="password" id="loginPassword" class="modal-input" placeholder="Password" autocomplete="current-password">
-        <button onclick="handleLogin()" class="modal-btn">Sign In →</button>
-        <button onclick="closeModal()" class="modal-btn modal-cancel">Cancel</button>
-        <div class="modal-demo">
-            <strong>Demo Credentials:</strong> demo@ordo.com / password123
-        </div>
-    </div>
-</div>
-
 <!-- NAV -->
 <nav>
   <div class="nav-logo">Ordo<span>Point of Sale</span></div>
   <div class="nav-links">
-    <a href="#" onclick="showLoginModal(); return false;" class="signin-btn" style="color:#c9a84c;">Sign In</a>
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
     <a href="#how">How it works</a>
-    <a href="#" onclick="showLoginModal(); return false;" class="nav-cta">Start Free Trial →</a>
+    <a href="register.html" class="nav-cta">Start Free Trial →</a>
   </div>
 </nav>
 
@@ -276,7 +184,7 @@ h1{animation-delay:.2s}
     <h1>The POS that runs as fast as your <em>kitchen</em></h1>
     <p class="hero-sub">Ordo is a complete restaurant management system — orders, tables, kitchen, reports, and QR menus — all in one tab.</p>
     <div class="hero-actions">
-      <a href="#" onclick="showLoginModal(); return false;" class="btn-primary">Start 14-Day Free Trial <span>→</span></a>
+      <a href="register.html" class="btn-primary">Start 14-Day Free Trial <span>→</span></a>
       <a href="#features" class="btn-secondary">See features</a>
     </div>
     <p class="hero-trial"><strong>No credit card required.</strong> Full access for 14 days.</p>
@@ -369,6 +277,7 @@ h1{animation-delay:.2s}
     <p class="section-sub" style="margin:0 auto">All plans include the full system. Pay only when you're ready.</p>
   </div>
   <div class="plans">
+
     <!-- Free Trial -->
     <div class="plan">
       <div class="plan-name">Free Trial</div>
@@ -383,134 +292,5 @@ h1{animation-delay:.2s}
         <li class="no">Priority support</li>
         <li class="no">Custom branding</li>
       </ul>
-      <a href="#" onclick="showLoginModal(); return false;" class="plan-btn plan-btn-outline">Start Free Trial</a>
-      <p class="plan-trial">No credit card required</p>
-    </div>
-
-    <!-- Pro Plan -->
-    <div class="plan featured">
-      <div class="plan-badge">Most Popular</div>
-      <div class="plan-name">Pro Plan</div>
-      <div class="plan-price"><sup>SAR</sup>299<sub>/month</sub></div>
-      <div class="plan-period">billed monthly</div>
-      <div class="plan-divider"></div>
-      <ul class="plan-features">
-        <li>Everything in Free Trial</li>
-        <li>Unlimited devices</li>
-        <li>Priority 24/7 support</li>
-        <li>Custom branding & domain</li>
-        <li>Advanced analytics</li>
-        <li>API access</li>
-      </ul>
-      <a href="#" onclick="showLoginModal(); return false;" class="plan-btn plan-btn-gold">Start Pro Trial →</a>
-      <p class="plan-trial">14-day free trial on Pro</p>
-    </div>
-
-    <!-- Enterprise -->
-    <div class="plan">
-      <div class="plan-name">Enterprise</div>
-      <div class="plan-price"><sup>SAR</sup>Custom</div>
-      <div class="plan-period">contact sales</div>
-      <div class="plan-divider"></div>
-      <ul class="plan-features">
-        <li>Everything in Pro</li>
-        <li>Dedicated account manager</li>
-        <li>SLA guarantee</li>
-        <li>On-premise deployment</li>
-        <li>Custom integrations</li>
-        <li>White-label solution</li>
-      </ul>
-      <a href="#" onclick="showLoginModal(); return false;" class="plan-btn plan-btn-outline">Contact Sales</a>
-    </div>
-  </div>
-</section>
-
-<!-- TESTIMONIALS -->
-<section class="testimonials">
-  <div style="text-align:center">
-    <div class="section-tag" style="justify-content:center">Loved by restaurants</div>
-    <h2>Trusted by <em>hundreds</em> of locations</h2>
-  </div>
-  <div class="testi-grid">
-    <div class="testi">
-      <div class="testi-text">"Ordo transformed our operations. The kitchen display system alone saved us 30% in wait times."</div>
-      <div class="testi-author"><div class="testi-avatar">🍕</div><div><div class="testi-name">Ahmed Al-Rashid</div><div class="testi-role">Owner, Pizza Hub</div></div></div>
-    </div>
-    <div class="testi">
-      <div class="testi-text">"The QR menu feature is brilliant. Customers love ordering from their phones, and we love the efficiency."</div>
-      <div class="testi-author"><div class="testi-avatar">☕</div><div><div class="testi-name">Noura Hassan</div><div class="testi-role">Manager, Brew Cafe</div></div></div>
-    </div>
-    <div class="testi">
-      <div class="testi-text">"Offline mode saved us during an internet outage. Orders kept coming, synced automatically later."</div>
-      <div class="testi-author"><div class="testi-avatar">🍣</div><div><div class="testi-name">Yusuf Karam</div><div class="testi-role">Director, Sushi House</div></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- CTA Section -->
-<section class="cta-section">
-  <h2>Ready to <em>accelerate</em> your restaurant?</h2>
-  <p>Join hundreds of restaurants using Ordo to serve faster, smarter, better.</p>
-  <a href="#" onclick="showLoginModal(); return false;" class="btn-primary" style="font-size:16px; padding:16px 36px;">Start Free Trial →</a>
-</section>
-
-<!-- FOOTER -->
-<footer>
-  <div class="footer-logo">Ordo<span style="font-size:12px;"> POS</span></div>
-  <div class="footer-links">
-    <a href="#features">Features</a>
-    <a href="#pricing">Pricing</a>
-    <a href="#how">How it works</a>
-    <a href="#" onclick="showLoginModal(); return false;">Sign In</a>
-  </div>
-  <div class="footer-copy">© 2024 Ordo POS — Restaurant Management System</div>
-</footer>
-
-<script>
-// Login Modal Functions
-function showLoginModal() {
-    document.getElementById('loginModal').style.display = 'flex';
-}
-
-function closeModal() {
-    document.getElementById('loginModal').style.display = 'none';
-    // Clear inputs
-    document.getElementById('loginEmail').value = '';
-    document.getElementById('loginPassword').value = '';
-}
-
-function handleLogin() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    
-    // Demo credentials check
-    if(email === 'demo@ordo.com' && password === 'password123') {
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userEmail', email);
-        localStorage.setItem('userName', 'Demo Restaurant');
-        window.location.href = 'dashboard.html';
-    } else {
-        alert('Invalid credentials.\n\nUse:\nEmail: demo@ordo.com\nPassword: password123');
-    }
-}
-
-// Close modal when clicking outside
-document.addEventListener('click', function(event) {
-    const modal = document.getElementById('loginModal');
-    const modalContent = document.querySelector('.modal-content');
-    if (event.target === modal) {
-        closeModal();
-    }
-});
-
-// Check if user is already logged in and redirect to dashboard
-document.addEventListener('DOMContentLoaded', function() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    if (isLoggedIn === 'true') {
-        window.location.href = 'dashboard.html';
-    }
-});
-</script>
-
-</body>
-</html>
+      <a href="register.html" class="plan-btn plan-btn-outline">Start Free Trial</a>
+      <p c
