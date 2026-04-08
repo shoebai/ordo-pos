@@ -15,8 +15,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<!-- Firebase (loaded only when cloud sync is configured) -->
+<!-- Firebase backend — Firestore sync only, no POS user accounts -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
 :root{
@@ -205,6 +206,7 @@ html.light *{transition:background-color .2s,border-color .18s,color .12s;}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.3)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 6px var(--green)}50%{opacity:.6;box-shadow:0 0 2px var(--green)}}
 
 /* ─── SAFE AREA INSETS ─── */
 /* --extra-bottom is injected by JS below for browser toolbar support */
@@ -228,6 +230,35 @@ html.light *{transition:background-color .2s,border-color .18s,color .12s;}
   padding-bottom: calc(var(--safe-bot) + 8px) !important;
 }
 
+/* ─── ORDER PANEL FOOTER (Send to Kitchen / Mark as Paid) ─── */
+/* Gives the action button breathing room above system nav bar  */
+.order-footer{
+  padding-bottom: calc(10px + var(--safe-bot)) !important;
+}
+
+/* On mobile the order-panel is the bottom half of the split screen —
+   it can sit right above the system nav bar, so it needs safe area */
+@media(max-width:599px){
+  .order-footer{
+    padding-bottom: calc(14px + var(--safe-bot)) !important;
+  }
+  /* The scroll area above the footer shouldn't create double-padding */
+  .order-panel .scroll-y{
+    padding-bottom: 4px;
+  }
+  /* Prevent the split container itself from adding extra bottom space */
+  .split{
+    padding-bottom: 0 !important;
+  }
+}
+
+/* Landscape mobile — no bottom nav, minimal safe area needed */
+@media(max-width:899px) and (max-height:500px){
+  .order-footer{
+    padding-bottom: calc(8px + var(--safe-bot)) !important;
+  }
+}
+
 /* Scrollable areas need room for nav + safe area */
 .mb-pad{
   padding-bottom: calc(var(--bot) + var(--safe-bot) + 16px) !important;
@@ -246,11 +277,9 @@ html.light *{transition:background-color .2s,border-color .18s,color .12s;}
 
 /* ─── GLOBAL TOUCH & PERFORMANCE ─── */
 *{-webkit-tap-highlight-color:transparent;tap-highlight-color:transparent;}
-button,a,[role=button]{touch-action:manipulation;cursor:pointer;}
+button,a,[role=button]{touch-action:manipulation;}
 .scroll-y{-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 input,select,textarea{-webkit-appearance:none;appearance:none;border-radius:var(--rs);}
-
-/* ─── SMOOTH ANIMATIONS ─── */
 .btn,.chip,.nav-tab,.bot-tab,.tbl-card,.m-card,.kit-card{will-change:transform;}
 .modal{will-change:transform,opacity;}
 
@@ -259,24 +288,20 @@ input,select,textarea{-webkit-appearance:none;appearance:none;border-radius:var(
 /* ═══ DESKTOP (>1024px) ═══ */
 @media(min-width:1025px){
   :root{--nav:60px;--bot:0px;}
-  .nav-tabs{max-width:none;}
-  /* Wider cashier left panel on big screens */
   .cashier-left{width:280px!important;}
 }
 
-/* ═══ TABLET LANDSCAPE (900px – 1024px) ═══ */
+/* ═══ TABLET LANDSCAPE (900–1024px) ═══ */
 @media(min-width:900px) and (max-width:1024px){
   :root{--nav:56px;--bot:0px;}
   .nav-tab{padding:5px 9px;font-size:11px;}
   .tbl-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;}
-  .tbl-card{padding:10px;}
-  .tbl-num{font-size:15px;}
   .stat-v{font-size:22px;}
   .m-img,.m-emoji{height:90px;}
   .theme-tog span{display:none;}
 }
 
-/* ═══ TABLET PORTRAIT (600px – 899px) ═══ */
+/* ═══ TABLET PORTRAIT (600–899px) ═══ */
 @media(min-width:600px) and (max-width:899px){
   :root{--nav:54px;--bot:0px;}
   .nav-tab{padding:5px 10px;font-size:11px;}
@@ -284,10 +309,8 @@ input,select,textarea{-webkit-appearance:none;appearance:none;border-radius:var(
   .stat-v{font-size:22px;}
   .tbl-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px;}
   .m-img,.m-emoji{height:95px;}
-  /* Modals stay centered (not bottom sheet) on tablet */
   .overlay{align-items:center;padding:20px;}
   .modal{border-radius:var(--rl);animation:fadeIn .2s ease;max-height:90vh;}
-  /* Cashier split: narrower left list */
   .cashier-left{width:200px!important;}
 }
 
@@ -295,99 +318,122 @@ input,select,textarea{-webkit-appearance:none;appearance:none;border-radius:var(
 @media(max-width:599px){
   :root{--nav:52px;--bot:60px;}
 
-  /* Nav bar */
   .nav-tabs,.hide-sm{display:none!important;}
   .nav-bar{padding:0 calc(10px + var(--sal)) 0 calc(10px + var(--sar));}
   .nav-logo{font-size:13px;}
   .theme-tog{padding:4px 8px;font-size:11px;}
   .theme-tog span{display:none;}
 
-  /* Bottom nav — always above system nav bar */
+  /* Bottom nav — elevated with active top-border indicator */
   .bot-nav{
-    display:flex;
+    display:flex;flex-direction:column;
     padding-bottom:var(--safe-bot);
     height:calc(var(--bot) + var(--safe-bot));
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    box-shadow:0 -4px 20px rgba(0,0,0,.18);
   }
   .bot-inner{
-    align-items:flex-start;
-    padding-top:4px;
-    overflow-x:auto;
-    justify-content:flex-start;
-    padding-left:4px;
-    padding-right:4px;
-    gap:0;
-    scrollbar-width:none;
+    display:flex;flex:1;overflow-x:auto;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    padding:0 2px;
   }
   .bot-inner::-webkit-scrollbar{display:none;}
-  .mb-pad{padding-bottom:calc(var(--bot) + var(--safe-bot) + 12px)!important;}
-  .bot-tab{font-size:9px;padding:5px 8px;min-width:44px;flex-shrink:0;}
-  .bot-tab i{font-size:18px;}
+  .bot-tab{
+    flex:1;min-width:50px;max-width:80px;flex-shrink:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;padding:5px 2px;font-size:9.5px;font-weight:600;
+    border:none;background:none;color:var(--t3);
+    border-top:2px solid transparent;
+    transition:color .15s,border-color .15s;
+  }
+  .bot-tab.active{color:var(--primary);border-top-color:var(--primary);}
+  .bot-tab i{font-size:20px;}
+  .mb-pad{padding-bottom:calc(var(--bot) + var(--safe-bot) + 14px)!important;}
 
-  /* Modals → full-screen bottom sheet */
+  /* Modals → bottom sheet with drag handle */
   .overlay{align-items:flex-end;padding:0;}
   .modal{
-    max-width:100%!important;
-    width:100%;
-    border-radius:20px 20px 0 0;
-    max-height:93vh;
+    max-width:100%!important;width:100%;
+    border-radius:22px 22px 0 0;max-height:92vh;
     animation:slideUpSheet .28s cubic-bezier(.22,.61,.36,1);
-    padding:20px 16px calc(20px + var(--safe-bot));
+    padding:0 16px calc(20px + var(--safe-bot));
+  }
+  .modal::before{
+    content:'';display:block;width:40px;height:4px;
+    background:var(--border);border-radius:99px;
+    margin:12px auto 16px;
   }
   .modal-lg{max-width:100%!important;}
 
-  /* Split screen (order/cashier) */
+  /* Split screens */
   .order-panel{width:100%!important;border:none!important;}
   .split{flex-direction:column!important;}
-  .split>.left-pane{height:57%!important;flex:none!important;min-height:0;}
-  .split>.order-panel{height:43%!important;min-height:0;}
+  .split>.left-pane{height:56%!important;flex:none!important;min-height:0;}
+  .split>.order-panel{height:44%!important;min-height:0;}
+  .cashier-wrap{flex-direction:column!important;}
+  .cashier-left{
+    width:100%!important;border-right:none!important;
+    border-bottom:1px solid var(--border)!important;
+    max-height:none!important;
+  }
+  /* Cashier table row — horizontal on mobile */
+  .cashier-left .scroll-y{
+    display:flex!important;flex-direction:row!important;
+    overflow-x:auto!important;overflow-y:hidden!important;
+    scrollbar-width:none;
+  }
+  .cashier-left .scroll-y::-webkit-scrollbar{display:none;}
+  .cashier-left .scroll-y>div{
+    flex-shrink:0;min-width:100px;
+    border-bottom:none!important;
+    border-right:1px solid var(--border)!important;
+  }
 
-  /* Cashier — stack vertically */
-  .cashier-left{width:100%!important;border-right:none!important;border-bottom:1px solid var(--border)!important;max-height:180px;}
-
-  /* Tables grid — 3 columns */
+  /* Tables grid */
   .tbl-grid{grid-template-columns:repeat(3,1fr);gap:8px;}
-  .tbl-card{padding:10px 6px;border-radius:10px;}
+  .tbl-card{padding:10px 6px;border-radius:12px;}
   .tbl-num{font-size:14px;}
   .tbl-card .sdot{width:7px;height:7px;top:7px;right:7px;}
 
-  /* Menu cards — 2 columns */
+  /* Menu cards */
   .m-grid-2{grid-template-columns:repeat(2,1fr)!important;}
-  .m-img,.m-emoji{height:88px;}
-  .m-emoji{font-size:34px;}
+  .m-img,.m-emoji{height:86px;}
+  .m-emoji{font-size:32px;}
 
-  /* Buttons — larger tap targets */
-  .btn{font-size:12px;padding:9px 14px;}
-  .btn-lg{padding:13px 20px;font-size:14px;}
-  .btn-icon{width:38px;height:38px;}
+  /* Buttons */
+  .btn{font-size:13px;padding:10px 16px;}
+  .btn-lg{padding:14px 22px;font-size:15px;}
+  .btn-icon{width:40px;height:40px;}
+  .btn-sm{padding:7px 13px;font-size:12px;}
 
-  /* Cards */
-  .card{padding:14px;}
+  /* Inputs — 16px stops iOS zoom */
+  .input{font-size:16px!important;padding:12px 14px;}
+  select.input{padding-right:28px;}
+  textarea.input{font-size:15px!important;}
 
-  /* Chips — touch-friendly */
-  .chip{padding:7px 13px;font-size:12px;}
-
-  /* Stats */
+  .card{padding:14px;border-radius:12px;}
+  .chip{padding:8px 14px;font-size:12px;}
   .stat-card{padding:14px;}
   .stat-v{font-size:22px;}
-
-  /* Kitchen cards */
   .kit-card{padding:12px;}
-
-  /* Inputs */
-  .input{font-size:16px;padding:11px 13px;}/* 16px prevents iOS zoom */
+  .section-hdr{font-size:11px;}
 }
 
-/* ═══ LANDSCAPE MOBILE (short height) ═══ */
+/* ═══ LANDSCAPE MOBILE ═══ */
 @media(max-width:899px) and (max-height:500px){
   :root{--nav:44px;--bot:0px;}
   .nav-tabs{display:flex!important;}
   .hide-sm{display:none!important;}
   .bot-nav{display:none!important;}
   .mb-pad{padding-bottom:16px!important;}
+  .split{flex-direction:row!important;}
   .split>.left-pane{height:100%!important;flex:1!important;}
   .split>.order-panel{height:100%!important;}
-  .split{flex-direction:row!important;}
+  .cashier-wrap{flex-direction:row!important;}
   .cashier-left{width:180px!important;max-height:none!important;border-right:1px solid var(--border)!important;border-bottom:none!important;}
+  .cashier-left .scroll-y{display:block!important;flex-direction:unset!important;overflow-x:hidden!important;overflow-y:auto!important;}
+  .cashier-left .scroll-y>div{min-width:0!important;border-right:none!important;border-bottom:1px solid var(--border)!important;}
   .modal{max-height:96vh;border-radius:var(--rl);}
   .overlay{align-items:center;padding:12px;}
 }
@@ -396,108 +442,35 @@ input,select,textarea{-webkit-appearance:none;appearance:none;border-radius:var(
 @media(max-width:380px){
   :root{--bot:56px;}
   .tbl-grid{grid-template-columns:repeat(2,1fr);}
-  .bot-tab{font-size:8.5px;min-width:38px;}
+  .bot-tab{font-size:8.5px;min-width:44px;}
   .stat-v{font-size:18px;}
-  .btn-lg{font-size:13px;padding:12px 16px;}
-  .input{font-size:16px;}
+  .btn-lg{font-size:14px;padding:13px 18px;}
 }
 
-/* ═══ DASHBOARD — stack charts on mobile ═══ */
-@media(max-width:700px){
-  .dash-charts{grid-template-columns:1fr!important;}
-}
+/* ═══ DASHBOARD charts ═══ */
+@media(max-width:700px){.dash-charts{grid-template-columns:1fr!important;}}
 
-/* ═══ CASHIER — stack on mobile ═══ */
-@media(max-width:599px){
-  .cashier-wrap{flex-direction:column!important;}
-}
-
-/* ═══ SETTINGS TABS — scrollable on any width ═══ */
+/* ═══ SETTINGS TABS ═══ */
 .settings-tabs{
   display:flex;gap:5px;flex-shrink:0;
   overflow-x:auto;padding:8px 12px;
   border-bottom:1px solid var(--border);
-  scrollbar-width:none;
-  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
 }
 .settings-tabs::-webkit-scrollbar{display:none;}
 
-/* ═══ SAFE-AREA AWARE TOAST ═══ */
+/* ═══ TOASTS — above bottom nav ═══ */
 @media(max-width:599px){
-  .toast-wrap{top:auto;bottom:calc(var(--bot) + var(--safe-bot) + 12px);right:10px;left:10px;}
-  .toast{justify-content:center;}
-}
-/* Main order panel structure */
-.order-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0; /* Critical for flex children to shrink properly */
-}
-
-/* Cart items container - scrollable area */
-.order-panel .cart-items {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-  padding: 8px;
-}
-
-/* Cart footer - stays fixed at bottom */
-.order-panel .cart-footer {
-  flex-shrink: 0;
-  padding: 12px;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-}
-
-/* Mobile devices - ensure cart doesn't get too small */
-@media(max-width: 599px) {
-  .order-panel {
-    height: 45% !important;
-    min-height: 200px;
+  .toast-wrap{
+    top:auto;bottom:calc(var(--bot) + var(--safe-bot) + 10px);
+    right:10px;left:10px;
   }
-  
-  .order-panel .cart-items {
-    max-height: calc(100% - 140px);
+  .toast{
+    justify-content:center;border-radius:12px;
+    font-size:13px;padding:10px 18px;
+    box-shadow:0 4px 24px rgba(0,0,0,.35);
   }
 }
-
-/* Landscape mobile mode */
-@media(max-width: 899px) and (max-height: 500px) {
-  .order-panel {
-    height: 100% !important;
-    width: 280px !important;
-  }
-}
-
-/* Ensure the send button is visible above bottom nav */
-.order-panel .cart-footer .btn-block {
-  margin-bottom: 10px;
-  position: relative;
-  z-index: 10;
-}
-
-/* Fix for split screen on mobile - cart area */
-@media(max-width: 599px) {
-  .split {
-    flex-direction: column !important;
-  }
-  
-  .split > .left-pane {
-    height: 55% !important;
-    flex: none !important;
-    min-height: 0;
-  }
-  
-  .split > .order-panel {
-    height: 45% !important;
-    flex: none !important;
-    min-height: 0;
-    width: 100% !important;
-  }
-}
-
 </style>
 </head>
 <body>
@@ -537,6 +510,7 @@ const{useState,useEffect,useCallback,useContext,createContext,useRef,useMemo}=Re
 /* ======================================================
    HELPERS
 ====================================================== */
+
 async function hashPw(pw){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('ORDO2_'+pw));
   return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
@@ -549,32 +523,74 @@ const LS={
   s:(k,v)=>{try{localStorage.setItem(nsKey(k),JSON.stringify(v));}catch{}},
   rm:k=>localStorage.removeItem(nsKey(k))
 };
-// ── Firebase cloud sync helper ───────────────────────────────────────────────
+// ── Firebase real-time sync helper ─────────────────────────────────────────
 const FB={
-  _db:null, _ref:null,
+  _db:null,_ref:null,_unsubs:[],
+  // Per-collection: timestamp of OUR last write — prevents echo loops
+  _localTs:{},
+  // Debounce timers per collection
+  _saveTimers:{},
+
   init(cfg,cid){
     try{
-      if(!cfg||!cfg.apiKey)return false;
-      if(!firebase.apps.length)firebase.initializeApp(cfg);
-      else firebase.app(); // reuse
+      if(!cfg||!cfg.apiKey||!cfg.projectId)return false;
+      if(firebase.apps.length){
+        // Re-init with new config if needed
+        try{firebase.app();}catch(e){}
+      } else {
+        firebase.initializeApp(cfg);
+      }
       this._db=firebase.firestore();
       this._ref=this._db.collection('ordo_clients').doc(cid);
       this._db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+      // Anonymous sign-in for Firestore security rules — NOT the POS staff login
+      firebase.auth().signInAnonymously().catch(()=>{});
       return true;
     }catch(e){console.warn('Firebase init failed:',e);return false;}
   },
-  async save(col,data){
+
+  // ── Real-time listener for a collection ────────────────────────────────
+  // cb(data) is called whenever ANOTHER device saves new data
+  listen(col,cb){
+    if(!this._ref)return()=>{};
+    const docRef=this._ref.collection(col).doc('__data__');
+    const unsub=docRef.onSnapshot(snap=>{
+      if(!snap.exists||snap.metadata.hasPendingWrites)return;
+      const d=snap.data();
+      if(!d)return;
+      const theirTs=d.ts||0;
+      const ourTs=this._localTs[col]||0;
+      // Only apply if the incoming write is meaningfully newer than ours
+      // (1500ms grace window absorbs our own echo coming back)
+      if(theirTs>ourTs+1500){
+        cb(d.v);
+      }
+    },err=>console.warn('FB onSnapshot ['+col+']:',err));
+    this._unsubs.push(unsub);
+    return unsub;
+  },
+
+  // ── Debounced save (800ms) — avoids hammering Firestore on rapid changes ─
+  save(col,data){
     if(!this._ref)return;
-    try{await this._ref.collection(col).doc('__data__').set({v:data,ts:Date.now()});}
-    catch(e){console.warn('FB save failed:',e);}
+    clearTimeout(this._saveTimers[col]);
+    this._saveTimers[col]=setTimeout(async()=>{
+      const ts=Date.now();
+      this._localTs[col]=ts;
+      try{
+        await this._ref.collection(col).doc('__data__').set({v:data,ts});
+      }catch(e){console.warn('FB save failed ['+col+']:',e);}
+    },800);
   },
-  async load(col){
-    if(!this._ref)return null;
-    try{
-      const d=await this._ref.collection(col).doc('__data__').get();
-      return d.exists?d.data().v:null;
-    }catch(e){return null;}
+
+  // ── Stop all listeners (called on logout / reinit) ─────────────────────
+  stopAll(){
+    this._unsubs.forEach(u=>{try{u();}catch{}});
+    this._unsubs=[];
+    Object.values(this._saveTimers).forEach(t=>clearTimeout(t));
+    this._saveTimers={};
   },
+
   get ready(){return!!this._ref;}
 };
 const fmt=(n,cur='SAR')=>`${cur} ${Number(n).toFixed(2)}`;
@@ -673,7 +689,7 @@ const TR={
 en:{
   appName:'Ordo POS',login:'Login',logout:'Logout',username:'Username',password:'Password',
   admin:'Admin',cashier:'Cashier',waiter:'Waiter',kitchen:'Kitchen',
-  tables:'Tables',orders:'Orders',menu:'Menu',reports:'Reports',dashboard:'Dashboard',settings:'Settings',
+  tables:'Tables',orders:'Orders',menu:'Menu',reports:'Reports',dashboard:'Dashboard',settings:'Settings',cashier:'Cashier',
   avail:'Available',occupied:'Occupied',billReady:'Bill',table:'Table',
   addItem:'Add Item',sendKitchen:'Send to Kitchen',orderSent:'Order sent!',
   items:'Items',qty:'Qty',price:'Price',total:'Total',subtotal:'Subtotal',
@@ -712,7 +728,7 @@ en:{
 ar:{
   appName:'Ordo',login:'دخول',logout:'خروج',username:'المستخدم',password:'كلمة المرور',
   admin:'مدير',cashier:'كاشير',waiter:'نادل',kitchen:'مطبخ',
-  tables:'طاولات',orders:'طلبات',menu:'القائمة',reports:'تقارير',dashboard:'الرئيسية',settings:'الإعدادات',
+  tables:'طاولات',orders:'طلبات',menu:'القائمة',reports:'تقارير',dashboard:'الرئيسية',settings:'الإعدادات',cashier:'الكاشير',
   avail:'متاحة',occupied:'مشغولة',billReady:'فاتورة',table:'طاولة',
   addItem:'إضافة',sendKitchen:'إرسال للمطبخ',orderSent:'تم الإرسال!',
   items:'أصناف',qty:'كمية',price:'سعر',total:'المجموع',subtotal:'المجموع الفرعي',
@@ -759,7 +775,7 @@ const DEF_SETTINGS={
   vatRate:15,currency:'SAR',
   enableTips:true,enableDelivery:true,kitchenSound:true,sessionTimeout:480,
   receiptFooter:'Thank you for dining with us!',receiptFooterAr:'شكراً لزيارتكم!',
-  autoPrintKitchen:true,kitchenPrintCopies:1,thermalPaper:'80mm',
+  autoPrintKitchen:true,kitchenPrintCopies:1,thermalPaper:'80mm',adminEmail:'',
   firebaseApiKey:'',firebaseProjectId:'',firebaseAppId:'',
   globalExtras:[
     {id:'ge1',name:'Extra Spicy',nameAr:'حار جداً',adj:0,emoji:'🌶️'},
@@ -936,6 +952,7 @@ function Provider({children}){
   const[clientId,setClientIdS]=useState(()=>localStorage.getItem('ordo_clientId')||'');
   const[fbReady,setFbReady]=useState(false);
   const[showClientSetup,setShowClientSetup]=useState(false);
+  const[syncStatus,setSyncStatus]=useState('offline'); // 'offline'|'connecting'|'live'|'error'
 
   // Auto-initialise clientId on first run — no welcome dialog needed
   useEffect(()=>{
@@ -1027,30 +1044,51 @@ function Provider({children}){
     return true;
   },[]);
 
-  // Firebase init whenever firebaseApiKey/projectId changes
+  // ── Firebase: init + real-time listeners ──────────────────────────────────
+  // Re-runs whenever Firebase settings change
+  const _fbSetupDone=useRef(false);
   useEffect(()=>{
     const cfg=LS.g('settings');
-    if(cfg&&cfg.firebaseApiKey&&cfg.firebaseProjectId&&getCID()){
-      const ok=FB.init({
-        apiKey:cfg.firebaseApiKey,
-        projectId:cfg.firebaseProjectId,
-        appId:cfg.firebaseAppId||''
-      },getCID());
-      setFbReady(ok);
-      if(ok){
-        // Try to load latest data from cloud on startup
-        Promise.all([
-          FB.load('orders'),FB.load('items'),FB.load('cats'),
-          FB.load('tables'),FB.load('settings')
-        ]).then(([fo,fi,fc,ft,fs])=>{
-          if(fo&&Array.isArray(fo))setOrders(fo);
-          if(fi&&Array.isArray(fi))setItems(fi);
-          if(fc&&Array.isArray(fc))setCats(fc);
-          if(ft&&Array.isArray(ft))setTables(ft);
-          if(fs&&typeof fs==='object')setSettingsS(s=>Object.assign({},s,fs));
-        }).catch(()=>{});
+    if(!cfg||!cfg.firebaseApiKey||!cfg.firebaseProjectId||!getCID())return;
+    setSyncStatus('connecting');
+    FB.stopAll(); // clean up old listeners first
+    const ok=FB.init({
+      apiKey:cfg.firebaseApiKey,
+      projectId:cfg.firebaseProjectId,
+      appId:cfg.firebaseAppId||''
+    },getCID());
+    if(!ok){setSyncStatus('error');return;}
+    setFbReady(true);
+
+    // Track Firestore network connectivity
+    try{
+      FB._db.collection('ordo_clients').doc(getCID())
+        .collection('_ping').doc('ping')
+        .onSnapshot(()=>setSyncStatus('live'),()=>setSyncStatus('error'));
+    }catch{}
+
+    // ── Real-time listeners — update state when any device saves ──────────
+    FB.listen('orders', data=>{
+      if(Array.isArray(data)){setOrders(data);LS.s('orders',data);}
+    });
+    FB.listen('tables', data=>{
+      if(Array.isArray(data)){setTables(data);LS.s('tables',data);}
+    });
+    FB.listen('items', data=>{
+      if(Array.isArray(data)){setItems(data);LS.s('items',data);}
+    });
+    FB.listen('cats', data=>{
+      if(Array.isArray(data)){setCats(data);LS.s('cats',data);}
+    });
+    FB.listen('settings', data=>{
+      if(data&&typeof data==='object'){
+        setSettingsS(s=>Object.assign({},s,data));
+        LS.s('settings',data);
       }
-    }
+    });
+
+    setSyncStatus('live');
+    return()=>{FB.stopAll();setSyncStatus('offline');};
   },[]);
 
   // Hash default passwords on first boot — force rehash if upgrading from old prefix
@@ -1104,6 +1142,13 @@ function Provider({children}){
   const t=useCallback(k=>(TR[lang]||TR.en)[k]||k,[lang]);
   const setLang=l=>setLangS(l);
   const setSettings=upd=>setSettingsS(p=>({...p,...(typeof upd==='function'?upd(p):upd)}));
+
+  // Allow LicenseGenerator to update adminEmail via custom event (avoids prop drilling)
+  useEffect(()=>{
+    const h=e=>setSettings({adminEmail:e.detail});
+    document.addEventListener('ordo-set-admin-email',h);
+    return()=>document.removeEventListener('ordo-set-admin-email',h);
+  },[]);
 
   const toast=useCallback((msg,type='info',dur=3500)=>{
     const id=uid();
@@ -1176,7 +1221,14 @@ function Provider({children}){
       orderType:orderType||'dine-in',priority:'normal',
       createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
     setOrders(p=>[...p,order]);
-    if(tableId)setTables(p=>p.map(tb=>tb.id===tableId?{...tb,status:'ordered',orderId:id}:tb));
+    if(tableId){
+      setTables(p=>p.map(tb=>{
+        if(tb.id!==tableId)return tb;
+        // Only set orderId if table is currently free; keep existing orderId if occupied
+        const newOrdId=tb.status==='available'?id:tb.orderId;
+        return{...tb,status:'ordered',orderId:newOrdId};
+      }));
+    }
     writeAudit('ORDER_NEW','Table:'+tableNum+' Items:'+itemsList.length,user?.username);
     toast(t('orderSent'),'success');beep();
     setTimeout(()=>printKitchenTicket(order,settings),100);
@@ -1203,13 +1255,19 @@ function Provider({children}){
     setOrders(p=>p.map(o=>{
       if(o.id!==orderId)return o;
       const upd={...o,...updates,updatedAt:new Date().toISOString()};
-      if(updates.status==='paid'){
-        setTables(tt=>tt.map(tb=>tb.id===o.tableId?{...tb,status:'available',orderId:null}:tb));
-        writeAudit('ORDER_PAID','Order:'+orderId+' Method:'+(updates.paymentMethod||'?'),user?.username);
-      }
-      if(updates.status==='voided'){
-        setTables(tt=>tt.map(tb=>tb.id===o.tableId?{...tb,status:'available',orderId:null}:tb));
-        writeAudit('ORDER_VOIDED','Order:'+orderId+' Reason:'+(updates.voidReason||'none'),user?.username);
+      if(updates.status==='paid'||updates.status==='voided'){
+        // Free table only if all other orders on same table are also done
+        setTables(tt=>tt.map(tb=>{
+          if(tb.tableId!==o.tableId&&tb.id!==o.tableId)return tb;
+          // check remaining active orders for this table (excluding the one just paid)
+          const remaining=p.filter(x=>x.id!==orderId&&x.tableId===tb.id&&!['paid','voided','closed'].includes(x.status));
+          if(remaining.length===0){
+            return{...tb,status:'available',orderId:null};
+          }
+          return tb;
+        }));
+        if(updates.status==='paid')writeAudit('ORDER_PAID','Order:'+orderId+' Method:'+(updates.paymentMethod||'?'),user?.username);
+        if(updates.status==='voided')writeAudit('ORDER_VOIDED','Order:'+orderId+' Reason:'+(updates.voidReason||'none'),user?.username);
       }
       if(updates.status==='billed'){
         setTables(tt=>tt.map(tb=>tb.id===o.tableId?{...tb,status:'bill'}:tb));
@@ -1230,6 +1288,28 @@ function Provider({children}){
     if(outcome==='accepted')setPwaEvt(null);
   },[pwaEvt]);
 
+  const reinitFirebase=useCallback(()=>{
+    const cfg=LS.g('settings');
+    if(!cfg||!cfg.firebaseApiKey||!cfg.firebaseProjectId||!getCID()){
+      setSyncStatus('offline');setFbReady(false);return;
+    }
+    setSyncStatus('connecting');
+    FB.stopAll();
+    const ok=FB.init({
+      apiKey:cfg.firebaseApiKey,
+      projectId:cfg.firebaseProjectId,
+      appId:cfg.firebaseAppId||''
+    },getCID());
+    if(!ok){setSyncStatus('error');setFbReady(false);return;}
+    setFbReady(true);
+    FB.listen('orders',data=>{if(Array.isArray(data)){setOrders(data);LS.s('orders',data);}});
+    FB.listen('tables',data=>{if(Array.isArray(data)){setTables(data);LS.s('tables',data);}});
+    FB.listen('items',data=>{if(Array.isArray(data)){setItems(data);LS.s('items',data);}});
+    FB.listen('cats',data=>{if(Array.isArray(data)){setCats(data);LS.s('cats',data);}});
+    FB.listen('settings',data=>{if(data&&typeof data==='object'){setSettingsS(s=>Object.assign({},s,data));LS.s('settings',data);}});
+    setSyncStatus('live');
+  },[]);
+
   return(
     <Ctx.Provider value={{
       lang,t,setLang,user,setUser,login,logout,ready,
@@ -1238,7 +1318,8 @@ function Provider({children}){
       toasts,toast,createOrder,addItemsToOrder,updateOrder,calcTotal,beep,confirm,
       pwaEvt,pwaInstall,theme,toggleTheme,
       clientId,setClientId,fbReady,showClientSetup,setShowClientSetup,
-      license,licenseChecked,inactiveWarning,setInactiveWarning,resetInactivity,writeAudit
+      license,licenseChecked,inactiveWarning,setInactiveWarning,resetInactivity,writeAudit,
+      syncStatus,reinitFirebase
     }}>
       {children}
       <ToastContainer/>
@@ -1398,8 +1479,16 @@ function LoginScreen(){
    HEADER
 ====================================================== */
 function Header({screen,setScreen,allowed}){
-  const{t,user,logout,lang,setLang,settings,pwaEvt,pwaInstall,theme,toggleTheme}=useApp();
-  const ic={dashboard:'fa-chart-pie',tables:'fa-border-all',orders:'fa-receipt',menu:'fa-utensils',kitchen:'fa-fire-flame-curved',reports:'fa-chart-bar',settings:'fa-cog'};
+  const{t,user,logout,lang,setLang,settings,pwaEvt,pwaInstall,theme,toggleTheme,syncStatus}=useApp();
+  const ic={dashboard:'fa-chart-pie',tables:'fa-border-all',cashier:'fa-cash-register',orders:'fa-receipt',menu:'fa-utensils',kitchen:'fa-fire-flame-curved',reports:'fa-chart-bar',settings:'fa-cog'};
+
+  const syncCfg={
+    live:{c:'var(--green)',label:'Live',glow:true},
+    connecting:{c:'var(--yellow)',label:'Sync…',glow:false},
+    error:{c:'var(--red)',label:'Error',glow:false},
+    offline:{c:'var(--t3)',label:'Local',glow:false},
+  }[syncStatus]||{c:'var(--t3)',label:'Local',glow:false};
+
   return(
     <header className="nav-bar no-print">
       <div className="nav-logo">✦ <span className="hide-sm">{(lang==='ar'?settings.restaurantNameAr:settings.restaurantName)||'Ordo'}</span></div>
@@ -1411,6 +1500,16 @@ function Header({screen,setScreen,allowed}){
         ))}
       </div>
       <div style={{display:'flex',gap:6,alignItems:'center'}}>
+        {/* Sync status pill */}
+        <div title={`Sync: ${syncStatus}`} style={{display:'flex',alignItems:'center',gap:4,padding:'3px 8px',background:'var(--elevated)',borderRadius:99,border:'1px solid var(--border)',cursor:'default'}}>
+          <span style={{
+            display:'inline-block',width:7,height:7,borderRadius:'50%',
+            background:syncCfg.c,flexShrink:0,
+            boxShadow:syncCfg.glow?`0 0 6px ${syncCfg.c}`:'none',
+            animation:syncStatus==='connecting'?'pulse 1s infinite':'none'
+          }}/>
+          <span className="hide-sm" style={{fontSize:10,fontWeight:600,color:'var(--t2)'}}>{syncCfg.label}</span>
+        </div>
         <button className="theme-tog" onClick={toggleTheme} title={theme==='dark'?'Day mode':'Night mode'}>
           {theme==='dark'?<><i className="fa fa-sun"/> <span className="hide-sm">Day</span></>:<><i className="fa fa-moon"/> <span className="hide-sm">Night</span></>}
         </button>
@@ -1425,7 +1524,7 @@ function Header({screen,setScreen,allowed}){
 
 function BotNav({screen,setScreen,allowed}){
   const{t}=useApp();
-  const ic={dashboard:'fa-chart-pie',tables:'fa-border-all',orders:'fa-receipt',menu:'fa-utensils',kitchen:'fa-fire-flame-curved',reports:'fa-chart-bar',settings:'fa-cog'};
+  const ic={dashboard:'fa-chart-pie',tables:'fa-border-all',cashier:'fa-cash-register',orders:'fa-receipt',menu:'fa-utensils',kitchen:'fa-fire-flame-curved',reports:'fa-chart-bar',settings:'fa-cog'};
   return(
     <div className="bot-nav no-print">
       <div className="bot-inner">
@@ -1710,7 +1809,7 @@ function OrderScreen({table,existingOrder,onBack}){
       {modItem&&<ModModal item={modItem} lang={lang} onConfirm={itm=>{insert(itm);setModItem(null);}} onClose={()=>setModItem(null)}/>}
 
       {/* Left: menu */}
-      <div className="left-pane" style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div className="left-pane" style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minWidth:0,minHeight:0}}>
         <div style={{padding:'9px 12px',borderBottom:'1px solid var(--border)',display:'flex',gap:8,alignItems:'center',flexShrink:0,flexWrap:'wrap'}}>
           <button className="btn btn-ghost btn-sm" onClick={onBack}><i className="fa fa-arrow-left"/></button>
           <div>
@@ -1766,11 +1865,11 @@ function OrderScreen({table,existingOrder,onBack}){
       </div>
 
       {/* Right: cart */}
-      <div className="order-panel" style={{width:280,flexShrink:0}}>
+      <div className="order-panel" style={{width:280,flexShrink:0,overflow:'hidden',display:'flex',flexDirection:'column'}}>
         <div style={{padding:'10px 12px',borderBottom:'1px solid var(--border)',fontWeight:700,fontSize:13,flexShrink:0}}>
           🛒 {t('cart')} ({cartQty})
         </div>
-        <div className="scroll-y" style={{flex:1,padding:8}}>
+        <div className="scroll-y" style={{flex:1,padding:8,minHeight:0}}>
           {!cart.length&&<div style={{textAlign:'center',padding:28,color:'var(--t3)',fontSize:12}}>{lang==='ar'?'اختر من القائمة':'Tap menu items to add'}</div>}
           {cart.map(c=>{
             const k=cartKey(c);
@@ -1784,26 +1883,26 @@ function OrderScreen({table,existingOrder,onBack}){
                   <div style={{fontSize:11,color:'var(--primary)',fontWeight:700}}>{cur} {((c.price+(c.modAdj||0))*c.qty).toFixed(2)}</div>
                 </div>
                 <div style={{display:'flex',gap:3,alignItems:'center',flexShrink:0}}>
-                  <button className="btn btn-ghost btn-icon" style={{width:26,height:26,fontSize:14}} onClick={()=>chQty(k,-1)}>-</button>
-                  <span style={{width:18,textAlign:'center',fontSize:12,fontWeight:700}}>{c.qty}</span>
-                  <button className="btn btn-ghost btn-icon" style={{width:26,height:26,fontSize:14}} onClick={()=>chQty(k,1)}>+</button>
+                  <button className="btn btn-ghost btn-icon" style={{width:30,height:30,fontSize:16}} onClick={()=>chQty(k,-1)}>−</button>
+                  <span style={{width:20,textAlign:'center',fontSize:13,fontWeight:700}}>{c.qty}</span>
+                  <button className="btn btn-ghost btn-icon" style={{width:30,height:30,fontSize:16}} onClick={()=>chQty(k,1)}>+</button>
                 </div>
               </div>
             );
           })}
         </div>
-    <div style={{padding:10,borderTop:'1px solid var(--border)',flexShrink:0, paddingBottom:'calc(12px + env(safe-area-inset-bottom, 0px) + 70px)'}}>
-  <textarea className="input" placeholder={t('addNote')} value={note} onChange={e=>setNote(e.target.value)} rows={2} style={{marginBottom:8,fontSize:12}}/>
-  {cart.length>0&&(
-    <div className="row-between" style={{marginBottom:8}}>
-      <span style={{fontSize:12,color:'var(--t2)'}}>{t('total')}</span>
-      <span style={{fontWeight:700,color:'var(--primary)',fontSize:14}}>{cur} {cartTotal.toFixed(2)}</span>
-    </div>
-  )}
-  <button className="btn btn-primary btn-block" onClick={send} disabled={!cart.length} style={{marginBottom:'10px'}}>
-    <i className={`fa ${isAdd?'fa-plus':'fa-paper-plane'}`}/> {isAdd?t('addToOrder'):t('sendKitchen')}
-  </button>
-</div>
+        <div className="order-footer" style={{padding:10,borderTop:'1px solid var(--border)',flexShrink:0,background:'var(--surface)'}}>
+          <textarea className="input" placeholder={t('addNote')} value={note} onChange={e=>setNote(e.target.value)} rows={2} style={{marginBottom:8,fontSize:12,resize:'none'}}/>
+          {cart.length>0&&(
+            <div className="row-between" style={{marginBottom:8}}>
+              <span style={{fontSize:12,color:'var(--t2)'}}>{t('total')}</span>
+              <span style={{fontWeight:700,color:'var(--primary)',fontSize:15}}>{cur} {cartTotal.toFixed(2)}</span>
+            </div>
+          )}
+          <button className="btn btn-primary btn-block btn-lg" style={{justifyContent:'center'}} onClick={send} disabled={!cart.length}>
+            <i className={`fa ${isAdd?'fa-plus':'fa-paper-plane'}`}/> {isAdd?t('addToOrder'):t('sendKitchen')}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1813,8 +1912,10 @@ function OrderScreen({table,existingOrder,onBack}){
    WAITER SCREEN
 ====================================================== */
 function WaiterScreen(){
-  const{t,lang,tables,orders,confirm}=useApp();
-  const[selTbl,setSelTbl]=useState(null);const[addMode,setAddMode]=useState(false);
+  const{t,lang,tables,orders,setTables,confirm}=useApp();
+  const[selTbl,setSelTbl]=useState(null);
+  const[addMode,setAddMode]=useState(false);
+  const[tableAction,setTableAction]=useState(null); // {table, activeOrders}
   const statusLbl={available:t('avail'),ordered:t('occupied'),bill:t('billReady')};
 
   if(selTbl){
@@ -1822,18 +1923,73 @@ function WaiterScreen(){
     return<OrderScreen table={selTbl} existingOrder={existOrd} onBack={()=>{setSelTbl(null);setAddMode(false);}}/>;
   }
 
+  const handleTableTap=(tb)=>{
+    if(tb.status==='available'){
+      setAddMode(false);setSelTbl(tb);
+    } else {
+      // Collect ALL active orders for this table (not just orderId)
+      const activeOrders=orders.filter(o=>o.tableId===tb.id&&!['paid','voided','closed'].includes(o.status));
+      setTableAction({table:tb,activeOrders});
+    }
+  };
+
   return(
     <div className="scroll-y mb-pad" style={{padding:16,flex:1}}>
+      {/* Table action sheet */}
+      {tableAction&&(
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setTableAction(null)}>
+          <div className="modal" style={{maxWidth:360}}>
+            <div className="row-between" style={{marginBottom:14}}>
+              <div>
+                <h3 style={{fontSize:16}}>🪑 {tableAction.table.num}</h3>
+                <div style={{fontSize:11,color:'var(--t2)',marginTop:2}}>
+                  {tableAction.activeOrders.length} active order{tableAction.activeOrders.length!==1?'s':''}
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>setTableAction(null)}><i className="fa fa-times"/></button>
+            </div>
+
+            {/* Existing orders list */}
+            {tableAction.activeOrders.map(o=>(
+              <div key={o.id} style={{display:'flex',gap:8,alignItems:'center',padding:'8px 10px',background:'var(--elevated)',borderRadius:8,marginBottom:7}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,fontWeight:700}}>Order #{o.id.slice(-6)}</div>
+                  <div style={{fontSize:11,color:'var(--t2)'}}>{(o.items||[]).length} items · {o.orderType}</div>
+                </div>
+                <span className={`badge badge-${o.status==='new'?'yellow':o.status==='in-progress'?'blue':'green'}`} style={{fontSize:10}}>{o.status}</span>
+                <button className="btn btn-ghost btn-sm" onClick={()=>{
+                  setAddMode(true);
+                  // Point selTbl orderId at this specific order
+                  setSelTbl({...tableAction.table,orderId:o.id});
+                  setTableAction(null);
+                }}><i className="fa fa-plus"/> Add</button>
+              </div>
+            ))}
+
+            <div className="divider"/>
+
+            {/* Action buttons */}
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              <button className="btn btn-primary btn-block" style={{justifyContent:'center'}} onClick={()=>{
+                setAddMode(false);setSelTbl(tableAction.table);setTableAction(null);
+              }}>
+                <i className="fa fa-plus-circle"/> Start New Order on {tableAction.table.num}
+              </button>
+              <button className="btn btn-ghost btn-block" style={{justifyContent:'center'}} onClick={()=>setTableAction(null)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="tbl-grid">
         {tables.map(tb=>{
+          const activeOrds=orders.filter(o=>o.tableId===tb.id&&!['paid','voided','closed'].includes(o.status));
           const ord=orders.find(o=>o.id===tb.orderId);
+          const extraOrders=activeOrds.length>1?activeOrds.length-1:0;
           return(
-            <div key={tb.id} className={`tbl-card ${tb.status}`} onClick={()=>{
-              if(tb.status==='available'){setAddMode(false);setSelTbl(tb);}
-              else if(tb.status==='ordered'&&ord){
-                confirm(tb.num+' — Add more items to existing order?').then(function(yes){if(yes){setAddMode(true);setSelTbl(tb);}});
-              }
-            }}>
+            <div key={tb.id} className={`tbl-card ${tb.status}`} onClick={()=>handleTableTap(tb)}>
               <div className="sdot"/>
               <span style={{fontSize:28}}>🪑</span>
               <div className="tbl-num">{tb.num}</div>
@@ -1841,7 +1997,12 @@ function WaiterScreen(){
               <span className={`badge badge-${tb.status==='available'?'green':tb.status==='ordered'?'yellow':'red'}`} style={{marginTop:5,fontSize:10}}>
                 {statusLbl[tb.status]}
               </span>
-              {ord&&<KitTimer at={ord.createdAt}/>}
+              {activeOrds.length>0&&<KitTimer at={activeOrds[0].createdAt}/>}
+              {extraOrders>0&&(
+                <div style={{marginTop:4,background:'var(--purple)',color:'#fff',borderRadius:99,fontSize:9,fontWeight:700,padding:'1px 6px'}}>
+                  +{extraOrders} more
+                </div>
+              )}
             </div>
           );
         })}
@@ -2151,7 +2312,9 @@ function EditOrderModal({order,onClose}){
 ====================================================== */
 function CashierScreen(){
   const{t,lang,tables,orders,updateOrder,calcTotal,settings,toast}=useApp();
-  const[selTbl,setSelTbl]=useState(null);const[discount,setDisc]=useState(0);
+  const[selTbl,setSelTbl]=useState(null);
+  const[selOrderId,setSelOrderId]=useState(null); // which order is active in multi-order view
+  const[discount,setDisc]=useState(0);
   const[payMethod,setPay]=useState('cash');const[received,setReceived]=useState('');
   const[tip,setTip]=useState(0);const[showSplit,setShowSplit]=useState(false);
   const[voidId,setVoidId]=useState(null);const[voidReason,setVoidReason]=useState('');
@@ -2159,7 +2322,19 @@ function CashierScreen(){
   const cur=settings.currency||'SAR';
 
   const activeTables=tables.filter(tb=>tb.status==='ordered'||tb.status==='bill');
-  const selOrder=selTbl?orders.find(o=>o.id===selTbl.orderId):null;
+
+  // All active orders for selected table
+  const tableOrders=selTbl
+    ? orders.filter(o=>o.tableId===selTbl.id&&!['paid','voided','closed'].includes(o.status))
+    : [];
+
+  // Selected order within the table (default to first)
+  const selOrder=tableOrders.find(o=>o.id===selOrderId)||tableOrders[0]||null;
+
+  // When table changes, reset order selection
+  const selectTable=(tb)=>{
+    setSelTbl(tb);setSelOrderId(null);setDisc(0);setTip(0);setReceived('');setPay('cash');
+  };
 
   const{sub,disc,after,vat,total}=selOrder?{...calcTotal({...selOrder,discount,tip}),tip}:{sub:0,disc:0,after:0,vat:0,total:0,tip:0};
   const change=received?Math.max(0,parseFloat(received)-total):0;
@@ -2168,7 +2343,14 @@ function CashierScreen(){
     if(!selOrder)return;
     updateOrder(selOrder.id,{status:'paid',discount,tip,paymentMethod:payMethod,paidAt:new Date().toISOString()});
     toast(`Payment accepted · ${cur} ${total.toFixed(2)}`,'success');
-    setSelTbl(null);setDisc(0);setTip(0);setReceived('');
+    // Check if there are more orders on the same table
+    const remaining=tableOrders.filter(o=>o.id!==selOrder.id);
+    if(remaining.length>0){
+      setSelOrderId(remaining[0].id);
+    }else{
+      setSelTbl(null);
+    }
+    setDisc(0);setTip(0);setReceived('');
   };
 
   const printReceipt=()=>{
@@ -2270,7 +2452,9 @@ function CashierScreen(){
       {showSplit&&selOrder&&<SplitModal order={{...selOrder,discount,tip}} calcTotal={calcTotal} settings={settings} onClose={()=>setShowSplit(false)} onPay={(parts)=>{
         updateOrder(selOrder.id,{status:'paid',discount,tip,paymentMethod:'split',splits:parts,paidAt:new Date().toISOString()});
         toast(`Split payment (${parts} ways) · ${cur} ${(total/parts).toFixed(2)} each`,'success');
-        setSelTbl(null);setDisc(0);setTip(0);
+        const remaining=tableOrders.filter(o=>o.id!==selOrder.id);
+        if(remaining.length>0){setSelOrderId(remaining[0].id);}else{setSelTbl(null);}
+        setDisc(0);setTip(0);
       }}/>}
       {voidId&&(
         <div className="overlay" onClick={e=>e.target===e.currentTarget&&setVoidId(null)}>
@@ -2284,7 +2468,10 @@ function CashierScreen(){
               <button className="btn btn-ghost" onClick={()=>setVoidId(null)}>{t('cancel')}</button>
               <button className="btn btn-danger" onClick={()=>{
                 updateOrder(voidId,{status:'voided',voidReason,voidedAt:new Date().toISOString()});
-                toast('Order voided','warning');setVoidId(null);setSelTbl(null);
+                toast('Order voided','warning');
+                setVoidId(null);
+                const remaining=tableOrders.filter(o=>o.id!==voidId);
+                if(remaining.length>0){setSelOrderId(remaining[0].id);}else{setSelTbl(null);}
               }}>{t('confirm')}</button>
             </div>
           </div>
@@ -2297,17 +2484,21 @@ function CashierScreen(){
         <div className="scroll-y" style={{flex:1}}>
           {!activeTables.length&&<div style={{padding:20,textAlign:'center',color:'var(--t3)',fontSize:12}}>No active tables</div>}
           {activeTables.map(tb=>(
-            <div key={tb.id} onClick={()=>{setSelTbl(tb);setDisc(0);setTip(0);setReceived('');setPay('cash');}}
+            <div key={tb.id} onClick={()=>selectTable(tb)}
               style={{padding:'10px 12px',cursor:'pointer',borderBottom:'1px solid var(--border)',background:selTbl?.id===tb.id?'var(--primary-dim)':'transparent',transition:'all .15s'}}>
               <div className="row-between">
                 <span style={{fontWeight:700}}>{tb.num}</span>
                 <span className={`badge badge-${tb.status==='bill'?'red':'yellow'}`}>{tb.status==='bill'?t('billReady'):t('occupied')}</span>
               </div>
-              {orders.find(o=>o.id===tb.orderId)&&(
-                <div style={{fontSize:11,color:'var(--t2)',marginTop:3}}>
-                  {orders.find(o=>o.id===tb.orderId)?.items.length} items
-                </div>
-              )}
+              {(()=>{
+                const tbOrds=orders.filter(o=>o.tableId===tb.id&&!['paid','voided','closed'].includes(o.status));
+                return tbOrds.length>0&&(
+                  <div style={{fontSize:11,color:'var(--t2)',marginTop:3}}>
+                    {tbOrds.reduce((s,o)=>s+(o.items||[]).length,0)} items
+                    {tbOrds.length>1&&<span style={{marginLeft:5,color:'var(--purple)',fontWeight:700}}>· {tbOrds.length} orders</span>}
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -2322,12 +2513,29 @@ function CashierScreen(){
           </div>
         ):(
           <div style={{maxWidth:520}}>
+            {/* Multi-order tab switcher */}
+            {tableOrders.length>1&&(
+              <div style={{display:'flex',gap:6,marginBottom:12,padding:'8px 10px',background:'var(--elevated)',borderRadius:10,flexWrap:'wrap'}}>
+                <span style={{fontSize:11,color:'var(--t2)',fontWeight:700,alignSelf:'center',marginRight:2}}>Orders:</span>
+                {tableOrders.map((o,i)=>(
+                  <button key={o.id}
+                    className={`chip${(selOrder.id===o.id)?' active':''}`}
+                    style={{fontSize:11}}
+                    onClick={()=>{setSelOrderId(o.id);setDisc(0);setTip(0);setReceived('');setPay('cash');}}>
+                    #{o.id.slice(-4)} · {(o.items||[]).length} items
+                  </button>
+                ))}
+                <span style={{fontSize:10,color:'var(--purple)',fontWeight:700,alignSelf:'center',marginLeft:'auto'}}>
+                  <i className="fa fa-layer-group"/> {tableOrders.length} orders
+                </span>
+              </div>
+            )}
             <div className="row-between" style={{marginBottom:14}}>
               <div>
                 <h3 style={{fontSize:16}}>{selTbl?.num}</h3>
-                <div style={{fontSize:11,color:'var(--t2)'}}>{selOrder.id} · {selOrder.orderType}</div>
+                <div style={{fontSize:11,color:'var(--t2)'}}>#{selOrder.id.slice(-8)} · {selOrder.orderType}</div>
               </div>
-              <div style={{display:'flex',gap:6}}>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                 <button className="btn btn-ghost btn-sm" onClick={()=>setEditOrder(selOrder)}><i className="fa fa-edit"/> Edit</button>
                 <button className="btn btn-ghost btn-sm" onClick={printReceipt}><i className="fa fa-print"/> {t('print')}</button>
                 <button className="btn btn-ghost btn-sm" onClick={printToken}><i className="fa fa-ticket"/> Token</button>
@@ -2968,7 +3176,7 @@ function AuditLogViewer(){
    SETTINGS
 ====================================================== */
 function Settings(){
-  const{t,lang,settings,setSettings,staff,setStaff,tables,setTables,toast,logout,confirm,clientId,fbReady,setShowClientSetup}=useApp();    
+  const{t,lang,settings,setSettings,staff,setStaff,tables,setTables,toast,logout,confirm,clientId,fbReady,setShowClientSetup,syncStatus,reinitFirebase,user}=useApp();
   const[tab,setTab]=useState('restaurant');
   const[staffModal,setStaffModal]=useState(false);
   const[editStaff,setEditStaff]=useState(null);
@@ -3091,22 +3299,22 @@ function Settings(){
                 <input className="input" value={settings.receiptFooterAr||''} onChange={e=>setSettings({receiptFooterAr:e.target.value})} dir="rtl"/>
               </div>
             </div>
-            <div className="section-hdr">📋 Digital Menu</div>
+            <div className="section-hdr">📱 Digital Menu QR</div>
             <div className="card" style={{background:'linear-gradient(135deg,rgba(251,191,36,.06),rgba(251,191,36,.02))',border:'1px solid rgba(251,191,36,.2)'}}>
-              <div style={{display:'flex',gap:14,alignItems:'center'}}>
+              <div style={{display:'flex',gap:14,alignItems:'center',marginBottom:12}}>
                 <div style={{fontSize:38}}>📱</div>
                 <div style={{flex:1}}>
                   <div style={{fontWeight:700,fontSize:14,marginBottom:3}}>Share Menu via QR</div>
-                  <div style={{fontSize:12,color:'var(--t2)',lineHeight:1.5}}>Generate a QR code for your customers to scan and view your menu. View-only with Day &amp; Night mode.</div>
+                  <div style={{fontSize:12,color:'var(--t2)',lineHeight:1.5}}>Customers scan to view your menu. View-only, works in Day &amp; Night mode.</div>
                 </div>
               </div>
-              <button className="btn btn-primary" style={{marginTop:12,width:'100%',justifyContent:'center'}} onClick={()=>setShowShareQR(true)}>
+              <button className="btn btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={()=>setShowShareQR(true)}>
                 <i className="fa fa-qrcode"/> Generate Menu QR Code
               </button>
             </div>
           </div>
         )}
-        {showShareQR&&<ShareMenuQR onClose={()=>setShowShareQR(false)}/>}
+        {showShareQR&&<ShareMenuQR onClose={()=>setShowShareQR(false)}/> }
 
         {/* Security */}
         {tab==='security'&&(
@@ -3228,124 +3436,111 @@ function Settings(){
         )}
 
         {/* Printers */}
-  {tab==='printers'&&(
-  <div>
-    
-    {/* Cashier / Receipt Printer */}
-    <div className="section-hdr">🧾 Cashier Receipt Printer</div>
-    <div className="card" style={{marginBottom:12}}>
-      <div style={{marginBottom:12}}>
-        <div style={{fontSize:12,color:'var(--t2)',marginBottom:8}}>
-          Configure printer for customer receipts and bills.
-        </div>
-        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-          <button className="btn btn-ghost btn-sm" onClick={() => configurePrinter('cashier', 'usb')}>
-            <i className="fa fa-usb"/> USB Printer
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => {
-            const ip = prompt('Enter printer IP address (e.g., 192.168.1.100):');
-            if (ip) configurePrinter('cashier', 'network', ip);
-          }}>
-            <i className="fa fa-network-wired"/> Network Printer
-          </button>
-          <button className="btn btn-primary btn-sm" onClick={() => testPrinter('cashier')}>
-            <i className="fa fa-print"/> Test Print
-          </button>
-        </div>
-      </div>
-      <div style={{fontSize:11,color:'var(--t3)',padding:'8px 0 0 0',borderTop:'1px solid var(--border)'}}>
-        <i className="fa fa-info-circle"/> USB: Plug & play auto-detection. Network: Requires IP address (port 9100)
-      </div>
-    </div>
+        {tab==='printers'&&(
+          <div>
+            <div className="section-hdr">🧾 Receipt &amp; Token Printer</div>
+            <div className="card" style={{marginBottom:12}}>
+              <div className="form-g">
+                <label className="form-lbl">Paper Size</label>
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                  {[['80mm','80mm Thermal (standard)'],['57mm','57mm Thermal (mini)'],['A4','A4 / Letter']].map(([v,l])=>(
+                    <button key={v} className={`chip${(settings.thermalPaper||'80mm')===v?' active':''}`} style={{fontSize:11}} onClick={()=>setSettings({thermalPaper:v})}>{l}</button>
+                  ))}
+                </div>
+                <div style={{fontSize:11,color:'var(--t3)',marginTop:5}}>
+                  In your browser print dialog: set <strong style={{color:'var(--t1)'}}>Margins → None</strong> and select the matching paper size.
+                </div>
+              </div>
+            </div>
 
-    {/* Kitchen Printer */}
-    <div className="section-hdr">🍳 Kitchen Printer</div>
-    <div className="card" style={{marginBottom:12}}>
-      <div style={{marginBottom:12}}>
-        <div style={{fontSize:12,color:'var(--t2)',marginBottom:8}}>
-          Configure printer for kitchen order tickets.
-        </div>
-        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-          <button className="btn btn-ghost btn-sm" onClick={() => configurePrinter('kitchen', 'usb')}>
-            <i className="fa fa-usb"/> USB Printer
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => {
-            const ip = prompt('Enter printer IP address (e.g., 192.168.1.101):');
-            if (ip) configurePrinter('kitchen', 'network', ip);
-          }}>
-            <i className="fa fa-network-wired"/> Network Printer
-          </button>
-          <button className="btn btn-primary btn-sm" onClick={() => testPrinter('kitchen')}>
-            <i className="fa fa-print"/> Test Print
-          </button>
-        </div>
-      </div>
-      <Tog k="autoPrintKitchen" label="Auto-print kitchen ticket when order is sent"/>
-      <div className="form-g" style={{marginTop:12}}>
-        <label className="form-lbl">Kitchen Ticket Copies</label>
-        <div style={{display:'flex',gap:6}}>
-          {[1,2,3].map(n=>(
-            <button key={n} className={`chip${(settings.kitchenPrintCopies||1)===n?' active':''}`} onClick={()=>setSettings({kitchenPrintCopies:n})}>{n}</button>
-          ))}
-        </div>
-      </div>
-    </div>
+            <div className="section-hdr">🖨️ Kitchen Ticket Printer</div>
+            <div className="card" style={{marginBottom:12}}>
+              <Tog k="autoPrintKitchen" label="Auto-print kitchen ticket when order is sent"/>
+              <div className="form-g" style={{marginTop:12}}>
+                <label className="form-lbl">Kitchen Ticket Copies</label>
+                <div style={{display:'flex',gap:6}}>
+                  {[1,2,3].map(n=>(
+                    <button key={n} className={`chip${(settings.kitchenPrintCopies||1)===n?' active':''}`} onClick={()=>setSettings({kitchenPrintCopies:n})}>{n}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-    {/* Paper Size Setting */}
-    <div className="section-hdr">📄 Paper Size</div>
-    <div className="card" style={{marginBottom:12}}>
-      <div className="form-g">
-        <label className="form-lbl">Receipt Paper Size</label>
-        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-          {[['80mm','80mm Thermal (standard)'],['57mm','57mm Thermal (mini)']].map(([v,l])=>(
-            <button key={v} className={`chip${(settings.thermalPaper||'80mm')===v?' active':''}`} style={{fontSize:11}} onClick={()=>setSettings({thermalPaper:v})}>{l}</button>
-          ))}
-        </div>
-        <div style={{fontSize:11,color:'var(--t3)',marginTop:5}}>
-          In your browser print dialog: set <strong style={{color:'var(--t1)'}}>Margins → None</strong> and select matching paper size.
-        </div>
-      </div>
-    </div>
+            <div className="card" style={{marginBottom:12}}>
+              <div className="section-hdr">How Printing Works</div>
+              <div style={{fontSize:12,color:'var(--t2)',lineHeight:1.8}}>
+                <div>1. Receipts and tokens are opened in a print window and auto-print.</div>
+                <div style={{marginTop:4}}>2. Kitchen tickets also open a window per order and auto-print.</div>
+                <div style={{marginTop:4}}>3. For <strong style={{color:'var(--t1)'}}>thermal printers</strong>: set your printer as default, choose <strong style={{color:'var(--t1)'}}>No margins</strong> and the correct paper size.</div>
+                <div style={{marginTop:4}}>4. For <strong style={{color:'var(--t1)'}}>silent auto-print</strong> (no dialog): install <a href="https://qz.io" target="_blank" style={{color:'var(--primary)'}}>QZ Tray</a> on the POS device.</div>
+              </div>
+            </div>
 
-    {/* Test Print Section */}
-    <div className="section-hdr">🖨️ Test Prints</div>
-    <div className="card" style={{marginBottom:12}}>
-      <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-        <button className="btn btn-ghost btn-sm" onClick={() => {
-          printTestTicket();
-        }}>
-          <i className="fa fa-print"/> Test Receipt
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={() => {
-          printKitchenTicket({
-            id:'TEST-'+Date.now(),
-            tableNum:'TEST',
-            orderType:'dine-in',
-            items:[
-              {name:'Test Item',nameAr:'عنصر اختبار',qty:1,price:10,modAdj:0},
-              {name:'Another Item',nameAr:'عنصر آخر',qty:2,price:15,modAdj:0}
-            ],
-            note:'Test order',
-            createdAt:new Date().toISOString()
-          },settings,1);
-        }}>
-          <i className="fa fa-fire-flame-curved"/> Test Kitchen Ticket
-        </button>
-      </div>
-    </div>
+            <div className="card">
+              <div className="section-hdr">Test Prints</div>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                <button className="btn btn-ghost btn-sm" onClick={()=>{
+                  printKitchenTicket({
+                    id:'ORD-TEST001',tableNum:'T1 (Test)',orderType:'dine-in',
+                    items:[
+                      {name:'Grilled Chicken',nameAr:'دجاج مشوي',qty:2,price:55,modAdj:0,selectedMods:{},itemNote:'Extra sauce'},
+                      {name:'Fresh Juice',nameAr:'عصير طازج',qty:1,price:20,modAdj:3,selectedMods:{},itemNote:''}
+                    ],
+                    note:'Test order — please ignore',waiterName:'Test Waiter',
+                    priority:'normal',createdAt:new Date().toISOString()
+                  },{...settings,autoPrintKitchen:true},1);
+                }}><i className="fa fa-fire-flame-curved"/> Kitchen Ticket</button>
 
-    {/* Printer Help */}
-    <div className="card">
-      <div className="section-hdr">🖨️ Printer Setup Guide</div>
-      <div style={{fontSize:12,color:'var(--t2)',lineHeight:1.8}}>
-        <div><strong>USB Printers:</strong> Connect via USB, drivers auto-detected.</div>
-        <div style={{marginTop:6}}><strong>Network Printers:</strong> Requires IP address. Common ports: 9100 (RAW), 631 (IPP)</div>
-        <div style={{marginTop:6}}><strong>Recommended:</strong> Epson TM-T20, TM-T88, or any ESC/POS compatible printer.</div>
-        <div style={{marginTop:6}}><strong>Test:</strong> After configuring, click "Test Print" to verify.</div>
-      </div>
-    </div>
-  </div>
-)}
+                <button className="btn btn-ghost btn-sm" onClick={()=>{
+                  const w=window.open('','_blank','width=380,height=600');
+                  const paperW=settings.thermalPaper==='57mm'?'57mm':'80mm';
+                  const bodyW=settings.thermalPaper==='57mm'?'50mm':'72mm';
+                  w.document.write(`<!DOCTYPE html><html><head><title>Test Receipt</title>
+                  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:12px;padding:6px}
+                  .c{text-align:center}.d{border-top:1px dashed #000;margin:7px 0}.r{display:flex;justify-content:space-between;margin:2px 0}
+                  .big{font-size:15px;font-weight:bold}
+                  @media print{@page{size:${paperW} auto;margin:0;}body{width:${bodyW};padding:4px;}}
+                  </style></head><body>
+                  <div class="c"><strong style="font-size:15px">${settings.restaurantName||'Ordo POS'}</strong><br/>
+                  <span style="font-size:10px">${settings.address||''}</span><br/>
+                  <span style="font-size:10px">${new Date().toLocaleString()}</span></div>
+                  <div class="d"></div>
+                  <div class="r"><span>Table: T1</span><span>Order: #TEST001</span></div>
+                  <div class="d"></div>
+                  <div class="r"><span>Grilled Chicken ×2</span><span>SAR 110.00</span></div>
+                  <div class="r"><span>Fresh Juice ×1</span><span>SAR 23.00</span></div>
+                  <div class="d"></div>
+                  <div class="r"><span>Subtotal</span><span>SAR 133.00</span></div>
+                  <div class="r"><span>VAT 15%</span><span>SAR 19.95</span></div>
+                  <div class="d"></div>
+                  <div class="r big"><span>TOTAL</span><span>SAR 152.95</span></div>
+                  <div class="d"></div>
+                  <div class="c" style="font-size:11px">${settings.receiptFooter||'Thank you!'}</div>
+                  <script>window.onload=function(){window.print();setTimeout(function(){window.close();},3000);};<\/script>
+                  </body></html>`);w.document.close();
+                }}><i className="fa fa-receipt"/> Test Receipt</button>
+
+                <button className="btn btn-ghost btn-sm" onClick={()=>{
+                  const w=window.open('','_blank','width=300,height=400');
+                  w.document.write(`<!DOCTYPE html><html><head><title>Token</title>
+                  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;padding:10px;background:#fff;color:#000;text-align:center}
+                  .dashed{border-top:2px dashed #000;margin:8px 0}
+                  @media print{@page{size:80mm auto;margin:0;}body{width:72mm;padding:4mm;}}
+                  </style></head><body>
+                  <div style="font-size:14px;font-weight:bold">${settings.restaurantName||'Ordo POS'}</div>
+                  <div class="dashed"></div>
+                  <div style="font-size:11px;color:#555">Table: T1</div>
+                  <div style="font-size:64px;font-weight:900;margin:8px 0;letter-spacing:4px">A042</div>
+                  <div style="font-size:11px;color:#555">${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                  <div class="dashed"></div>
+                  <div style="font-size:11px">Please wait for your number</div>
+                  <script>window.onload=function(){window.print();setTimeout(function(){window.close();},2500);};<\/script>
+                  </body></html>`);w.document.close();
+                }}><i className="fa fa-ticket"/> Test Token</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* License */}
         {tab==='license'&&(
@@ -3370,16 +3565,46 @@ function Settings(){
         {/* Cloud Sync */}
         {tab==='cloud'&&(
           <div>
-            <div className="section-hdr">☁️ Firebase Cloud Sync</div>
-            <div className="card" style={{marginBottom:12}}>
-              <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:12}}>
-                <div style={{width:10,height:10,borderRadius:'50%',background:fbReady?'var(--green)':'var(--t3)',boxShadow:fbReady?'0 0 6px var(--green)':'none'}}/>
-                <span style={{fontSize:13,fontWeight:600,color:fbReady?'var(--green)':'var(--t2)'}}>
-                  {fbReady?'Connected to Firebase':'Not connected'}
-                </span>
+            <div className="section-hdr">☁️ Real-Time Cloud Sync</div>
+
+            {/* Status card */}
+            <div className="card" style={{marginBottom:12,padding:'12px 14px'}}>
+              <div style={{display:'flex',gap:10,alignItems:'center',marginBottom:10}}>
+                <div style={{
+                  width:12,height:12,borderRadius:'50%',flexShrink:0,
+                  background:syncStatus==='live'?'var(--green)':syncStatus==='connecting'?'var(--yellow)':syncStatus==='error'?'var(--red)':'var(--t3)',
+                  boxShadow:syncStatus==='live'?'0 0 8px var(--green)':'none'
+                }}/>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13,color:syncStatus==='live'?'var(--green)':syncStatus==='error'?'var(--red)':'var(--t2)'}}>
+                    {syncStatus==='live'?'🟢 Live — Real-time sync active':syncStatus==='connecting'?'🟡 Connecting…':syncStatus==='error'?'🔴 Sync error — check config':'⚫ Offline — local storage only'}
+                  </div>
+                  <div style={{fontSize:11,color:'var(--t3)',marginTop:2}}>
+                    {syncStatus==='live'?'All devices are syncing in real-time':syncStatus==='offline'?'Enter your Firebase config below to enable sync':'Check your API key and Project ID'}
+                  </div>
+                </div>
+                {syncStatus!=='offline'&&(
+                  <button className="btn btn-ghost btn-sm" onClick={reinitFirebase}>
+                    <i className="fa fa-rotate-right"/> Reconnect
+                  </button>
+                )}
               </div>
-              <div style={{fontSize:12,color:'var(--t2)',marginBottom:14,lineHeight:1.7}}>
-                Add your Firebase config below to enable real-time cloud sync. Your data stays in <strong style={{color:'var(--t1)'}}>your own Firebase project</strong> — Ordo never sees it.
+              {syncStatus==='live'&&(
+                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                  {['orders','tables','items','cats','settings'].map(c=>(
+                    <span key={c} style={{fontSize:10,padding:'2px 8px',background:'var(--green-dim)',color:'var(--green)',borderRadius:99,fontWeight:600}}>
+                      ✓ {c}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Config inputs */}
+            <div className="card" style={{marginBottom:12}}>
+              <div style={{fontSize:12,color:'var(--t2)',marginBottom:12,lineHeight:1.7}}>
+                Enter your Firebase config below. Your data stays in <strong style={{color:'var(--t1)'}}>your own Firebase project</strong> — Ordo never sees it.
+                Real-time sync means every device sees changes <strong style={{color:'var(--t1)'}}>instantly</strong> — no refresh needed.
               </div>
               {[
                 ['firebaseApiKey','API Key','AIzaSy…'],
@@ -3391,30 +3616,40 @@ function Settings(){
                   <input className="input" value={settings[k]||''} onChange={e=>setSettings({[k]:e.target.value})} placeholder={ph} style={{fontFamily:'monospace',fontSize:12}}/>
                 </div>
               ))}
-              <button className="btn btn-primary btn-sm" onClick={()=>{
-                const ok=FB.init({apiKey:settings.firebaseApiKey,projectId:settings.firebaseProjectId,appId:settings.firebaseAppId||''},getCID());
-                if(ok){toast('Firebase connected!','success');}
-                else{toast('Firebase init failed — check your config','error');}
+              <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',marginTop:4}} onClick={()=>{
+                // Save settings first, then reinit
+                setSettings({
+                  firebaseApiKey:settings.firebaseApiKey,
+                  firebaseProjectId:settings.firebaseProjectId,
+                  firebaseAppId:settings.firebaseAppId||''
+                });
+                setTimeout(()=>{
+                  reinitFirebase();
+                  toast('Connecting to Firebase…','info');
+                },300);
               }}>
-                <i className="fa fa-plug"/> Connect Firebase
+                <i className="fa fa-plug"/> Connect &amp; Start Syncing
               </button>
             </div>
+
+            {/* Setup guide */}
             <div className="card" style={{marginBottom:12}}>
-              <div className="section-hdr">How to set up Firebase (free)</div>
-              <ol style={{fontSize:12,color:'var(--t2)',lineHeight:2,paddingLeft:16}}>
+              <div className="section-hdr">How to set up (free · 5 min)</div>
+              <ol style={{fontSize:12,color:'var(--t2)',lineHeight:2.2,paddingLeft:16}}>
                 <li>Go to <a href="https://console.firebase.google.com" target="_blank" style={{color:'var(--primary)'}}>console.firebase.google.com</a></li>
-                <li>Create a new project (free Spark plan)</li>
-                <li>Add a Web App and copy the config</li>
-                <li>Go to Firestore Database → Create database</li>
-                <li>Paste the API Key and Project ID above</li>
+                <li>Create a project → Add Web App → copy config</li>
+                <li>Firestore Database → Create database → Start in <strong style={{color:'var(--t1)'}}>test mode</strong></li>
+                <li>Paste API Key + Project ID above → click Connect</li>
+                <li>Open on any device — changes appear instantly 🎉</li>
               </ol>
             </div>
+
             <div className="card">
-              <div className="section-hdr">Your Client ID</div>
-              <div style={{fontSize:13,padding:'8px 12px',background:'var(--elevated)',borderRadius:8,fontFamily:'monospace',fontWeight:700,color:'var(--primary)',letterSpacing:1,marginBottom:8}}>
-                {clientId||'(not set)'}
+              <div className="section-hdr">Your Cloud Namespace</div>
+              <div style={{padding:'8px 12px',background:'var(--elevated)',borderRadius:8,fontFamily:'monospace',fontWeight:700,color:'var(--primary)',letterSpacing:1,marginBottom:6,fontSize:13}}>
+                ordo_clients / {clientId||'ordo-main'}
               </div>
-              <div style={{fontSize:11,color:'var(--t2)'}}>This is your cloud folder. All data is stored under <code>ordo_clients/{clientId}</code> in Firestore.</div>
+              <div style={{fontSize:11,color:'var(--t2)'}}>All synced data lives here in your Firestore. Each collection (orders, tables, etc.) is a separate document under this path.</div>
             </div>
           </div>
         )}
@@ -3725,7 +3960,7 @@ function CustomerQR({tableNum}){
         </div>
       </div>
       {cart.length>0&&(
-        <div style={{position:'fixed',bottom:0,left:0,right:0,padding:12,background:'var(--surface)',borderTop:'1px solid var(--border)'}}>
+        <div style={{position:'fixed',bottom:0,left:0,right:0,padding:'12px 12px',paddingBottom:'calc(12px + var(--safe-bot, env(safe-area-inset-bottom, 0px)))',background:'var(--surface)',borderTop:'1px solid var(--border)'}}>
           <div style={{maxWidth:480,margin:'0 auto'}}>
             <div style={{display:'flex',gap:6,overflowX:'auto',marginBottom:8}}>
               {cart.map(c=>{const k=cartKey(c);return(
@@ -3815,7 +4050,7 @@ function LicenseScreen({license}){
    LICENSE GENERATOR  (admin tool — Settings → License)
 ======================================================*/
 function LicenseGenerator(){
-  const{toast}=useApp();
+  const{toast,settings}=useApp();
   const[email,setEmail]=useState('');
   const[phone,setPhone]=useState('');
   const[plan,setPlan]=useState('basic');
@@ -3823,36 +4058,84 @@ function LicenseGenerator(){
   const[forClient,setForClient]=useState('*');
   const[generatedKey,setGeneratedKey]=useState('');
   const[loading,setLoading]=useState(false);
+  const[sent,setSent]=useState(false);
+
+  // Admin's own email from settings (so they can see it pre-filled)
+  const adminEmail=settings.adminEmail||'';
 
   const generate=async()=>{
-    if(!email&&!phone){toast('Enter email or phone','warning');return;}
-    setLoading(true);
+    if(!email.trim()){toast('Enter client email first','warning');return;}
+    setLoading(true);setSent(false);
     const k=await generateLicenseKey({email,phone,plan,days,forClientId:forClient||'*'});
     setGeneratedKey(k);
     setLoading(false);
     writeAudit('LICENSE_GENERATED','plan='+plan+' email='+email+' phone='+phone,'admin');
+    // Auto-open email compose immediately
+    const expDate=new Date(Date.now()+days*864e5).toLocaleDateString();
+    const body=
+`Hello,
+
+Your Ordo POS license key is ready.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+LICENSE KEY:
+${k}
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Plan    : ${plan.toUpperCase()}
+Expires : ${expDate}
+${forClient!=='*'?'Client ID: '+forClient:''}
+
+HOW TO ACTIVATE:
+1. Open Ordo POS
+2. Go to Settings → License
+3. Click "Activate" and paste the key above
+
+For support contact us at: ${adminEmail||'your-support-email@email.com'}
+
+Thank you,
+Ordo POS Team`;
+    setTimeout(()=>{
+      window.open('mailto:'+email+'?subject=Your Ordo POS License Key&body='+encodeURIComponent(body));
+      setSent(true);
+    },300);
   };
 
   const planColors={trial:'var(--yellow)',basic:'var(--blue)',pro:'var(--purple)',enterprise:'var(--green)'};
 
   return(
     <div>
-      <div className="section-hdr">🔑 Generate License Key</div>
+      <div className="section-hdr">🔑 Generate &amp; Send License Key</div>
+
+      {/* Admin email setting */}
+      <div className="card" style={{marginBottom:12,padding:'10px 14px',display:'flex',gap:10,alignItems:'center',background:'var(--elevated)'}}>
+        <i className="fa fa-envelope" style={{color:'var(--primary)',fontSize:14}}/>
+        <div style={{flex:1}}>
+          <div style={{fontSize:10,color:'var(--t3)',fontWeight:700,textTransform:'uppercase',letterSpacing:.06}}>Your Admin / Support Email</div>
+          <input className="input" type="email" value={adminEmail}
+            onChange={e=>{ /* save to settings */ const v=e.target.value; document.dispatchEvent(new CustomEvent('ordo-set-admin-email',{detail:v})); }}
+            placeholder="your-email@gmail.com"
+            style={{marginTop:4,fontSize:13,background:'transparent',border:'none',borderBottom:'1px solid var(--border)',borderRadius:0,padding:'3px 0'}}/>
+        </div>
+      </div>
+
       <div className="card" style={{marginBottom:12}}>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {/* Client details */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
           <div className="form-g" style={{marginBottom:0}}>
-            <label className="form-lbl">Client Email</label>
+            <label className="form-lbl">Client Email *</label>
             <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="client@email.com"/>
           </div>
           <div className="form-g" style={{marginBottom:0}}>
-            <label className="form-lbl">Mobile Number</label>
+            <label className="form-lbl">Client Phone</label>
             <input className="input" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+966 5X XXX XXXX"/>
           </div>
         </div>
-        <div className="form-g" style={{marginTop:10}}>
-          <label className="form-lbl">Client ID Lock (leave * for any)</label>
+        <div className="form-g">
+          <label className="form-lbl">Client ID Lock <span style={{color:'var(--t3)',fontWeight:400}}>— leave * for any device</span></label>
           <input className="input" value={forClient} onChange={e=>setForClient(e.target.value)} placeholder="* or specific-client-id" style={{fontFamily:'monospace'}}/>
         </div>
+        {/* Plan */}
         <div className="form-g">
           <label className="form-lbl">Plan</label>
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
@@ -3865,45 +4148,59 @@ function LicenseGenerator(){
             ))}
           </div>
         </div>
+        {/* Duration */}
         <div className="form-g" style={{marginBottom:12}}>
           <label className="form-lbl">Duration (days)</label>
-          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
             {[30,90,180,365,730].map(d=>(
               <button key={d} className={`chip${days===d?' active':''}`} style={{fontSize:11}} onClick={()=>setDays(d)}>{d}d</button>
             ))}
             <input type="number" className="input" style={{width:80,padding:'5px 8px'}} value={days} onChange={e=>setDays(Math.max(1,+e.target.value))} min={1}/>
           </div>
         </div>
+        {/* Summary */}
         <div style={{padding:'8px 12px',background:'var(--elevated)',borderRadius:8,fontSize:11,color:'var(--t2)',marginBottom:12}}>
           Expires: <strong style={{color:'var(--t1)'}}>{new Date(Date.now()+days*864e5).toLocaleDateString()}</strong>
           {' · '}Plan: <strong style={{color:planColors[plan]}}>{plan.toUpperCase()}</strong>
-          {forClient!=='*'&&<><br/>Locked to client: <strong style={{color:'var(--primary)',fontFamily:'monospace'}}>{forClient}</strong></>}
+          {forClient!=='*'&&<> · Locked to: <strong style={{color:'var(--primary)',fontFamily:'monospace'}}>{forClient}</strong></>}
         </div>
-        <button className="btn btn-primary btn-block" onClick={generate} disabled={loading}>
-          {loading?<i className="fa fa-spinner" style={{animation:'spin 1s linear infinite'}}/>:<i className="fa fa-key"/>}
-          {' '}Generate License Key
+        <button className="btn btn-primary btn-block" onClick={generate} disabled={loading||!email.trim()}>
+          {loading
+            ?<><i className="fa fa-spinner" style={{animation:'spin 1s linear infinite'}}/> Generating…</>
+            :<><i className="fa fa-paper-plane"/> Generate &amp; Send via Email</>
+          }
         </button>
+        {!email.trim()&&<div style={{textAlign:'center',fontSize:11,color:'var(--t3)',marginTop:6}}>Enter client email above to enable</div>}
       </div>
 
       {generatedKey&&(
-        <div className="card">
-          <div style={{fontSize:11,color:'var(--t2)',marginBottom:8}}>✅ Generated Key — copy and send to client:</div>
-          <div style={{padding:'12px 14px',background:'var(--elevated)',borderRadius:8,fontFamily:'monospace',fontSize:13,fontWeight:700,letterSpacing:1.5,wordBreak:'break-all',color:'var(--primary)',marginBottom:10}}>
+        <div className="card" style={{border:'1px solid rgba(16,185,129,.3)'}}>
+          <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:10}}>
+            <i className="fa fa-check-circle" style={{color:'var(--green)',fontSize:18}}/>
+            <div>
+              <div style={{fontWeight:700,fontSize:13,color:'var(--green)'}}>Key Generated!</div>
+              <div style={{fontSize:11,color:'var(--t2)'}}>{sent?'📧 Email compose opened — paste key if needed':'Opening email compose…'}</div>
+            </div>
+          </div>
+          {/* Key display */}
+          <div style={{padding:'12px 14px',background:'var(--elevated)',borderRadius:8,fontFamily:'monospace',fontSize:13,fontWeight:700,letterSpacing:1.5,wordBreak:'break-all',color:'var(--primary)',marginBottom:10,textAlign:'center'}}>
             {generatedKey}
           </div>
-          <div style={{display:'flex',gap:8}}>
-            <button className="btn btn-ghost btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>{
+          {/* Action row */}
+          <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
+            <button className="btn btn-ghost btn-sm" style={{flex:1,justifyContent:'center',minWidth:80}} onClick={()=>{
               navigator.clipboard.writeText(generatedKey).catch(()=>{});
-              toast('Copied!','success');
-            }}><i className="fa fa-copy"/> Copy Key</button>
-            <button className="btn btn-ghost btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>{
-              const body=`Your Ordo POS License Key:\n\n${generatedKey}\n\nPlan: ${plan.toUpperCase()}\nExpires: ${new Date(Date.now()+days*864e5).toLocaleDateString()}\n\nTo activate: open the app → enter this key when prompted.`;
-              window.open('mailto:'+email+'?subject=Your Ordo POS License&body='+encodeURIComponent(body));
-            }}><i className="fa fa-envelope"/> Email</button>
-            <button className="btn btn-ghost btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>{
+              toast('Copied to clipboard!','success');
+            }}><i className="fa fa-copy"/> Copy</button>
+            <button className="btn btn-primary btn-sm" style={{flex:1,justifyContent:'center',minWidth:80}} onClick={()=>{
+              const expDate=new Date(Date.now()+days*864e5).toLocaleDateString();
+              const body=`Hello,\n\nYour Ordo POS license key:\n\n${generatedKey}\n\nPlan: ${plan.toUpperCase()}\nExpires: ${expDate}\n\nTo activate: Settings → License → Activate.\n\nThank you,\nOrdo POS Team`;
+              window.open('mailto:'+email+'?subject=Your Ordo POS License Key&body='+encodeURIComponent(body));
+            }}><i className="fa fa-envelope"/> Re-send Email</button>
+            {phone&&<button className="btn btn-success btn-sm" style={{flex:1,justifyContent:'center',minWidth:80}} onClick={()=>{
               const msg=`Ordo POS License:\n${generatedKey}\nPlan: ${plan.toUpperCase()} | Expires: ${new Date(Date.now()+days*864e5).toLocaleDateString()}`;
               window.open('https://wa.me/'+phone.replace(/[^0-9]/g,'')+'?text='+encodeURIComponent(msg));
-            }}><i className="fa fa-whatsapp"/> WhatsApp</button>
+            }}><i className="fa fa-whatsapp"/> WhatsApp</button>}
           </div>
         </div>
       )}
@@ -4024,8 +4321,8 @@ function MainApp(){
   },[]);
 
   const roleScreens={
-    admin:['dashboard','tables','orders','menu','kitchen','reports','settings'],
-    cashier:['tables','orders','reports'],
+    admin:['dashboard','tables','cashier','orders','menu','kitchen','reports','settings'],
+    cashier:['cashier','orders','reports'],
     waiter:['tables'],
     kitchen:['kitchen']
   };
@@ -4053,7 +4350,8 @@ function MainApp(){
 
   const panels={
     dashboard:<Dashboard/>,
-    tables:role==='cashier'?<CashierScreen/>:<WaiterScreen/>,
+    tables:<WaiterScreen/>,
+    cashier:<CashierScreen/>,
     orders:<OrdersScreen/>,
     menu:<MenuManagement/>,
     kitchen:<KitchenScreen/>,
