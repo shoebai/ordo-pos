@@ -1,450 +1,487 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ordo POS - Client Dashboard</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0d0d14 0%, #1a1a2e 100%);
-            color: #fff;
-            min-height: 100vh;
-        }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 30px;
-        }
-        .logo { font-size: 24px; font-weight: bold; background: linear-gradient(135deg, #fbbf24, #d97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .user-info { display: flex; gap: 15px; align-items: center; }
-        .btn-logout { background: rgba(255,255,255,0.1); border: none; padding: 8px 16px; border-radius: 8px; color: #fff; cursor: pointer; }
-        .btn-logout:hover { background: rgba(239,68,68,0.3); }
-        
-        /* Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .stat-card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .stat-card h3 { font-size: 14px; color: #9898b0; margin-bottom: 10px; }
-        .stat-card .value { font-size: 32px; font-weight: bold; color: #fbbf24; }
-        
-        /* License Card */
-        .license-card {
-            background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(217,119,6,0.05));
-            border-radius: 16px;
-            padding: 25px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(251,191,36,0.3);
-        }
-        .license-key {
-            font-family: monospace;
-            font-size: 18px;
-            background: rgba(0,0,0,0.3);
-            padding: 12px;
-            border-radius: 8px;
-            letter-spacing: 2px;
-            margin: 15px 0;
-        }
-        .copy-btn { background: #fbbf24; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        
-        /* Mode Selector */
-        .mode-selector {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .mode-btn {
-            flex: 1;
-            padding: 15px;
-            background: rgba(255,255,255,0.05);
-            border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        .mode-btn.active {
-            border-color: #fbbf24;
-            background: rgba(251,191,36,0.1);
-        }
-        .mode-btn:hover { border-color: #fbbf24; }
-        .mode-icon { font-size: 32px; margin-bottom: 10px; }
-        .mode-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
-        .mode-desc { font-size: 12px; color: #9898b0; }
-        
-        /* Download Section */
-        .download-section {
-            background: rgba(255,255,255,0.05);
-            border-radius: 16px;
-            padding: 25px;
-        }
-        .download-btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #fbbf24, #d97706);
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            color: #0d0d14;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            text-decoration: none;
-            margin-top: 15px;
-        }
-        .offline-instructions {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 8px;
-            font-size: 13px;
-            color: #9898b0;
-        }
-        
-        /* Login/Register Forms */
-        .form-container {
-            max-width: 400px;
-            margin: 100px auto;
-            background: rgba(255,255,255,0.05);
-            border-radius: 16px;
-            padding: 30px;
-        }
-        .form-container h2 { margin-bottom: 20px; text-align: center; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-size: 12px; color: #9898b0; }
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            color: #fff;
-        }
-        .form-group input:focus { outline: none; border-color: #fbbf24; }
-        .form-btn {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #fbbf24, #d97706);
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .switch-form { text-align: center; margin-top: 15px; font-size: 12px; color: #9898b0; }
-        .switch-form a { color: #fbbf24; cursor: pointer; text-decoration: none; }
-        .error { color: #ef4444; font-size: 12px; margin-top: 5px; }
-        .success { color: #10b981; font-size: 12px; margin-top: 5px; }
-        
-        .hidden { display: none; }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ordo POS — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --ink:#0a0a0f;--ink2:#13131f;--ink3:#1f1f2e;--ink4:#161622;
+  --gold:#c9a84c;--gold2:#e8c97a;--gold3:rgba(201,168,76,.12);
+  --cream:#f5f0e8;--t1:#f5f0e8;--t2:#9a9080;--t3:#5a5448;
+  --red:#ef4444;--green:#10b981;--blue:#3b82f6;
+  --border:rgba(201,168,76,.12);--border2:rgba(255,255,255,.05);
+  --r:12px;--rs:8px;
+}
+body{background:var(--ink);color:var(--t1);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+
+/* Subtle radial glow */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 70% 40% at 50% -10%,rgba(201,168,76,.08),transparent);}
+
+/* ── NAV ── */
+nav{
+  padding:16px 5%;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border2);
+  background:rgba(10,10,15,.8);backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:50;
+}
+.logo{font-family:'Instrument Serif',serif;font-size:21px;color:var(--gold2);text-decoration:none;letter-spacing:-.3px;}
+.nav-right{display:flex;align-items:center;gap:16px;}
+.nav-user{display:flex;align-items:center;gap:8px;}
+.nav-avatar{width:32px;height:32px;border-radius:50%;background:var(--gold3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--gold2);}
+.nav-name{font-size:13px;color:var(--t2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn-logout{font-size:12px;color:var(--t3);background:none;border:1px solid rgba(255,255,255,.06);
+  border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;transition:.15s;}
+.btn-logout:hover{color:var(--t1);border-color:rgba(255,255,255,.14);}
+
+/* ── SKELETON ── */
+.skeleton{background:linear-gradient(90deg,var(--ink3) 25%,var(--ink2) 50%,var(--ink3) 75%);
+  background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── MAIN LAYOUT ── */
+main{flex:1;padding:40px 5% 60px;max-width:900px;margin:0 auto;width:100%;}
+
+/* ── WELCOME HEADER ── */
+.welcome{margin-bottom:36px;}
+.welcome-sub{font-size:12px;color:var(--t3);font-weight:500;letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;}
+.welcome-title{font-family:'Instrument Serif',serif;font-size:32px;color:var(--cream);letter-spacing:-.5px;margin-bottom:6px;}
+.welcome-rest{font-size:15px;color:var(--gold2);}
+
+/* ── PLAN BADGE ── */
+.plan-strip{display:flex;align-items:center;gap:10px;padding:10px 16px;
+  background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);
+  margin-bottom:32px;width:fit-content;}
+.plan-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);flex-shrink:0;}
+.plan-dot.trial{background:var(--gold);box-shadow:0 0 6px var(--gold);}
+.plan-dot.expired{background:var(--red);box-shadow:0 0 6px var(--red);}
+.plan-text{font-size:12px;color:var(--t2);}
+.plan-text strong{color:var(--t1);}
+.plan-days{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;}
+.plan-days.trial{background:rgba(201,168,76,.12);color:var(--gold2);}
+.plan-days.active{background:rgba(16,185,129,.12);color:var(--green);}
+.plan-days.expired{background:rgba(239,68,68,.12);color:var(--red);}
+
+/* ── SECTION LABEL ── */
+.section-label{font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px;}
+
+/* ── MAIN ACTION CARDS ── */
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:40px;}
+@media(max-width:600px){.action-grid{grid-template-columns:1fr;}}
+
+.action-card{
+  background:var(--ink2);border:1px solid var(--border2);border-radius:16px;
+  padding:28px 24px;cursor:pointer;transition:all .22s;position:relative;overflow:hidden;
+  text-align:left;display:flex;flex-direction:column;gap:0;
+}
+.action-card:hover{border-color:var(--border);transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.35);}
+.action-card.primary{border-color:rgba(201,168,76,.25);background:linear-gradient(145deg,var(--ink2),rgba(201,168,76,.04));}
+.action-card.primary:hover{border-color:rgba(201,168,76,.45);box-shadow:0 12px 40px rgba(201,168,76,.1);}
+.action-card::before{content:'';position:absolute;inset:0;opacity:0;background:radial-gradient(circle at 50% 0%,rgba(201,168,76,.06),transparent 70%);transition:opacity .3s;pointer-events:none;}
+.action-card:hover::before{opacity:1;}
+
+.card-icon{font-size:32px;margin-bottom:16px;line-height:1;}
+.card-title{font-family:'Instrument Serif',serif;font-size:20px;color:var(--cream);margin-bottom:6px;letter-spacing:-.2px;}
+.card-desc{font-size:13px;color:var(--t2);line-height:1.6;flex:1;margin-bottom:20px;}
+.card-cta{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:13px;font-weight:600;padding:10px 18px;border-radius:var(--rs);
+  border:none;cursor:pointer;font-family:inherit;transition:.18s;
+  width:fit-content;
+}
+.card-cta.gold{background:var(--gold);color:var(--ink);}
+.card-cta.gold:hover{background:var(--gold2);box-shadow:0 4px 16px rgba(201,168,76,.3);}
+.card-cta.outline{background:transparent;color:var(--t1);border:1px solid rgba(255,255,255,.1);}
+.card-cta.outline:hover{border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.04);}
+.card-badge{position:absolute;top:14px;right:14px;font-size:10px;font-weight:600;
+  padding:3px 9px;border-radius:99px;background:rgba(201,168,76,.12);color:var(--gold2);}
+
+/* Download modal overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.overlay.show{display:flex;}
+.modal{background:var(--ink2);border:1px solid var(--border);border-radius:18px;
+  padding:32px;width:100%;max-width:460px;position:relative;}
+.modal-close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;
+  background:var(--ink3);border:none;color:var(--t2);cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;transition:.15s;}
+.modal-close:hover{color:var(--t1);background:var(--ink4);}
+.modal-icon{font-size:38px;margin-bottom:14px;}
+.modal-title{font-family:'Instrument Serif',serif;font-size:24px;color:var(--cream);margin-bottom:6px;}
+.modal-sub{font-size:13px;color:var(--t2);margin-bottom:22px;line-height:1.6;}
+
+.download-step{display:flex;gap:12px;align-items:flex-start;padding:12px 0;
+  border-bottom:1px solid var(--border2);}
+.download-step:last-child{border-bottom:none;}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--gold3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  color:var(--gold2);flex-shrink:0;margin-top:1px;}
+.step-text{font-size:13px;color:var(--t2);line-height:1.6;}
+.step-text strong{color:var(--t1);}
+
+.dl-btn{
+  width:100%;padding:14px;background:var(--gold);color:var(--ink);
+  border:none;border-radius:var(--rs);font-family:inherit;font-size:15px;
+  font-weight:600;cursor:pointer;transition:.18s;margin-top:20px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.dl-btn:hover{background:var(--gold2);box-shadow:0 6px 20px rgba(201,168,76,.25);}
+.dl-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── ACCOUNT CARD ── */
+.account-section{margin-bottom:32px;}
+.info-card{background:var(--ink2);border:1px solid var(--border2);border-radius:var(--r);overflow:hidden;}
+.info-row{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--border2);gap:16px;}
+.info-row:last-child{border-bottom:none;}
+.info-label{font-size:12px;color:var(--t3);font-weight:500;flex-shrink:0;}
+.info-value{font-size:13px;color:var(--t1);text-align:right;word-break:break-all;}
+.info-value.gold{color:var(--gold2);}
+
+/* ── LOADING SCREEN ── */
+#loading-screen{
+  position:fixed;inset:0;background:var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  z-index:200;transition:opacity .4s;
+}
+#loading-screen.hide{opacity:0;pointer-events:none;}
+.loading-logo{font-family:'Instrument Serif',serif;font-size:28px;color:var(--gold2);}
+.loading-spin{width:20px;height:20px;border:2px solid rgba(201,168,76,.2);
+  border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:500px){
+  main{padding:28px 4% 50px;}
+  .welcome-title{font-size:26px;}
+  .action-card{padding:22px 18px;}
+  .card-title{font-size:18px;}
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <!-- Login/Register Section -->
-        <div id="auth-section">
-            <div id="login-form" class="form-container">
-                <h2>🔐 Login to Ordo POS</h2>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="login-email" placeholder="your@email.com">
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="login-password" placeholder="••••••••">
-                </div>
-                <div id="login-error" class="error"></div>
-                <button class="form-btn" onclick="login()">Login</button>
-                <div class="switch-form">Don't have an account? <a onclick="showRegister()">Register</a></div>
-            </div>
-            
-            <div id="register-form" class="form-container hidden">
-                <h2>📝 Register for Ordo POS</h2>
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="reg-name" placeholder="John Doe">
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="reg-email" placeholder="your@email.com">
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="reg-password" placeholder="••••••••">
-                </div>
-                <div class="form-group">
-                    <label>Confirm Password</label>
-                    <input type="password" id="reg-confirm" placeholder="••••••••">
-                </div>
-                <div id="register-error" class="error"></div>
-                <div id="register-success" class="success"></div>
-                <button class="form-btn" onclick="register()">Register</button>
-                <div class="switch-form">Already have an account? <a onclick="showLogin()">Login</a></div>
-            </div>
-        </div>
-        
-        <!-- Dashboard Section -->
-        <div id="dashboard-section" class="hidden">
-            <div class="header">
-                <div class="logo">🏪 Ordo POS</div>
-                <div class="user-info">
-                    <span id="user-name"></span>
-                    <span id="user-plan" class="badge"></span>
-                    <button class="btn-logout" onclick="logout()">Logout</button>
-                </div>
-            </div>
-            
-            <!-- Stats -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>License Status</h3>
-                    <div class="value" id="license-status">—</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Days Remaining</h3>
-                    <div class="value" id="days-left">—</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Your Plan</h3>
-                    <div class="value" id="plan-name">—</div>
-                </div>
-            </div>
-            
-            <!-- License Key -->
-            <div class="license-card">
-                <h3>🔑 Your License Key</h3>
-                <div class="license-key" id="license-key">—</div>
-                <button class="copy-btn" onclick="copyLicense()">📋 Copy License Key</button>
-                <p style="font-size: 12px; margin-top: 10px; color: #9898b0;">Use this key to activate Ordo POS</p>
-            </div>
-            
-            <!-- Mode Selector -->
-            <div class="mode-selector">
-                <div class="mode-btn active" onclick="selectMode('online')" id="mode-online">
-                    <div class="mode-icon">🌐</div>
-                    <div class="mode-title">Online Mode</div>
-                    <div class="mode-desc">Real-time sync across devices</div>
-                </div>
-                <div class="mode-btn" onclick="selectMode('offline')" id="mode-offline">
-                    <div class="mode-icon">💾</div>
-                    <div class="mode-title">Offline Mode</div>
-                    <div class="mode-desc">Standalone installer</div>
-                </div>
-            </div>
-            
-            <!-- Download Section -->
-            <div class="download-section">
-                <h3>📥 Download Ordo POS</h3>
-                <p id="download-desc">Choose your preferred installation method</p>
-                <a href="#" id="download-link" class="download-btn">⬇️ Download Installer</a>
-                <div id="offline-instructions" class="offline-instructions hidden">
-                    <strong>📋 Offline Installation Instructions:</strong><br/>
-                    1. Download the installer above<br/>
-                    2. Run the setup.exe file<br/>
-                    3. Enter your license key during installation<br/>
-                    4. Complete the installation<br/>
-                    5. Launch Ordo POS and start using!
-                </div>
-                <div id="online-instructions" class="offline-instructions">
-                    <strong>🌐 Online Mode Instructions:</strong><br/>
-                    1. Download and install Ordo POS<br/>
-                    2. Launch the app and login with your credentials<br/>
-                    3. Your data will sync across all devices<br/>
-                    4. Access your dashboard anytime to manage your license
-                </div>
-            </div>
-        </div>
+
+<!-- Loading screen (shown until auth resolves) -->
+<div id="loading-screen">
+  <div class="loading-logo">Ordo</div>
+  <div class="loading-spin"></div>
+</div>
+
+<!-- Nav -->
+<nav>
+  <a href="ordo_landing.html" class="logo">Ordo</a>
+  <div class="nav-right">
+    <div class="nav-user">
+      <div class="nav-avatar" id="nav-avatar">?</div>
+      <span class="nav-name" id="nav-name">Loading…</span>
     </div>
-    
-    <script>
-        // ========== AUTHENTICATION CHECK - REDIRECT IF NOT LOGGED IN ==========
-        // Check if user is logged in (using either auth method)
-        if(!localStorage.getItem('isLoggedIn') && !localStorage.getItem('ordo_user')) {
-            window.location.href = 'index.html'; // Redirect to landing page
-        }
-        // ========== END OF AUTH CHECK ==========
-        
-        const API_URL = "http://localhost:3002/api";
-        let currentUser = null;
-        let currentLicense = null;
-        let selectedMode = "online";
-        
-        // Check if user is logged in
-        function checkAuth() {
-            const user = localStorage.getItem('ordo_user');
-            if (user) {
-                currentUser = JSON.parse(user);
-                showDashboard();
-            }
-        }
-        
-        // Register
-        async function register() {
-            const name = document.getElementById('reg-name').value;
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-password').value;
-            const confirm = document.getElementById('reg-confirm').value;
-            
-            document.getElementById('register-error').innerText = '';
-            document.getElementById('register-success').innerText = '';
-            
-            if (!name || !email || !password) {
-                document.getElementById('register-error').innerText = 'Please fill all fields';
-                return;
-            }
-            
-            if (password !== confirm) {
-                document.getElementById('register-error').innerText = 'Passwords do not match';
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_URL}/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, plan: 'basic' })
-                });
-                
-                const data = await response.json();
-                if (data.error) {
-                    document.getElementById('register-error').innerText = data.error;
-                } else {
-                    document.getElementById('register-success').innerText = 'Registration successful! Please login.';
-                    setTimeout(() => showLogin(), 2000);
-                }
-            } catch (err) {
-                document.getElementById('register-error').innerText = 'Network error. Please try again.';
-            }
-        }
-        
-        // Login
-        async function login() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            
-            document.getElementById('login-error').innerText = '';
-            
-            if (!email || !password) {
-                document.getElementById('login-error').innerText = 'Please enter email and password';
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_URL}/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                
-                const data = await response.json();
-                if (data.error) {
-                    document.getElementById('login-error').innerText = data.error;
-                } else {
-                    // ✅ ADDED: Set login flag for redirect check
-                    localStorage.setItem('isLoggedIn', 'true');
-                    
-                    currentUser = data.user;
-                    currentLicense = data.license;
-                    localStorage.setItem('ordo_user', JSON.stringify(currentUser));
-                    localStorage.setItem('ordo_license', JSON.stringify(currentLicense));
-                    showDashboard();
-                }
-            } catch (err) {
-                document.getElementById('login-error').innerText = 'Network error. Please try again.';
-            }
-        }
-        
-        // Show Dashboard
-        async function showDashboard() {
-            document.getElementById('auth-section').classList.add('hidden');
-            document.getElementById('dashboard-section').classList.remove('hidden');
-            
-            // Fetch fresh data
-            const response = await fetch(`${API_URL}/dashboard/${currentUser.id}`, {
-                headers: { 'sessionToken': localStorage.getItem('sessionToken') || '' }
-            });
-            const data = await response.json();
-            
-            currentUser = data.user;
-            currentLicense = data.activeLicense;
-            
-            document.getElementById('user-name').innerText = currentUser.name;
-            document.getElementById('user-plan').innerHTML = currentUser.plan.toUpperCase();
-            document.getElementById('license-status').innerHTML = currentLicense ? '✅ Active' : '❌ No License';
-            document.getElementById('days-left').innerHTML = currentLicense ? `${currentLicense.daysLeft} days` : '—';
-            document.getElementById('plan-name').innerHTML = currentUser.plan.toUpperCase();
-            document.getElementById('license-key').innerHTML = currentLicense ? currentLicense.key : 'No license found';
-        }
-        
-        // Select Mode
-        function selectMode(mode) {
-            selectedMode = mode;
-            document.getElementById('mode-online').classList.toggle('active', mode === 'online');
-            document.getElementById('mode-offline').classList.toggle('active', mode === 'offline');
-            
-            const downloadLink = document.getElementById('download-link');
-            const offlineInstructions = document.getElementById('offline-instructions');
-            const onlineInstructions = document.getElementById('online-instructions');
-            
-            if (mode === 'offline') {
-                downloadLink.href = `${API_URL}/download/${currentUser.id}?mode=offline`;
-                offlineInstructions.classList.remove('hidden');
-                onlineInstructions.classList.add('hidden');
-            } else {
-                downloadLink.href = `${API_URL}/download/${currentUser.id}?mode=online`;
-                offlineInstructions.classList.add('hidden');
-                onlineInstructions.classList.remove('hidden');
-            }
-        }
-        
-        // Copy License Key
-        function copyLicense() {
-            const licenseKey = document.getElementById('license-key').innerText;
-            navigator.clipboard.writeText(licenseKey);
-            alert('License key copied to clipboard!');
-        }
-        
-        // Logout
-        function logout() {
-            // ✅ ADDED: Remove login flag on logout
-            localStorage.removeItem('isLoggedIn');
-            
-            localStorage.removeItem('ordo_user');
-            localStorage.removeItem('ordo_license');
-            currentUser = null;
-            currentLicense = null;
-            document.getElementById('auth-section').classList.remove('hidden');
-            document.getElementById('dashboard-section').classList.add('hidden');
-            showLogin();
-        }
-        
-        function showRegister() {
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('register-form').classList.remove('hidden');
-        }
-        
-        function showLogin() {
-            document.getElementById('register-form').classList.add('hidden');
-            document.getElementById('login-form').classList.remove('hidden');
-        }
-        
-        // Initialize
-        checkAuth();
-    </script>
+    <button class="btn-logout" onclick="signOut()">Sign out</button>
+  </div>
+</nav>
+
+<!-- Main -->
+<main>
+
+  <!-- Welcome -->
+  <div class="welcome">
+    <div class="welcome-sub">Dashboard</div>
+    <div class="welcome-title" id="welcome-title">Welcome back</div>
+    <div class="welcome-rest" id="welcome-rest"></div>
+  </div>
+
+  <!-- Plan status -->
+  <div class="plan-strip" id="plan-strip">
+    <div class="plan-dot trial" id="plan-dot"></div>
+    <div class="plan-text" id="plan-text"><strong>Loading plan…</strong></div>
+    <div class="plan-days trial" id="plan-days" style="display:none"></div>
+  </div>
+
+  <!-- Main action cards -->
+  <div class="section-label">Get Started</div>
+  <div class="action-grid">
+
+    <!-- Card 1: Use Online -->
+    <div class="action-card primary" onclick="goOnline()">
+      <div class="card-badge">Recommended</div>
+      <div class="card-icon">🌐</div>
+      <div class="card-title">Use Ordo Online</div>
+      <div class="card-desc">Open the full POS app in your browser. Works on any device — phone, tablet, or PC. Syncs in real-time across all devices using your account.</div>
+      <button class="card-cta gold" onclick="goOnline();event.stopPropagation()">
+        Open POS App →
+      </button>
+    </div>
+
+    <!-- Card 2: Download -->
+    <div class="action-card" onclick="openDownloadModal()">
+      <div class="card-icon">💻</div>
+      <div class="card-title">Local Network App</div>
+      <div class="card-desc">Download the app for your Windows PC. Run on your local WiFi — no internet needed. All devices on the same network sync instantly.</div>
+      <button class="card-cta outline" onclick="openDownloadModal();event.stopPropagation()">
+        Download for Windows →
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Account info -->
+  <div class="account-section">
+    <div class="section-label">Account</div>
+    <div class="info-card">
+      <div class="info-row">
+        <span class="info-label">Restaurant</span>
+        <span class="info-value gold" id="info-rest">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Owner</span>
+        <span class="info-value" id="info-owner">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Email</span>
+        <span class="info-value" id="info-email">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Plan</span>
+        <span class="info-value gold" id="info-plan">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Member since</span>
+        <span class="info-value" id="info-since">—</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Download Modal -->
+<div class="overlay" id="dl-overlay" onclick="if(event.target===this)closeDownloadModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDownloadModal()">✕</button>
+    <div class="modal-icon">💻</div>
+    <div class="modal-title">Local Network Setup</div>
+    <div class="modal-sub">Run Ordo POS on your PC — all devices on the same WiFi sync instantly. No internet required.</div>
+
+    <div class="download-step">
+      <div class="step-num">1</div>
+      <div class="step-text"><strong>Download the package</strong> — a ZIP containing the server and app files.</div>
+    </div>
+    <div class="download-step">
+      <div class="step-num">2</div>
+      <div class="step-text"><strong>Extract the ZIP</strong> to any folder on your Windows PC (e.g. Desktop).</div>
+    </div>
+    <div class="download-step">
+      <div class="step-num">3</div>
+      <div class="step-text"><strong>Double-click setup.bat</strong> — it installs Node.js automatically and creates a Desktop shortcut.</div>
+    </div>
+    <div class="download-step">
+      <div class="step-num">4</div>
+      <div class="step-text"><strong>Click "Ordo POS" on your Desktop</strong> — opens at <code style="font-size:11px;background:var(--ink3);padding:1px 6px;border-radius:4px;color:var(--gold2)">localhost:3000</code>. Other devices connect via your PC's IP address.</div>
+    </div>
+
+    <button class="dl-btn" id="dl-btn" onclick="downloadPackage()">
+      ⬇ Download Ordo POS (Windows)
+    </button>
+    <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--t3)">
+      Requires Windows 7/8/10/11 · Node.js auto-installed · Free
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  FIREBASE CONFIG
+// ═══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
+  authDomain:        "pos-ordo.firebaseapp.com",
+  projectId:         "pos-ordo",
+  storageBucket:     "pos-ordo.firebasestorage.app",
+  messagingSenderId: "575923763514",
+  appId:             "1:575923763514:web:f81283d99aafd2460f3803"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ═══════════════════════════════════════════════════════════════
+//  AUTH GUARD — redirect to register if not logged in
+// ═══════════════════════════════════════════════════════════════
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    window.location.href = 'register.html';
+    return;
+  }
+
+  // Populate nav immediately from auth object
+  const initials = (user.displayName || user.email || '?')[0].toUpperCase();
+  document.getElementById('nav-avatar').textContent = initials;
+  document.getElementById('nav-name').textContent   = user.displayName || user.email;
+  document.getElementById('welcome-title').textContent =
+    'Welcome back, ' + (user.displayName ? user.displayName.split(' ')[0] : 'there');
+  document.getElementById('info-email').textContent = user.email;
+
+  // Load tenant profile from Firestore
+  try {
+    const snap = await db.collection('tenants').doc(user.uid).get();
+    if (snap.exists) {
+      const d = snap.data();
+      populateDashboard(d, user);
+    } else {
+      // New user — no tenant doc yet
+      populateDashboard({ plan:'trial', ownerName: user.displayName||'', restaurantName:'' }, user);
+    }
+  } catch(e) {
+    console.warn('Failed to load tenant:', e);
+    populateDashboard({ plan:'trial', ownerName: user.displayName||'', restaurantName:'' }, user);
+  }
+
+  // Hide loading screen
+  const ls = document.getElementById('loading-screen');
+  ls.classList.add('hide');
+  setTimeout(() => ls.style.display='none', 450);
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  POPULATE DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+function populateDashboard(d, user) {
+  const restName  = d.restaurantName || 'Your Restaurant';
+  const ownerName = d.ownerName      || user.displayName || '';
+  const plan      = d.plan           || 'trial';
+  const createdAt = d.createdAt ? new Date(d.createdAt) : null;
+
+  // Welcome header
+  document.getElementById('welcome-rest').textContent = restName;
+
+  // Account info rows
+  document.getElementById('info-rest').textContent  = restName;
+  document.getElementById('info-owner').textContent = ownerName || '—';
+  document.getElementById('info-plan').textContent  = planLabel(plan);
+  document.getElementById('info-since').textContent = createdAt
+    ? createdAt.toLocaleDateString('en', { year:'numeric', month:'long', day:'numeric' })
+    : '—';
+
+  // Plan strip
+  const dot    = document.getElementById('plan-dot');
+  const text   = document.getElementById('plan-text');
+  const days   = document.getElementById('plan-days');
+  dot.className = 'plan-dot';
+
+  if (plan === 'trial') {
+    const trialEnd   = d.trialEnd ? new Date(d.trialEnd) : null;
+    const daysLeft   = trialEnd ? Math.max(0, Math.ceil((trialEnd - Date.now()) / 86400000)) : 0;
+    const isExpired  = daysLeft <= 0;
+
+    dot.classList.add(isExpired ? 'expired' : 'trial');
+    text.innerHTML   = `<strong>${isExpired ? 'Trial expired' : 'Free trial'}</strong>`;
+    days.style.display = '';
+    days.className   = 'plan-days ' + (isExpired ? 'expired' : 'trial');
+    days.textContent = isExpired ? 'Expired' : daysLeft + ' day' + (daysLeft!==1?'s':'') + ' left';
+  } else {
+    dot.classList.add('active');
+    text.innerHTML = `<strong>${planLabel(plan)}</strong> — Active`;
+    days.style.display = '';
+    days.className = 'plan-days active';
+    days.textContent = 'Active';
+  }
+}
+
+function planLabel(plan) {
+  return { trial:'Free Trial', monthly:'Monthly', annual:'Annual', lifetime:'Lifetime' }[plan] || plan;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════════════════════════
+function goOnline() {
+  window.location.href = 'ordo_pos.html';
+}
+
+function signOut() {
+  auth.signOut().then(() => { window.location.href = 'register.html'; });
+}
+
+// ── Download modal ──────────────────────────────────────────────
+function openDownloadModal() {
+  document.getElementById('dl-overlay').classList.add('show');
+}
+function closeDownloadModal() {
+  document.getElementById('dl-overlay').classList.remove('show');
+}
+
+// ── Download package ─────────────────────────────────────────────
+// Generates a ZIP on-the-fly containing the 5 server files
+// (requires JSZip — loaded below if download is triggered)
+async function downloadPackage() {
+  const btn = document.getElementById('dl-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="width:16px;height:16px;border:2px solid rgba(0,0,0,.25);border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></span> Preparing…';
+
+  try {
+    // Load JSZip dynamically
+    if (!window.JSZip) {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    }
+
+    const zip = new JSZip();
+    const folder = zip.folder('Ordo POS');
+
+    // Fetch all required files
+    const files = [
+      { name:'ordo_pos.html',    url:'ordo_pos.html'    },
+      { name:'server.js',        url:'server.js'        },
+      { name:'package.json',     url:'package.json'     },
+      { name:'package-lock.json',url:'package-lock.json'},
+      { name:'setup.bat',        url:'setup.bat'        },
+      { name:'README.md',        url:'README.md'        },
+    ];
+
+    const results = await Promise.allSettled(
+      files.map(f => fetch(f.url).then(r => r.ok ? r.arrayBuffer() : null).then(buf => ({...f, buf})))
+    );
+
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value.buf) {
+        folder.file(r.value.name, r.value.buf);
+      }
+    }
+
+    const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{ level:6 }});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'Ordo-POS-Local.zip';
+    a.click();
+    URL.revokeObjectURL(url);
+
+    btn.innerHTML = '✓ Download started!';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '⬇ Download Ordo POS (Windows)';
+    }, 3000);
+
+  } catch(e) {
+    console.error('Download error:', e);
+    btn.disabled = false;
+    btn.innerHTML = '⬇ Download Ordo POS (Windows)';
+    alert('Download failed. Please try again or contact support.');
+  }
+}
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+</script>
 </body>
 </html>
