@@ -15,6 +15,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Firebase backend — Firestore sync only, no POS user accounts -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -559,8 +560,40 @@ const{useState,useEffect,useCallback,useContext,createContext,useRef,useMemo}=Re
    HELPERS
 ====================================================== */
 async function hashPw(pw){
-  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('ORDO2_'+pw));
-  return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+  const input = 'ORDO2_' + pw;
+  // crypto.subtle only works on HTTPS or localhost — use fallback on plain HTTP (other LAN devices)
+  if (typeof crypto !== 'undefined' && crypto.subtle) {
+    try {
+      const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+      return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+    } catch(e) {}
+  }
+  // Pure-JS SHA-256 fallback (works on HTTP)
+  return _sha256js(input);
+}
+function _sha256js(str) {
+  function rr(v,a){return(v>>>a)|(v<<(32-a));}
+  const MP=Math.pow,MW=MP(2,32);
+  let result='',words=[],H=[],K=[];
+  let pc=0;const ic={};
+  for(let c=2;pc<64;c++){if(!ic[c]){for(let i=0;i<313;i+=c)ic[i]=c;H[pc]=(MP(c,.5)*MW)|0;K[pc++]=(MP(c,1/3)*MW)|0;}}
+  const abl=str.length*8;
+  str+='\x80';while(str.length%64-56)str+='\x00';
+  for(let i=0;i<str.length;i++){const j=str.charCodeAt(i);if(j>>8)return'';words[i>>2]|=j<<((3-i)%4)*8;}
+  words[words.length]=((abl/MW)|0);words[words.length]=(abl|0);
+  for(let j=0;j<words.length;){
+    const w=words.slice(j,j+=16),oh=H.slice(0,8);
+    for(let i=0;i<64;i++){
+      const i2=i<16?w[i]:(rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10))+w[i-7]+(rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3))+w[i-16];
+      w[i]=i2|0;
+      const t1=H[7]+(rr(H[4],6)^rr(H[4],11)^rr(H[4],25))+((H[4]&H[5])^(~H[4]&H[6]))+K[i]+w[i];
+      const t2=(rr(H[0],2)^rr(H[0],13)^rr(H[0],22))+((H[0]&H[1])^(H[0]&H[2])^(H[1]&H[2]));
+      H.splice(0,8,(t1+t2)|0,H[0],H[1],H[2],(H[3]+t1)|0,H[4],H[5],H[6]);
+    }
+    for(let i=0;i<8;i++)H[i]=(H[i]+oh[i])|0;
+  }
+  for(let i=0;i<8;i++)for(let j=3;j+1;j--){const b=(H[i]>>(j*8))&255;result+=((b<16)?'0':'')+b.toString(16);}
+  return result;
 }
 // ── Client-namespaced storage ──────────────────────────────────────────────
 const getCID=()=>localStorage.getItem('ordo_clientId')||'';
@@ -577,15 +610,13 @@ const LS={
 // ║  ORDO FIREBASE CONFIG — paste your pos-ordo credentials here ║
 // ║  Get from: Firebase Console → Project Settings → Web App     ║
 // ╚══════════════════════════════════════════════════════════════╝
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
-  authDomain: "pos-ordo.firebaseapp.com",
-  projectId: "pos-ordo",
-  storageBucket: "pos-ordo.firebasestorage.app",
-  messagingSenderId: "575923763514",
-  appId: "1:575923763514:web:f81283d99aafd2460f3803",
-  measurementId: "G-PND9FKHRVF"
+const _FB_CFG={
+  apiKey:'AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI',
+  authDomain:'pos-ordo.firebaseapp.com',
+  projectId:'pos-ordo',
+  storageBucket:'pos-ordo.firebasestorage.app',
+  messagingSenderId:'575923763514',
+  appId:'1:575923763514:web:f81283d99aafd2460f3803'
 };
 
 // Derive a safe Firestore document key from the client email
@@ -669,53 +700,9 @@ const today=()=>new Date().toDateString();
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 /* ══════════════════════════════════════════════════════════════
-   LICENSE ENGINE
+   FREE — no license required
 ══════════════════════════════════════════════════════════════ */
-// Split secret to resist trivial grep — joined at runtime
-const _S=['ORDO','_LIC','_2K2','5_XK','7Q9Z'];
-const LIC_SECRET=_S.join('');
-
-async function _sha256(msg){
-  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg));
-  return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
-}
-// Encode payload → base64url
-function _b64e(str){return btoa(str).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');}
-function _b64d(str){return atob(str.replace(/-/g,'+').replace(/_/g,'/'));}
-
-async function generateLicenseKey({email='',phone='',plan='basic',days=365,forClientId='*'}){
-  const payload=JSON.stringify({e:email.toLowerCase().trim(),m:phone.replace(/\s/g,''),p:plan,x:Date.now()+days*864e5,c:forClientId,i:Date.now()});
-  const b64=_b64e(payload);
-  const sig=(await _sha256(LIC_SECRET+b64)).slice(0,12);
-  const raw=(b64+'.'+sig).toUpperCase();
-  // Format as groups of 5
-  const flat=raw.replace(/\./g,'D').replace(/[^A-Z0-9]/g,'');
-  return flat.match(/.{1,5}/g).join('-');
-}
-
-async function validateLicenseKey(rawKey){
-  try{
-    if(!rawKey)return{valid:false,reason:'No license key'};
-    const flat=rawKey.replace(/-/g,'').toUpperCase().replace(/D/g,'.');
-    const dotIdx=flat.lastIndexOf('.');
-    if(dotIdx<0)return{valid:false,reason:'Invalid format'};
-    const b64=flat.slice(0,dotIdx).toLowerCase().replace(/\./g,'');
-    const keySig=flat.slice(dotIdx+1).toLowerCase();
-    const expectedSig=(await _sha256(LIC_SECRET+b64)).slice(0,12);
-    if(keySig!==expectedSig)return{valid:false,reason:'Invalid license key — signature mismatch'};
-    const payload=JSON.parse(_b64d(b64));
-    if(Date.now()>payload.x)return{valid:false,expired:true,payload,reason:'License expired on '+new Date(payload.x).toLocaleDateString()};
-    const cid=getCID();
-    if(payload.c&&payload.c!=='*'&&payload.c!==cid)return{valid:false,reason:'License is for client "'+payload.c+'" — your ID is "'+cid+'"'};
-    return{valid:true,payload,daysLeft:Math.ceil((payload.x-Date.now())/864e5)};
-  }catch(e){return{valid:false,reason:'License parse error: '+e.message};}
-}
-
-function getLicenseState(){
-  const raw=localStorage.getItem('ordo_license_key');
-  if(!raw)return null;
-  return LS.g('ordo_license_cache');
-}
+// Ordo POS is free. No keys, no trial, no activation needed.
 
 /* ══════════════════════════════════════════════════════════════
    LOGIN LOCKOUT
@@ -911,7 +898,7 @@ function printKitchenTicket(order,settings,copies){
       <title>KT-${order.id.slice(-6)}</title>
       <style>
         *{margin:0;padding:0;box-sizing:border-box;}
-        body{font-family:'Courier New',monospace;width:280px;padding:10px;background:#fff;color:#000;}
+        body{font-family:'Courier New',monospace;width:${settings.kitchenPaper==='57mm'?'50mm':settings.kitchenPaper==='A4'?'190mm':'72mm'};padding:4mm;background:#fff;color:#000;word-wrap:break-word;overflow-wrap:break-word;}
         .dashed{border-top:2px dashed #000;margin:8px 0;}
         .center{text-align:center;}
         .rest{font-size:13px;font-weight:bold;}
@@ -921,7 +908,7 @@ function printKitchenTicket(order,settings,copies){
         table{width:100%;border-collapse:collapse;}
         .note-box{border:2px dashed #000;padding:6px 8px;margin-top:8px;font-size:12px;}
         .footer{text-align:center;font-size:10px;margin-top:8px;}
-        @media print{@page{size:${settings.kitchenPaper||'80mm'} auto;margin:0;}body{width:${settings.kitchenPaper==='57mm'?'50mm':settings.kitchenPaper==='A4'?'190mm':'72mm'};padding:4mm;}}
+        @media print{@page{size:${settings.kitchenPaper||'80mm'} auto;margin:0mm;}html,body{width:${settings.kitchenPaper==='57mm'?'50mm':settings.kitchenPaper==='A4'?'190mm':'72mm'};margin:0 auto;padding:2mm 1mm;}}
       </style>
     </head><body>
       <div class="center">
@@ -950,7 +937,18 @@ function printKitchenTicket(order,settings,copies){
 /* ======================================================
    CONTEXT
 ====================================================== */
-const safeArr=(k,def)=>{try{const v=localStorage.getItem(nsKey(k));if(!v)return def;const p=JSON.parse(v);return Array.isArray(p)?p:def;}catch{return def;}};
+const safeArr=(k,def)=>{
+  try{
+    const key = nsKey(k);
+    const v = localStorage.getItem(key);
+    if(!v) return def;
+    const p = JSON.parse(v);
+    return Array.isArray(p) ? p : def;
+  } catch(e){
+    console.error('safeArr error for', k, e);
+    return def;
+  }
+};
 const Ctx=createContext(null);
 const useApp=()=>useContext(Ctx);
 
@@ -1013,7 +1011,35 @@ function Provider({children}){
   const[orders,setOrders]=useState(()=>safeArr('orders',[]));
   const[cats,setCats]=useState(()=>safeArr('cats',DEF_CATS));
   const[items,setItems]=useState(()=>safeArr('items',DEF_ITEMS));
-  const[staff,setStaff]=useState(()=>safeArr('staff',DEF_STAFF));
+const[staff,setStaff]=useState(()=>{
+  try {
+    // Try to load from localStorage first
+    const key = nsKey('staff');
+    const savedRaw = localStorage.getItem(key);
+    let saved = null;
+    
+    if (savedRaw) {
+      try {
+        saved = JSON.parse(savedRaw);
+      } catch(e) {}
+    }
+    
+    // If no saved data or empty, use DEF_STAFF
+    if (!saved || !Array.isArray(saved) || saved.length === 0) {
+      console.log('[Provider] No saved staff, using DEF_STAFF');
+      // Initialize localStorage with DEF_STAFF
+      localStorage.setItem(key, JSON.stringify(DEF_STAFF));
+      return DEF_STAFF;
+    }
+    
+    console.log('[Provider] Staff loaded from storage:', saved.length, 'users');
+    console.log('[Provider] Admin user exists:', saved.some(s => s.username === 'admin'));
+    return saved;
+  } catch(e) {
+    console.error('[Provider] Error loading staff:', e);
+    return DEF_STAFF;
+  }
+});
   const[settings,setSettingsS]=useState(()=>{try{const s=LS.g('settings');return(s&&typeof s==='object')?Object.assign({},DEF_SETTINGS,s):DEF_SETTINGS;}catch{return DEF_SETTINGS;}});
   const[toasts,setToasts]=useState([]);
   const[pwaEvt,setPwaEvt]=useState(null);
@@ -1031,8 +1057,9 @@ function Provider({children}){
       setClientIdS('ordo-main');
     }
   },[]);
-  const[license,setLicense]=useState(null); // {valid,payload,daysLeft,reason}
-  const[licenseChecked,setLicenseChecked]=useState(false);
+  // FREE — always valid, no license needed
+  const[license]=useState({valid:true,free:true});
+  const[licenseChecked]=useState(true);
   const[inactiveWarning,setInactiveWarning]=useState(false);
   const _inactiveTimer=useRef(null);
   const _warnTimer=useRef(null);
@@ -1044,34 +1071,7 @@ function Provider({children}){
   },[theme]);
   const toggleTheme=useCallback(()=>setThemeS(t=>t==='dark'?'light':'dark'),[]);
 
-  // ── License validation ─────────────────────────────────────────────────────
-  useEffect(()=>{
-    (async()=>{
-      const raw=localStorage.getItem('ordo_license_key');
-      if(!raw){
-        // Check trial period
-        let trial=LS.g('trial_start');
-        if(!trial){trial=Date.now();LS.s('trial_start',trial);}
-        const trialDays=30;
-        const daysLeft=Math.ceil((trial+trialDays*864e5-Date.now())/864e5);
-        if(daysLeft>0){
-          setLicense({valid:true,trial:true,daysLeft,reason:null});
-        }else{
-          setLicense({valid:false,trial:true,expired:true,reason:'Trial expired '+Math.abs(daysLeft)+' days ago'});
-        }
-      }else{
-        const result=await validateLicenseKey(raw);
-        if(result.valid){
-          LS.s('ordo_license_cache',result);
-          writeAudit('LICENSE_OK','plan='+result.payload.p+' daysLeft='+result.daysLeft,'system');
-        }else{
-          writeAudit('LICENSE_FAIL',result.reason,'system');
-        }
-        setLicense(result);
-      }
-      setLicenseChecked(true);
-    })();
-  },[]);
+  // FREE — no license validation needed
 
   // ── Inactivity auto-logout ───────────────────────────────────────────────
   const resetInactivity=useCallback(()=>{
@@ -1114,71 +1114,112 @@ function Provider({children}){
     return true;
   },[]);
 
-  // ── Firebase: auto-connect using license email as the client namespace ───────
-  // No Firebase config needed from clients — we own the backend (pos-ordo).
-  // Each client's data is stored under ordo_clients/{email_namespace}/
-  useEffect(()=>{
-    // Get email from license payload (set after license validation)
-    const raw=localStorage.getItem('ordo_license_key');
-    let clientNs=null;
-    if(raw){
-      // Try to extract email from license cache
-      try{
-        const cached=LS.g('ordo_license_cache');
-        if(cached&&cached.payload&&cached.payload.e){
-          clientNs=_emailToNs(cached.payload.e);
-        }
-      }catch{}
-    }
-    // Fallback: use admin email from settings, or a generic namespace
-    if(!clientNs){
-      const cfg=LS.g('settings');
-      if(cfg&&cfg.adminEmail){clientNs=_emailToNs(cfg.adminEmail);}
-    }
-    if(!clientNs)return; // no license / email yet — stay offline
-
-    setSyncStatus('connecting');
-    FB.stopAll();
-    const ok=FB.init(clientNs);
-    if(!ok){setSyncStatus('error');return;}
-    setFbReady(true);
-
-    // Connectivity probe
-    try{
-      FB._db.collection('ordo_clients').doc(clientNs)
-        .collection('_ping').doc('ping')
-        .onSnapshot(()=>setSyncStatus('live'),()=>setSyncStatus('error'));
-    }catch{}
-
-    // Real-time listeners
-    FB.listen('orders',data=>{if(Array.isArray(data)){setOrders(data);LS.s('orders',data);}});
-    FB.listen('tables',data=>{if(Array.isArray(data)){setTables(data);LS.s('tables',data);}});
-    FB.listen('items', data=>{if(Array.isArray(data)){setItems(data); LS.s('items',data);}});
-    FB.listen('cats',  data=>{if(Array.isArray(data)){setCats(data);  LS.s('cats',data);}});
-    FB.listen('settings',data=>{
-      if(data&&typeof data==='object'){setSettingsS(s=>Object.assign({},s,data));LS.s('settings',data);}
-    });
-
+// ── Local Network Sync Only (Firebase disabled for local server) ──
+useEffect(()=>{
+  const host = location.hostname;
+  const port = location.port;
+  
+  // Check if we're running on the local server (port 3000)
+  const isLocalServer = (host === 'localhost' || host === '127.0.0.1' || port === '3000');
+  
+  if (isLocalServer) {
+    console.log('[Ordo] Running on local server - using WebSocket sync only');
     setSyncStatus('live');
-    return()=>{FB.stopAll();setSyncStatus('offline');};
-  },[]);
+    setFbReady(false); // Explicitly disable Firebase
+    return;
+  }
+  
+  // For external/cloud deployment only (if ever needed)
+  const clientNs = localStorage.getItem('ordo_clientId') || 'ordo-main';
+  setSyncStatus('connecting');
+  FB.stopAll();
+  const ok = FB.init(clientNs);
+  if (!ok) { setSyncStatus('error'); return; }
+  setFbReady(true);
+  
+  try {
+    FB._db.collection('ordo_clients').doc(clientNs)
+      .collection('_ping').doc('ping')
+      .onSnapshot(() => setSyncStatus('live'), () => setSyncStatus('error'));
+  } catch {}
+  
+  FB.listen('orders', data => { if (Array.isArray(data)) { setOrders(data); LS.s('orders', data); } });
+  FB.listen('tables', data => { if (Array.isArray(data)) { setTables(data); LS.s('tables', data); } });
+  FB.listen('items', data => { if (Array.isArray(data)) { setItems(data); LS.s('items', data); } });
+  FB.listen('cats', data => { if (Array.isArray(data)) { setCats(data); LS.s('cats', data); } });
+  FB.listen('settings', data => {
+    if (data && typeof data === 'object') { setSettingsS(s => Object.assign({}, s, data)); LS.s('settings', data); }
+  });
+  
+  setSyncStatus('live');
+  return () => { FB.stopAll(); setSyncStatus('offline'); };
+}, []);
 
-  // Hash default passwords on first boot — force rehash if upgrading from old prefix
-  useEffect(()=>{
-    (async()=>{
-      const saved=LS.g('staff');
-      const ver=LS.g('staffVer');
-      if(!saved||!ver||ver!=='ordo2'||saved.some(s=>!s.hash)){
-        const base=saved||DEF_STAFF;
-        const hashed=await Promise.all(base.map(async s=>({
-          ...s,
-          hash:await hashPw(DEF_PASSES[s.username]||s.username+'123')
-        })));
-        setStaff(hashed);LS.s('staff',hashed);LS.s('staffVer','ordo2');
+// ── Hash default passwords on first boot — force rehash if upgrading from old prefix
+useEffect(() => {
+  let isMounted = true;
+  const init = async () => {
+    try {
+      console.log('[Init] Starting staff initialization...');
+      
+      // Get current staff from state or localStorage
+      let currentStaff = staff;
+      if (!currentStaff || currentStaff.length === 0) {
+        const key = nsKey('staff');
+        const savedRaw = localStorage.getItem(key);
+        if (savedRaw) {
+          try {
+            currentStaff = JSON.parse(savedRaw);
+          } catch(e) {}
+        }
       }
-      setReady(true);
-    })();
-  },[]);
+      
+      if (!currentStaff || currentStaff.length === 0) {
+        currentStaff = DEF_STAFF;
+      }
+      
+      const ver = LS.g('staffVer');
+      const needsHash = !ver || ver !== 'ordo2' || currentStaff.some(s => !s.hash);
+      
+      if (needsHash) {
+        console.log('[Init] Hashing default passwords...');
+        const hashed = await Promise.all(currentStaff.map(async s => ({
+          ...s,
+          hash: await hashPw(DEF_PASSES[s.username] || s.username + '123')
+        })));
+        if (isMounted) {
+          setStaff(hashed);
+          LS.s('staff', hashed);
+          LS.s('staffVer', 'ordo2');
+          console.log('[Init] Staff hashed and saved:', hashed.length, 'users');
+        }
+      } else {
+        console.log('[Init] Using existing staff data, already hashed');
+        if (isMounted && currentStaff) {
+          setStaff(currentStaff);
+        }
+      }
+      
+      if (isMounted) {
+        setReady(true);
+        console.log('[Init] Ready set to true');
+      }
+    } catch (err) {
+      console.error('[Init] Error:', err);
+      if (isMounted) {
+        // Initialize with default staff on error
+        const key = nsKey('staff');
+        localStorage.setItem(key, JSON.stringify(DEF_STAFF));
+        setStaff(DEF_STAFF);
+        setReady(true);
+      }
+    }
+  };
+  init();
+  // Safety net: always unblock the login screen within 5 seconds
+  const safetyTimer = setTimeout(() => { if (isMounted) setReady(true); }, 5000);
+  return () => { isMounted = false; clearTimeout(safetyTimer); };
+}, []);
 
   // Restore session
   useEffect(()=>{
@@ -1203,8 +1244,42 @@ function Provider({children}){
   useEffect(()=>{LS.s('orders',orders);if(FB.ready)FB.save('orders',orders);},[orders]);
   useEffect(()=>{LS.s('cats',cats);if(FB.ready)FB.save('cats',cats);},[cats]);
   useEffect(()=>{LS.s('items',items);if(FB.ready)FB.save('items',items);},[items]);
-  useEffect(()=>{LS.s('staff',staff);},[staff]);
+  useEffect(()=>{
+    if(!staff||staff.length===0)return;
+    LS.s('staff',staff);
+    // Explicitly trigger WebSocket sync for staff (bypasses _applyingSync guard)
+    if(typeof window._ordoSyncNow==='function')window._ordoSyncNow('staff',staff);
+  },[staff]);
   useEffect(()=>{LS.s('settings',settings);if(FB.ready)FB.save('settings',settings);},[settings]);
+
+  // ── Local network sync: register global so the injected WebSocket script
+  //    (server.js) can push data directly into React state ─────────────────
+  useEffect(()=>{
+    window._ordoApplySync=(col,data)=>{
+      try{
+        // Use React batching to apply state in one render pass (zero flicker)
+        const apply = () => {
+          if(col==='orders'&&Array.isArray(data))setOrders(data);
+          else if(col==='tables'&&Array.isArray(data))setTables(data);
+          else if(col==='items'&&Array.isArray(data))setItems(data);
+          else if(col==='cats'&&Array.isArray(data))setCats(data);
+          else if(col==='settings'&&data&&typeof data==='object')setSettingsS(s=>Object.assign({},s,data));
+          else if(col==='staff'&&Array.isArray(data)){
+            setStaff(data);
+            LS.rm('staffVer');
+            LS.s('staffVer','ordo2');
+          }
+        };
+        // React 18 auto-batches; for React 17 fallback use flushSync wrapper
+        if(typeof ReactDOM !== 'undefined' && ReactDOM.unstable_batchedUpdates){
+          ReactDOM.unstable_batchedUpdates(apply);
+        } else {
+          apply();
+        }
+      }catch(e){console.warn('[local-sync] _ordoApplySync error',e);}
+    };
+    return()=>{delete window._ordoApplySync;};
+  },[]);
   useEffect(()=>{
     LS.s('lang',lang);
     document.documentElement.lang=lang;
@@ -1215,12 +1290,7 @@ function Provider({children}){
   const setLang=l=>setLangS(l);
   const setSettings=upd=>setSettingsS(p=>({...p,...(typeof upd==='function'?upd(p):upd)}));
 
-  // Allow LicenseGenerator to update adminEmail via custom event (avoids prop drilling)
-  useEffect(()=>{
-    const h=e=>setSettings({adminEmail:e.detail});
-    document.addEventListener('ordo-set-admin-email',h);
-    return()=>document.removeEventListener('ordo-set-admin-email',h);
-  },[]);
+
 
   const toast=useCallback((msg,type='info',dur=3500)=>{
     const id=uid();
@@ -1244,30 +1314,92 @@ function Provider({children}){
     }catch{}
   },[settings.kitchenSound]);
 
-  const login=useCallback(async(username,pw)=>{
-    const uname=username.trim().toLowerCase();
+const login = useCallback(async (username, pw) => {
+  try {
+    console.log('[Login] Attempt for username:', username);
+    const uname = username.trim().toLowerCase();
+    
     // Check lockout
-    const lock=getLockout(uname);
-    if(lock&&lock.until>Date.now()){
-      const mins=Math.ceil((lock.until-Date.now())/60000);
-      return{locked:true,mins};
+    const lock = getLockout(uname);
+    if (lock && lock.until > Date.now()) {
+      const mins = Math.ceil((lock.until - Date.now()) / 60000);
+      console.log('[Login] Account locked for', mins, 'minutes');
+      return { locked: true, mins };
     }
-    const allStaff=LS.g('staff')||staff;
-    const s=allStaff.find(s=>s.username===uname&&s.active);
-    if(!s){recordBadAttempt(uname);writeAudit('LOGIN_FAIL','Unknown user: '+uname,'—');return false;}
-    const h=await hashPw(pw);
-    if(h!==s.hash){
-      const l=recordBadAttempt(uname);
-      writeAudit('LOGIN_FAIL','Bad password for '+uname+' (attempt '+l.attempts+')','—');
-      if(l.attempts>=LOCK_MAX)return{locked:true,mins:LOCK_MINS};
-      return{failed:true,attemptsLeft:LOCK_MAX-l.attempts};
+    
+    // IMPORTANT: Force initialize staff from localStorage with correct namespace
+    let allStaff = null;
+    
+    // Try to get staff from state first
+    if (staff && staff.length > 0) {
+      allStaff = staff;
+      console.log('[Login] Using staff from state:', allStaff.length);
+    } else {
+      // Try to load from localStorage with correct namespace
+      const key = nsKey('staff');
+      const savedRaw = localStorage.getItem(key);
+      console.log('[Login] Looking for staff at key:', key);
+      
+      if (savedRaw) {
+        try {
+          allStaff = JSON.parse(savedRaw);
+          console.log('[Login] Loaded staff from localStorage:', allStaff?.length);
+        } catch(e) {
+          console.error('[Login] Failed to parse staff:', e);
+        }
+      }
     }
+    
+    // If still no staff, initialize with DEF_STAFF
+    if (!allStaff || allStaff.length === 0) {
+      console.log('[Login] No staff found, initializing with DEF_STAFF');
+      allStaff = DEF_STAFF;
+      // Save to localStorage immediately
+      const key = nsKey('staff');
+      localStorage.setItem(key, JSON.stringify(DEF_STAFF));
+      // Also update state
+      setStaff(DEF_STAFF);
+    }
+    
+    console.log('[Login] Staff available:', allStaff.length, 'users');
+    console.log('[Login] Staff usernames:', allStaff.map(s => s.username).join(', '));
+    
+    const s = allStaff.find(s => s.username === uname && s.active);
+    
+    if (!s) {
+      console.log('[Login] User not found:', uname);
+      recordBadAttempt(uname);
+      writeAudit('LOGIN_FAIL', 'Unknown user: ' + uname, '—');
+      return false;
+    }
+    
+    console.log('[Login] User found:', s.username, 'role:', s.role);
+    console.log('[Login] Hashed password from storage:', s.hash ? s.hash.substring(0, 20) + '...' : 'NO HASH');
+    
+    const h = await hashPw(pw);
+    console.log('[Login] Computed hash:', h.substring(0, 20) + '...');
+    console.log('[Login] Password match:', h === s.hash);
+    
+    if (h !== s.hash) {
+      console.log('[Login] Password mismatch');
+      const l = recordBadAttempt(uname);
+      writeAudit('LOGIN_FAIL', 'Bad password for ' + uname + ' (attempt ' + l.attempts + ')', '—');
+      if (l.attempts >= LOCK_MAX) return { locked: true, mins: LOCK_MINS };
+      return { failed: true, attemptsLeft: LOCK_MAX - l.attempts };
+    }
+    
+    console.log('[Login] Login successful!');
     clearLockout(uname);
-    const exp=Date.now()+(settings.sessionTimeout||480)*60000;
-    LS.s('session',{uid:s.id,exp});
-    writeAudit('LOGIN_OK','Role: '+s.role,uname);
-    setUser(s);return{ok:true};
-  },[staff,settings.sessionTimeout]);
+    const exp = Date.now() + (settings.sessionTimeout || 480) * 60000;
+    LS.s('session', { uid: s.id, exp });
+    writeAudit('LOGIN_OK', 'Role: ' + s.role, uname);
+    setUser(s);
+    return { ok: true };
+  } catch (err) {
+    console.error('[Login] Error:', err);
+    return false;
+  }
+}, [staff, settings.sessionTimeout]);
 
   const logout=useCallback(()=>{
     if(user)writeAudit('LOGOUT','Manual logout',user.username);
@@ -1361,16 +1493,7 @@ function Provider({children}){
   },[pwaEvt]);
 
   const reinitFirebase=useCallback(()=>{
-    let clientNs=null;
-    try{
-      const cached=LS.g('ordo_license_cache');
-      if(cached&&cached.payload&&cached.payload.e)clientNs=_emailToNs(cached.payload.e);
-    }catch{}
-    if(!clientNs){
-      const cfg=LS.g('settings');
-      if(cfg&&cfg.adminEmail)clientNs=_emailToNs(cfg.adminEmail);
-    }
-    if(!clientNs){setSyncStatus('offline');setFbReady(false);return;}
+    const clientNs=localStorage.getItem('ordo_clientId')||'ordo-main';
     setSyncStatus('connecting');
     FB.stopAll();
     const ok=FB.init(clientNs);
@@ -1458,7 +1581,7 @@ function KitTimer({at}){
    LOGIN SCREEN
 ====================================================== */
 function LoginScreen(){
-  const{t,login,lang,setLang,pwaEvt,pwaInstall,ready,theme,toggleTheme,license}=useApp();
+  const{t,login,lang,setLang,pwaEvt,pwaInstall,ready,theme,toggleTheme}=useApp();
   const[u,setU]=useState('');const[p,setP]=useState('');
   const[err,setErr]=useState('');const[loading,setLoad]=useState(false);
   const[lockMins,setLockMins]=useState(0);
@@ -1535,12 +1658,6 @@ function LoginScreen(){
         <div style={{display:'flex',justifyContent:'center',gap:8,marginTop:12}}>
           {pwaEvt&&<button className="btn btn-ghost btn-sm" onClick={pwaInstall}><i className="fa fa-download"/> {t('installApp')}</button>}
         </div>
-        {license&&license.trial&&license.valid&&(
-          <div style={{marginTop:10,padding:'8px 12px',background:'rgba(245,158,11,.12)',border:'1px solid rgba(245,158,11,.3)',borderRadius:8,fontSize:11,color:'var(--yellow)',textAlign:'center'}}>
-            ⏳ Trial — <strong>{license.daysLeft} day{license.daysLeft===1?'':'s'} remaining</strong>
-            {' · Contact your reseller to activate a full license.'}
-          </div>
-        )}
         <div style={{marginTop:14,padding:10,background:'var(--elevated)',borderRadius:8,fontSize:10,color:'var(--t3)',textAlign:'center',lineHeight:1.8}}>
           {t('loginHint')}:<br/>admin / admin123 · cashier / cash123<br/>waiter / wait123 · kitchen / kitchen123
         </div>
@@ -2463,18 +2580,19 @@ function CashierScreen(){
     const change2=received?Math.max(0,parseFloat(received)-tot2):0;
     const paperW=settings.thermalPaper==='57mm'?'57mm':'80mm';
     const bodyW=settings.thermalPaper==='57mm'?'50mm':'72mm';
-    const w=window.open('','_blank','width=380,height=700');
+    const popW=settings.thermalPaper==='57mm'?280:360;
+    const w=window.open('','_blank',`width=${popW},height=700`);
     w.document.write(`<!DOCTYPE html><html><head><title>Receipt</title>
     <style>
       *{margin:0;padding:0;box-sizing:border-box}
-      body{font-family:'Courier New',Courier,monospace;font-size:12px;padding:6px}
+      body{font-family:'Courier New',Courier,monospace;font-size:12px;padding:6px;width:100%;word-wrap:break-word;overflow-wrap:break-word;}
       .c{text-align:center}.d{border-top:1px dashed #000;margin:7px 0}.r{display:flex;justify-content:space-between;margin:2px 0}
       h2{font-size:15px;margin-bottom:2px}.big{font-size:16px;font-weight:bold}
       .logo{font-size:18px;font-weight:900;letter-spacing:1px}
       .item-name{flex:1;padding-right:6px;word-break:break-word}
       @media print{
-        @page{size:${paperW} auto;margin:0;}
-        body{width:${bodyW};padding:4px;}
+        @page{size:${paperW} auto;margin:0mm;}
+        html,body{width:${bodyW};margin:0 auto;padding:2mm 1mm;}
         .no-print{display:none!important;}
       }
     </style></head><body>
@@ -2875,10 +2993,80 @@ function Reports(){
           <button key={r} className={`chip${range===r?' active':''}`} style={{fontSize:11}} onClick={()=>setRange(r)}>Last {r}d</button>
         ))}
         <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}} onClick={()=>{
-          const data=JSON.stringify({orders,exportedAt:new Date().toISOString()},null,2);
-          const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(data);
-          a.download=`ordo-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
-        }}><i className="fa fa-download"/> Export</button>
+          const vr2=(settings.vatRate||15)/100;
+          const calcRev2=o=>{const sub=(o.items||[]).reduce((s,i)=>s+(i.price+(i.modAdj||0))*i.qty,0);return(sub*(1-(o.discount||0)/100))*(1+vr2)+(o.tip||0);};
+          const totalR=paid.reduce((s,o)=>s+calcRev2(o),0);
+          const wb=XLSX.utils.book_new();
+
+          /* Sheet 1: Summary */
+          const summaryData=[
+            ['Ordo POS — Export Report'],
+            ['Exported At', new Date().toLocaleString()],
+            ['Date Range', `Last ${range} days`],
+            [],
+            ['Metric','Value'],
+            ['Total Revenue', parseFloat(totalR.toFixed(2))],
+            ['Total Orders', paid.length],
+            ['Avg Order Value', paid.length?parseFloat((totalR/paid.length).toFixed(2)):0],
+            ['Total Items Sold', paid.reduce((s,o)=>s+(o.items||[]).reduce((ss,i)=>ss+i.qty,0),0)],
+            [],
+            ['Daily Breakdown'],
+            ['Date','Orders',`Revenue (${cur})`],
+            ...days.map(d=>[d.label, d.cnt, parseFloat(d.rev.toFixed(2))]),
+          ];
+          const ws1=XLSX.utils.aoa_to_sheet(summaryData);
+          ws1['!cols']=[{wch:28},{wch:20},{wch:18}];
+          XLSX.utils.book_append_sheet(wb,ws1,'Summary');
+
+          /* Sheet 2: Orders */
+          const ordRows=[['Order ID','Date','Time','Table','Type','Waiter','Items',`Subtotal (${cur})`,'Discount %',`VAT %`,`Tip (${cur})`,`Total (${cur})`,'Payment','Status']];
+          paid.forEach(o=>{
+            const sub=(o.items||[]).reduce((s,i)=>s+(i.price+(i.modAdj||0))*i.qty,0);
+            const disc=sub*(o.discount||0)/100;
+            const after=sub-disc;
+            const vat=after*vr2;
+            const tot=after+vat+(o.tip||0);
+            const d=new Date(o.createdAt);
+            ordRows.push([
+              o.id.slice(-8),
+              d.toLocaleDateString(),
+              d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+              o.tableNum||o.tableId||'-',
+              o.orderType||'dine-in',
+              o.waiterName||'-',
+              (o.items||[]).map(i=>`${i.qty}x ${i.name}`).join(', '),
+              parseFloat(sub.toFixed(2)),
+              o.discount||0,
+              settings.vatRate||15,
+              parseFloat((o.tip||0).toFixed(2)),
+              parseFloat(tot.toFixed(2)),
+              o.paymentMethod||'-',
+              o.status,
+            ]);
+          });
+          const ws2=XLSX.utils.aoa_to_sheet(ordRows);
+          ws2['!cols']=[{wch:12},{wch:12},{wch:8},{wch:8},{wch:10},{wch:12},{wch:40},{wch:12},{wch:10},{wch:8},{wch:10},{wch:12},{wch:10},{wch:10}];
+          XLSX.utils.book_append_sheet(wb,ws2,'Orders');
+
+          /* Sheet 3: Item Sales */
+          const itemMap={};
+          paid.forEach(o=>(o.items||[]).forEach(i=>{
+            const k=i.id||(i.name||'');
+            if(!itemMap[k])itemMap[k]={name:i.name,nameAr:i.nameAr||i.name,qty:0,revenue:0};
+            itemMap[k].qty+=i.qty;
+            itemMap[k].revenue+=(i.price+(i.modAdj||0))*i.qty;
+          }));
+          const itemRows=[['Item (EN)','Item (AR)','Qty Sold',`Revenue (${cur})`]];
+          Object.values(itemMap).sort((a,b)=>b.revenue-a.revenue).forEach(it=>{
+            itemRows.push([it.name, it.nameAr, it.qty, parseFloat(it.revenue.toFixed(2))]);
+          });
+          const ws3=XLSX.utils.aoa_to_sheet(itemRows);
+          ws3['!cols']=[{wch:28},{wch:28},{wch:12},{wch:16}];
+          XLSX.utils.book_append_sheet(wb,ws3,'Item Sales');
+
+          XLSX.writeFile(wb,`ordo-report-${new Date().toISOString().slice(0,10)}.xlsx`);
+          toast('Excel report exported!','success');
+        }}><i className="fa fa-file-excel"/> Export Excel</button>
       </div>
 
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(145px,1fr))',gap:10,marginBottom:14}}>
@@ -3144,85 +3332,14 @@ function MenuManagement(){
    LICENSE STATUS CARD
 ======================================================*/
 function LicenseStatusCard(){
-  const{license}=useApp();
-  const[showActivate,setShowActivate]=useState(false);
-  const[keyInput,setKeyInput]=useState('');
-  const[activateErr,setActivateErr]=useState('');
-  const[activating,setActivating]=useState(false);
-
-  if(!license)return null;
-  const col=license.valid?(license.trial?'var(--yellow)':'var(--green)'):'var(--red)';
-  const icon=license.valid?(license.trial?'fa-clock':'fa-check-circle'):'fa-times-circle';
-  const planLabel=license.trial?'Trial':((license.payload&&license.payload.p)||'').toUpperCase();
-
-  const doActivate=async()=>{
-    if(!keyInput.trim()){setActivateErr('Please enter your license key');return;}
-    setActivating(true);setActivateErr('');
-    const result=await validateLicenseKey(keyInput.trim());
-    if(result.valid){
-      localStorage.setItem('ordo_license_key',keyInput.trim().toUpperCase());
-      // Cache the payload immediately so reinitFirebase can read the email
-      LS.s('ordo_license_cache',result);
-      setTimeout(()=>window.location.reload(),800);
-    }else{
-      setActivateErr(result.reason||'Invalid key');
-    }
-    setActivating(false);
-  };
-
   return(
-    <div style={{marginBottom:14}}>
-      {/* Status bar */}
-      <div style={{padding:'12px 14px',background:'var(--elevated)',borderRadius:10,display:'flex',gap:10,alignItems:'center'}}>
-        <i className={`fa ${icon}`} style={{color:col,fontSize:20}}/>
-        <div style={{flex:1}}>
-          <div style={{fontWeight:700,fontSize:13,color:col}}>
-            {license.valid?(license.trial?'Trial Mode':'Licensed — '+planLabel):'License Invalid'}
-          </div>
-          {license.valid&&(
-            <div style={{fontSize:11,color:'var(--t2)',marginTop:3,display:'flex',flexDirection:'column',gap:2}}>
-              <span>{license.daysLeft} days remaining</span>
-              {license.payload?.e&&<span>📧 {license.payload.e}</span>}
-              {license.payload?.m&&<span>📱 {license.payload.m}</span>}
-              {license.payload?.c&&license.payload.c!=='*'&&<span>🏪 Locked to: <strong style={{color:'var(--primary)',fontFamily:'monospace'}}>{license.payload.c}</strong></span>}
-            </div>
-          )}
-          {!license.valid&&<div style={{fontSize:11,color:'var(--red)',marginTop:2}}>{license.reason}</div>}
-        </div>
-        {license.valid&&!license.trial&&(
-          <span className="badge badge-green" style={{fontSize:10}}>✓ Active</span>
-        )}
-        {license.trial&&(
-          <button className="btn btn-warning btn-sm" onClick={()=>setShowActivate(s=>!s)}>
-            <i className="fa fa-unlock"/> Activate
-          </button>
-        )}
-        {!license.valid&&(
-          <button className="btn btn-danger btn-sm" onClick={()=>setShowActivate(s=>!s)}>
-            <i className="fa fa-key"/> Enter Key
-          </button>
-        )}
+    <div style={{padding:'12px 14px',background:'var(--green-dim)',border:'1px solid rgba(16,185,129,.25)',borderRadius:10,display:'flex',gap:10,alignItems:'center'}}>
+      <i className="fa fa-check-circle" style={{color:'var(--green)',fontSize:20}}/>
+      <div style={{flex:1}}>
+        <div style={{fontWeight:700,fontSize:13,color:'var(--green)'}}>Free — No License Required</div>
+        <div style={{fontSize:11,color:'var(--t2)',marginTop:3}}>Ordo POS is free to use on unlimited devices. Cloud sync is always active.</div>
       </div>
-      {/* Inline activate form */}
-      {showActivate&&(
-        <div style={{marginTop:8,padding:'12px 14px',background:'var(--card)',border:'1px solid var(--border)',borderRadius:10}}>
-          <div className="form-g" style={{marginBottom:8}}>
-            <label className="form-lbl">License Key</label>
-            <input className="input" value={keyInput}
-              onChange={e=>setKeyInput(e.target.value.toUpperCase())}
-              onKeyDown={e=>e.key==='Enter'&&doActivate()}
-              placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
-              style={{fontFamily:'monospace',letterSpacing:2,fontSize:13}}/>
-          </div>
-          {activateErr&&<div style={{color:'var(--red)',fontSize:12,padding:'5px 9px',background:'var(--red-dim)',borderRadius:6,marginBottom:8}}>{activateErr}</div>}
-          <div style={{display:'flex',gap:8}}>
-            <button className="btn btn-ghost btn-sm" onClick={()=>setShowActivate(false)}>Cancel</button>
-            <button className="btn btn-primary btn-sm" onClick={doActivate} disabled={activating}>
-              {activating?<i className="fa fa-spinner" style={{animation:'spin 1s linear infinite'}}/>:<i className="fa fa-unlock"/>} Activate License
-            </button>
-          </div>
-        </div>
-      )}
+      <span className="badge badge-green" style={{fontSize:10}}>✓ Free</span>
     </div>
   );
 }
@@ -3324,7 +3441,7 @@ function Settings(){
   return(
     <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
       <div className="settings-tabs">
-        {[['restaurant','🏪 Restaurant'],['security','🔐 Security'],['staff','👥 Staff'],['tables','🪑 Tables'],['printers','🖨️ Printers'],['cloud','☁️ Cloud'],['license','🔑 License'],['data','💾 Data']].map(([k,l])=>(
+        {[['restaurant','🏪 Restaurant'],['security','🔐 Security'],['staff','👥 Staff'],['tables','🪑 Tables'],['printers','🖨️ Printers'],['cloud','☁️ Cloud'],['data','💾 Data']].map(([k,l])=>(
           <button key={k} className={`chip${tab===k?' active':''}`} style={{fontSize:11,whiteSpace:'nowrap'}} onClick={()=>setTab(k)}>{l}</button>
         ))}
       </div>
@@ -3428,8 +3545,6 @@ function Settings(){
               </div>
               <Tog k="kitchenSound" label={t('kitchenSound')}/>
             </div>
-            <div className="section-hdr">📋 License Status</div>
-            <LicenseStatusCard/>
             <div className="section-hdr" style={{marginTop:16}}>🔑 Change My Password</div>
             <div className="card">
               <div className="form-g"><label className="form-lbl">{t('currentPass')}</label><input className="input" type="password" value={passForm.cur} onChange={e=>setPassForm(p=>({...p,cur:e.target.value}))}/></div>
@@ -3696,26 +3811,6 @@ function Settings(){
           </div>
         )}
 
-        {/* License */}
-        {tab==='license'&&(
-          <div>
-            <div className="section-hdr">🔑 License Status</div>
-            <LicenseStatusCard/>
-            {user.role==='admin'&&(
-              <>
-                <div className="divider"/>
-                <LicenseGenerator/>
-              </>
-            )}
-            {user.role!=='admin'&&(
-              <div style={{textAlign:'center',padding:24,color:'var(--t3)',fontSize:12}}>
-                <i className="fa fa-lock" style={{fontSize:24,marginBottom:8,display:'block'}}/>
-                Contact your admin to manage licenses.
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Cloud Sync */}
         {tab==='cloud'&&(
           <div>
@@ -3734,15 +3829,15 @@ function Settings(){
                   <div style={{fontWeight:700,fontSize:14,color:syncStatus==='live'?'var(--green)':syncStatus==='error'?'var(--red)':syncStatus==='connecting'?'var(--yellow)':'var(--t2)'}}>
                     {syncStatus==='live'?'🟢 Live — syncing across all devices'
                      :syncStatus==='connecting'?'🟡 Connecting to Ordo Cloud…'
-                     :syncStatus==='error'?'🔴 Sync error'
-                     :'⚫ Offline — activate a license to enable sync'}
+                     :syncStatus==='error'?'🔴 Sync error — check your connection'
+                     :'⚫ Offline'}
                   </div>
                   <div style={{fontSize:11,color:'var(--t3)',marginTop:3}}>
                     {syncStatus==='live'
-                      ?'All devices with this license key are syncing in real-time'
+                      ?'All devices with this Client ID are syncing in real-time'
                       :syncStatus==='offline'
-                      ?'Sync activates automatically when you enter a valid license key'
-                      :'Check your internet connection or re-enter the license key'}
+                      ?'Tap the refresh button to reconnect'
+                      :'Check your internet connection and try again'}
                   </div>
                 </div>
                 <button className="btn btn-ghost btn-sm" onClick={reinitFirebase}>
@@ -3765,62 +3860,32 @@ function Settings(){
               <div className="section-hdr">How Ordo Cloud Works</div>
               <div style={{fontSize:12,color:'var(--t2)',lineHeight:1.9}}>
                 <div style={{display:'flex',gap:10,marginBottom:8,alignItems:'flex-start'}}>
-                  <span style={{fontSize:18,flexShrink:0}}>🔑</span>
-                  <div><strong style={{color:'var(--t1)'}}>Activate your license</strong> — go to Settings → License and enter your key. Your registered email becomes your private cloud namespace.</div>
+                  <span style={{fontSize:18,flexShrink:0}}>🆓</span>
+                  <div><strong style={{color:'var(--t1)'}}>Always free</strong> — no license key, no subscription. Cloud sync is included for every user at no cost.</div>
                 </div>
                 <div style={{display:'flex',gap:10,marginBottom:8,alignItems:'flex-start'}}>
                   <span style={{fontSize:18,flexShrink:0}}>📱</span>
-                  <div><strong style={{color:'var(--t1)'}}>Open on any device</strong> — phone, tablet, or desktop. Enter the same license key and all devices sync automatically.</div>
+                  <div><strong style={{color:'var(--t1)'}}>Open on any device</strong> — phone, tablet, or desktop. All devices using the same Client ID sync in real time automatically.</div>
                 </div>
                 <div style={{display:'flex',gap:10,alignItems:'flex-start'}}>
                   <span style={{fontSize:18,flexShrink:0}}>🔒</span>
-                  <div><strong style={{color:'var(--t1)'}}>Your data is private</strong> — each client's data is completely isolated. No other restaurant can see your orders or menu.</div>
+                  <div><strong style={{color:'var(--t1)'}}>Your data is private</strong> — each Client ID has a completely isolated cloud namespace. No other restaurant can see your orders or menu.</div>
                 </div>
               </div>
             </div>
 
-            {/* License & namespace info */}
-            {(()=>{
-              let licEmail='';let licNs='';
-              try{
-                const cached=LS.g('ordo_license_cache');
-                if(cached&&cached.payload&&cached.payload.e){
-                  licEmail=cached.payload.e;
-                  licNs=_emailToNs(licEmail);
-                }
-              }catch{}
-              return licEmail?(
-                <div className="card" style={{marginBottom:12}}>
-                  <div className="section-hdr">Your Cloud Identity</div>
-                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                    <div style={{display:'flex',gap:10,alignItems:'center',padding:'9px 12px',background:'var(--elevated)',borderRadius:8}}>
-                      <i className="fa fa-envelope" style={{color:'var(--primary)',fontSize:14,flexShrink:0}}/>
-                      <div>
-                        <div style={{fontSize:10,color:'var(--t3)',fontWeight:700,textTransform:'uppercase',letterSpacing:.06}}>Registered Email</div>
-                        <div style={{fontSize:13,fontWeight:700,color:'var(--t1)',marginTop:1}}>{licEmail}</div>
-                      </div>
-                    </div>
-                    <div style={{display:'flex',gap:10,alignItems:'center',padding:'9px 12px',background:'var(--elevated)',borderRadius:8}}>
-                      <i className="fa fa-database" style={{color:'var(--blue)',fontSize:14,flexShrink:0}}/>
-                      <div>
-                        <div style={{fontSize:10,color:'var(--t3)',fontWeight:700,textTransform:'uppercase',letterSpacing:.06}}>Cloud Namespace</div>
-                        <div style={{fontSize:12,fontWeight:700,color:'var(--blue)',fontFamily:'monospace',marginTop:1,wordBreak:'break-all'}}>{licNs}</div>
-                      </div>
-                    </div>
-                  </div>
+            {/* Cloud Identity */}
+            <div className="card" style={{marginBottom:12}}>
+              <div className="section-hdr">Your Cloud Identity</div>
+              <div style={{display:'flex',gap:10,alignItems:'center',padding:'9px 12px',background:'var(--elevated)',borderRadius:8}}>
+                <i className="fa fa-database" style={{color:'var(--blue)',fontSize:14,flexShrink:0}}/>
+                <div>
+                  <div style={{fontSize:10,color:'var(--t3)',fontWeight:700,textTransform:'uppercase',letterSpacing:.06}}>Cloud Namespace (Client ID)</div>
+                  <div style={{fontSize:13,fontWeight:700,color:'var(--blue)',fontFamily:'monospace',marginTop:1}}>{clientId||'ordo-main'}</div>
+                  <div style={{fontSize:11,color:'var(--t3)',marginTop:2}}>All devices with this Client ID share the same live data.</div>
                 </div>
-              ):(
-                <div className="card" style={{marginBottom:12,border:'1px solid rgba(245,158,11,.3)',background:'rgba(245,158,11,.04)'}}>
-                  <div style={{display:'flex',gap:12,alignItems:'center'}}>
-                    <span style={{fontSize:28}}>🔑</span>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:13,color:'var(--yellow)',marginBottom:3}}>No license activated yet</div>
-                      <div style={{fontSize:12,color:'var(--t2)'}}>Go to <strong style={{color:'var(--t1)'}}>Settings → License</strong> and enter your license key to enable cloud sync across all devices.</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+              </div>
+            </div>
           </div>
         )}
 
@@ -4156,229 +4221,6 @@ function CustomerQR({tableNum}){
 }
 
 /* ======================================================
-   LICENSE SCREEN  (shown when license invalid/expired)
-======================================================*/
-function LicenseScreen({license}){
-  const[key,setKey]=useState('');
-  const[err,setErr]=useState(license.reason||'');
-  const[loading,setLoading]=useState(false);
-  const[success,setSuccess]=useState(false);
-
-  const activate=async()=>{
-    if(!key.trim()){setErr('Please enter a license key');return;}
-    setLoading(true);setErr('');
-    const result=await validateLicenseKey(key.trim());
-    if(result.valid){
-      localStorage.setItem('ordo_license_key',key.trim().toUpperCase());
-      setSuccess(true);
-      setTimeout(()=>window.location.reload(),1200);
-    }else{
-      setErr(result.reason||'Invalid key');
-    }
-    setLoading(false);
-  };
-
-  return(
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:'var(--bg)',padding:20}}>
-      <div style={{width:'100%',maxWidth:400}}>
-        <div style={{textAlign:'center',marginBottom:24}}>
-          <div style={{fontSize:48,marginBottom:8}}>{license.expired?'⏰':'🔐'}</div>
-          <div style={{fontSize:20,fontWeight:800,color:'var(--t1)'}}>{license.expired?'License Expired':'Activation Required'}</div>
-          <div style={{fontSize:12,color:'var(--t2)',marginTop:6,lineHeight:1.6}}>{license.reason}</div>
-        </div>
-        {success?(
-          <div style={{textAlign:'center',padding:20,background:'var(--green-dim)',borderRadius:12,color:'var(--green)',fontWeight:700}}>
-            <i className="fa fa-check-circle" style={{fontSize:24,display:'block',marginBottom:8}}/>
-            License activated! Reloading…
-          </div>
-        ):(
-          <div className="card">
-            <div className="form-g">
-              <label className="form-lbl">License Key</label>
-              <input className="input" value={key} onChange={e=>setKey(e.target.value.toUpperCase())}
-                onKeyDown={e=>e.key==='Enter'&&activate()}
-                placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
-                style={{fontFamily:'monospace',letterSpacing:2,fontSize:13}}/>
-            </div>
-            {err&&<div style={{color:'var(--red)',fontSize:12,padding:'6px 10px',background:'var(--red-dim)',borderRadius:6,marginBottom:10}}>{err}</div>}
-            <button className="btn btn-primary btn-block" onClick={activate} disabled={loading}>
-              {loading?<i className="fa fa-spinner" style={{animation:'spin 1s linear infinite'}}/>:<i className="fa fa-unlock"/>}
-              {' '}Activate License
-            </button>
-            <div style={{marginTop:14,fontSize:11,color:'var(--t3)',textAlign:'center',lineHeight:1.8}}>
-              Contact your Ordo POS reseller to purchase or renew.<br/>
-              Your Client ID: <strong style={{color:'var(--primary)',fontFamily:'monospace'}}>{getCID()||'(not set)'}</strong>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ======================================================
-   LICENSE GENERATOR  (admin tool — Settings → License)
-======================================================*/
-function LicenseGenerator(){
-  const{toast,settings}=useApp();
-  const[email,setEmail]=useState('');
-  const[phone,setPhone]=useState('');
-  const[plan,setPlan]=useState('basic');
-  const[days,setDays]=useState(365);
-  const[forClient,setForClient]=useState('*');
-  const[generatedKey,setGeneratedKey]=useState('');
-  const[loading,setLoading]=useState(false);
-  const[sent,setSent]=useState(false);
-
-  // Admin's own email from settings (so they can see it pre-filled)
-  const adminEmail=settings.adminEmail||'';
-
-  const generate=async()=>{
-    if(!email.trim()){toast('Enter client email first','warning');return;}
-    setLoading(true);setSent(false);
-    const k=await generateLicenseKey({email,phone,plan,days,forClientId:forClient||'*'});
-    setGeneratedKey(k);
-    setLoading(false);
-    writeAudit('LICENSE_GENERATED','plan='+plan+' email='+email+' phone='+phone,'admin');
-    // Auto-open email compose immediately
-    const expDate=new Date(Date.now()+days*864e5).toLocaleDateString();
-    const body=
-`Hello,
-
-Your Ordo POS license key is ready.
-
-━━━━━━━━━━━━━━━━━━━━━━━
-LICENSE KEY:
-${k}
-━━━━━━━━━━━━━━━━━━━━━━━
-
-Plan    : ${plan.toUpperCase()}
-Expires : ${expDate}
-${forClient!=='*'?'Client ID: '+forClient:''}
-
-HOW TO ACTIVATE:
-1. Open Ordo POS
-2. Go to Settings → License
-3. Click "Activate" and paste the key above
-
-For support contact us at: ${adminEmail||'your-support-email@email.com'}
-
-Thank you,
-Ordo POS Team`;
-    setTimeout(()=>{
-      window.open('mailto:'+email+'?subject=Your Ordo POS License Key&body='+encodeURIComponent(body));
-      setSent(true);
-    },300);
-  };
-
-  const planColors={trial:'var(--yellow)',basic:'var(--blue)',pro:'var(--purple)',enterprise:'var(--green)'};
-
-  return(
-    <div>
-      <div className="section-hdr">🔑 Generate &amp; Send License Key</div>
-
-      {/* Admin email setting */}
-      <div className="card" style={{marginBottom:12,padding:'10px 14px',display:'flex',gap:10,alignItems:'center',background:'var(--elevated)'}}>
-        <i className="fa fa-envelope" style={{color:'var(--primary)',fontSize:14}}/>
-        <div style={{flex:1}}>
-          <div style={{fontSize:10,color:'var(--t3)',fontWeight:700,textTransform:'uppercase',letterSpacing:.06}}>Your Admin / Support Email</div>
-          <input className="input" type="email" value={adminEmail}
-            onChange={e=>{ /* save to settings */ const v=e.target.value; document.dispatchEvent(new CustomEvent('ordo-set-admin-email',{detail:v})); }}
-            placeholder="your-email@gmail.com"
-            style={{marginTop:4,fontSize:13,background:'transparent',border:'none',borderBottom:'1px solid var(--border)',borderRadius:0,padding:'3px 0'}}/>
-        </div>
-      </div>
-
-      <div className="card" style={{marginBottom:12}}>
-        {/* Client details */}
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
-          <div className="form-g" style={{marginBottom:0}}>
-            <label className="form-lbl">Client Email *</label>
-            <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="client@email.com"/>
-          </div>
-          <div className="form-g" style={{marginBottom:0}}>
-            <label className="form-lbl">Client Phone</label>
-            <input className="input" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+966 5X XXX XXXX"/>
-          </div>
-        </div>
-        <div className="form-g">
-          <label className="form-lbl">Client ID Lock <span style={{color:'var(--t3)',fontWeight:400}}>— leave * for any device</span></label>
-          <input className="input" value={forClient} onChange={e=>setForClient(e.target.value)} placeholder="* or specific-client-id" style={{fontFamily:'monospace'}}/>
-        </div>
-        {/* Plan */}
-        <div className="form-g">
-          <label className="form-lbl">Plan</label>
-          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-            {[['trial','Trial',30],['basic','Basic',365],['pro','Pro',365],['enterprise','Enterprise',730]].map(([k,l,d])=>(
-              <button key={k} className={`chip${plan===k?' active':''}`}
-                style={{fontSize:11,borderColor:plan===k?planColors[k]:'var(--border)',color:plan===k?'#0d0d14':planColors[k]}}
-                onClick={()=>{setPlan(k);setDays(d);}}>
-                {l}
-              </button>
-            ))}
-          </div>
-        </div>
-        {/* Duration */}
-        <div className="form-g" style={{marginBottom:12}}>
-          <label className="form-lbl">Duration (days)</label>
-          <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
-            {[30,90,180,365,730].map(d=>(
-              <button key={d} className={`chip${days===d?' active':''}`} style={{fontSize:11}} onClick={()=>setDays(d)}>{d}d</button>
-            ))}
-            <input type="number" className="input" style={{width:80,padding:'5px 8px'}} value={days} onChange={e=>setDays(Math.max(1,+e.target.value))} min={1}/>
-          </div>
-        </div>
-        {/* Summary */}
-        <div style={{padding:'8px 12px',background:'var(--elevated)',borderRadius:8,fontSize:11,color:'var(--t2)',marginBottom:12}}>
-          Expires: <strong style={{color:'var(--t1)'}}>{new Date(Date.now()+days*864e5).toLocaleDateString()}</strong>
-          {' · '}Plan: <strong style={{color:planColors[plan]}}>{plan.toUpperCase()}</strong>
-          {forClient!=='*'&&<> · Locked to: <strong style={{color:'var(--primary)',fontFamily:'monospace'}}>{forClient}</strong></>}
-        </div>
-        <button className="btn btn-primary btn-block" onClick={generate} disabled={loading||!email.trim()}>
-          {loading
-            ?<><i className="fa fa-spinner" style={{animation:'spin 1s linear infinite'}}/> Generating…</>
-            :<><i className="fa fa-paper-plane"/> Generate &amp; Send via Email</>
-          }
-        </button>
-        {!email.trim()&&<div style={{textAlign:'center',fontSize:11,color:'var(--t3)',marginTop:6}}>Enter client email above to enable</div>}
-      </div>
-
-      {generatedKey&&(
-        <div className="card" style={{border:'1px solid rgba(16,185,129,.3)'}}>
-          <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:10}}>
-            <i className="fa fa-check-circle" style={{color:'var(--green)',fontSize:18}}/>
-            <div>
-              <div style={{fontWeight:700,fontSize:13,color:'var(--green)'}}>Key Generated!</div>
-              <div style={{fontSize:11,color:'var(--t2)'}}>{sent?'📧 Email compose opened — paste key if needed':'Opening email compose…'}</div>
-            </div>
-          </div>
-          {/* Key display */}
-          <div style={{padding:'12px 14px',background:'var(--elevated)',borderRadius:8,fontFamily:'monospace',fontSize:13,fontWeight:700,letterSpacing:1.5,wordBreak:'break-all',color:'var(--primary)',marginBottom:10,textAlign:'center'}}>
-            {generatedKey}
-          </div>
-          {/* Action row */}
-          <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
-            <button className="btn btn-ghost btn-sm" style={{flex:1,justifyContent:'center',minWidth:80}} onClick={()=>{
-              navigator.clipboard.writeText(generatedKey).catch(()=>{});
-              toast('Copied to clipboard!','success');
-            }}><i className="fa fa-copy"/> Copy</button>
-            <button className="btn btn-primary btn-sm" style={{flex:1,justifyContent:'center',minWidth:80}} onClick={()=>{
-              const expDate=new Date(Date.now()+days*864e5).toLocaleDateString();
-              const body=`Hello,\n\nYour Ordo POS license key:\n\n${generatedKey}\n\nPlan: ${plan.toUpperCase()}\nExpires: ${expDate}\n\nTo activate: Settings → License → Activate.\n\nThank you,\nOrdo POS Team`;
-              window.open('mailto:'+email+'?subject=Your Ordo POS License Key&body='+encodeURIComponent(body));
-            }}><i className="fa fa-envelope"/> Re-send Email</button>
-            {phone&&<button className="btn btn-success btn-sm" style={{flex:1,justifyContent:'center',minWidth:80}} onClick={()=>{
-              const msg=`Ordo POS License:\n${generatedKey}\nPlan: ${plan.toUpperCase()} | Expires: ${new Date(Date.now()+days*864e5).toLocaleDateString()}`;
-              window.open('https://wa.me/'+phone.replace(/[^0-9]/g,'')+'?text='+encodeURIComponent(msg));
-            }}><i className="fa fa-whatsapp"/> WhatsApp</button>}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ======================================================
    CLOSE ORDERS (END OF DAY) — admin only
 ====================================================== */
 function CloseOrdersModal({onClose}){
@@ -4503,16 +4345,7 @@ function MainApp(){
     if(role&&!allowed.includes(screen))setScreen(allowed[0]);
   },[role]);
 
-  const{licenseChecked,license}=useApp();
 
-  if(!licenseChecked)return(
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',flexDirection:'column',gap:12,background:'var(--bg)'}}>
-      <i className="fa fa-spinner" style={{fontSize:28,animation:'spin 1s linear infinite',color:'var(--primary)'}}/>
-      <div style={{fontSize:13,color:'var(--t2)'}}>Verifying license…</div>
-    </div>
-  );
-
-  if(license&&!license.valid)return<LicenseScreen license={license}/>;
 
   if(menuView)return<MenuViewOnly/>;
   if(qrTable)return<CustomerQR tableNum={qrTable}/>;
