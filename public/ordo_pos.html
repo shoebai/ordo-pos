@@ -341,8 +341,30 @@ input,select,textarea{-webkit-appearance:none;appearance:none;border-radius:var(
   /* Split screens */
   .order-panel{width:100%!important;border:none!important;}
   .split{flex-direction:column!important;}
-  .split>.left-pane{height:50%!important;flex:none!important;min-height:0;}
-  .split>.order-panel{height:50%!important;min-height:0;}
+  /* Menu pane fills remaining space after cart panel */
+  .split>.left-pane{flex:1!important;min-height:0;overflow:hidden;}
+  /* Cart panel: fixed height — tall enough to show items + footer, never more than 45% */
+  .split>.order-panel{
+    flex:none!important;
+    height:auto!important;
+    max-height:45%!important;
+    min-height:0;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  /* Cart scroll area shrinks, footer always visible */
+  .split>.order-panel .scroll-y{
+    flex:1!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+  }
+  /* Cart footer — always pinned, never hidden */
+  .split>.order-panel .cart-footer{
+    flex-shrink:0!important;
+    position:relative!important;
+  }
   .cashier-wrap{flex-direction:column!important;}
   .cashier-left{
     width:100%!important;border-right:none!important;
@@ -393,10 +415,11 @@ input,select,textarea{-webkit-appearance:none;appearance:none;border-radius:var(
 
   /* Cart footer — always pinned to bottom of order-panel */
   .cart-footer{
-    padding:8px 10px calc(8px + var(--safe-bot,0px)) 10px;
+    padding:8px 10px 8px 10px;
     border-top:1px solid var(--border);
-    flex-shrink:0;
+    flex-shrink:0 !important;
     background:var(--surface);
+    /* Do NOT add safe-area here — cart panel is not at screen bottom in portrait */
   }
   .cart-footer .cart-note{
     rows:1;
@@ -405,6 +428,8 @@ input,select,textarea{-webkit-appearance:none;appearance:none;border-radius:var(
   .cashier-bill{
     padding-bottom:calc(var(--bot,0px) + var(--safe-bot,0px) + 24px)!important;
   }
+  /* Hide duplicate total row in footer — already shown in cart header on mobile */
+  .cart-total-row{display:none!important;}
 }
 
 /* ═══ LANDSCAPE MOBILE ═══ */
@@ -1118,41 +1143,121 @@ const[staff,setStaff]=useState(()=>{
 useEffect(()=>{
   const host = location.hostname;
   const port = location.port;
-  
-  // Check if we're running on the local server (port 3000)
-  const isLocalServer = (host === 'localhost' || host === '127.0.0.1' || port === '3000');
-  
-  if (isLocalServer) {
-    console.log('[Ordo] Running on local server - using WebSocket sync only');
+  const isLocalServer = (host === 'localhost' || host === '127.0.0.1' || port === '3000' || port === '');
+
+  if (!isLocalServer) {
+    // ── Cloud / Firebase path ──────────────────────────────────────────
+    const clientNs = localStorage.getItem('ordo_clientId') || 'ordo-main';
+    setSyncStatus('connecting');
+    FB.stopAll();
+    const ok = FB.init(clientNs);
+    if (!ok) { setSyncStatus('error'); return; }
+    setFbReady(true);
+    try {
+      FB._db.collection('ordo_clients').doc(clientNs)
+        .collection('_ping').doc('ping')
+        .onSnapshot(() => setSyncStatus('live'), () => setSyncStatus('error'));
+    } catch {}
+    FB.listen('orders',   data => { if (Array.isArray(data))           { setOrders(data);   LS.s('orders',  data); } });
+    FB.listen('tables',   data => { if (Array.isArray(data))           { setTables(data);   LS.s('tables',  data); } });
+    FB.listen('items',    data => { if (Array.isArray(data))           { setItems(data);    LS.s('items',   data); } });
+    FB.listen('cats',     data => { if (Array.isArray(data))           { setCats(data);     LS.s('cats',    data); } });
+    FB.listen('settings', data => { if (data && typeof data==='object'){ setSettingsS(s=>Object.assign({},s,data)); LS.s('settings',data); } });
     setSyncStatus('live');
-    setFbReady(false); // Explicitly disable Firebase
-    return;
+    return () => { FB.stopAll(); setSyncStatus('offline'); };
   }
-  
-  // For external/cloud deployment only (if ever needed)
-  const clientNs = localStorage.getItem('ordo_clientId') || 'ordo-main';
+
+  // ── Local server / WebSocket path ─────────────────────────────────
+  setFbReady(false);
   setSyncStatus('connecting');
-  FB.stopAll();
-  const ok = FB.init(clientNs);
-  if (!ok) { setSyncStatus('error'); return; }
-  setFbReady(true);
-  
-  try {
-    FB._db.collection('ordo_clients').doc(clientNs)
-      .collection('_ping').doc('ping')
-      .onSnapshot(() => setSyncStatus('live'), () => setSyncStatus('error'));
-  } catch {}
-  
-  FB.listen('orders', data => { if (Array.isArray(data)) { setOrders(data); LS.s('orders', data); } });
-  FB.listen('tables', data => { if (Array.isArray(data)) { setTables(data); LS.s('tables', data); } });
-  FB.listen('items', data => { if (Array.isArray(data)) { setItems(data); LS.s('items', data); } });
-  FB.listen('cats', data => { if (Array.isArray(data)) { setCats(data); LS.s('cats', data); } });
-  FB.listen('settings', data => {
-    if (data && typeof data === 'object') { setSettingsS(s => Object.assign({}, s, data)); LS.s('settings', data); }
-  });
-  
-  setSyncStatus('live');
-  return () => { FB.stopAll(); setSyncStatus('offline'); };
+
+  // Load initial data from server REST API
+  const COLS = ['orders','tables','items','cats','settings','staff'];
+  const origin = location.origin; // e.g. http://192.168.1.5:3000
+
+  const loadAll = async () => {
+    try {
+      await Promise.all(COLS.map(async col => {
+        try {
+          const r = await fetch(`${origin}/api/${col}`);
+          if (!r.ok) return;
+          const data = await r.json();
+          if (typeof window._ordoApplySync === 'function') window._ordoApplySync(col, data);
+        } catch(e) { console.warn('[local-sync] initial load failed for', col, e); }
+      }));
+    } catch(e) { console.warn('[local-sync] loadAll error', e); }
+  };
+
+  // WebSocket client with auto-reconnect
+  let ws = null;
+  let reconnectTimer = null;
+  let alive = true;
+  let _applyingSync = false;
+
+  const connect = () => {
+    if (!alive) return;
+    const wsUrl = `ws://${location.host}`;
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch(e) {
+      setSyncStatus('error');
+      reconnectTimer = setTimeout(connect, 3000);
+      return;
+    }
+
+    ws.onopen = () => {
+      console.log('[local-sync] WebSocket connected');
+      setSyncStatus('live');
+      loadAll(); // refresh all state on (re)connect
+    };
+
+    ws.onmessage = e => {
+      try {
+        const { col, data } = JSON.parse(e.data);
+        _applyingSync = true;
+        if (typeof window._ordoApplySync === 'function') window._ordoApplySync(col, data);
+        setTimeout(() => { _applyingSync = false; }, 100);
+      } catch(err) { console.warn('[local-sync] bad message', err); }
+    };
+
+    ws.onclose = () => {
+      if (!alive) return;
+      console.log('[local-sync] WebSocket closed — reconnecting in 2s');
+      setSyncStatus('connecting');
+      reconnectTimer = setTimeout(connect, 2000);
+    };
+
+    ws.onerror = () => {
+      setSyncStatus('error');
+      ws.close();
+    };
+  };
+
+  // POST helper — sends updated collection to server and broadcasts to peers
+  const postToServer = async (col, data) => {
+    try {
+      await fetch(`${origin}/api/${col}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    } catch(e) { console.warn('[local-sync] POST failed for', col, e); }
+  };
+
+  // Expose sync-now so persist effects can push changes to the server
+  window._ordoSyncNow = (col, data) => {
+    if (!_applyingSync) postToServer(col, data);
+  };
+
+  connect();
+
+  return () => {
+    alive = false;
+    clearTimeout(reconnectTimer);
+    if (ws) ws.close();
+    delete window._ordoSyncNow;
+    setSyncStatus('offline');
+  };
 }, []);
 
 // ── Hash default passwords on first boot — force rehash if upgrading from old prefix
@@ -1240,17 +1345,16 @@ useEffect(() => {
   },[]);
 
   // Persist
-  useEffect(()=>{LS.s('tables',tables);if(FB.ready)FB.save('tables',tables);},[tables]);
-  useEffect(()=>{LS.s('orders',orders);if(FB.ready)FB.save('orders',orders);},[orders]);
-  useEffect(()=>{LS.s('cats',cats);if(FB.ready)FB.save('cats',cats);},[cats]);
-  useEffect(()=>{LS.s('items',items);if(FB.ready)FB.save('items',items);},[items]);
+  useEffect(()=>{LS.s('tables',tables);if(FB.ready)FB.save('tables',tables);if(typeof window._ordoSyncNow==='function')window._ordoSyncNow('tables',tables);},[tables]);
+  useEffect(()=>{LS.s('orders',orders);if(FB.ready)FB.save('orders',orders);if(typeof window._ordoSyncNow==='function')window._ordoSyncNow('orders',orders);},[orders]);
+  useEffect(()=>{LS.s('cats',cats);if(FB.ready)FB.save('cats',cats);if(typeof window._ordoSyncNow==='function')window._ordoSyncNow('cats',cats);},[cats]);
+  useEffect(()=>{LS.s('items',items);if(FB.ready)FB.save('items',items);if(typeof window._ordoSyncNow==='function')window._ordoSyncNow('items',items);},[items]);
   useEffect(()=>{
     if(!staff||staff.length===0)return;
     LS.s('staff',staff);
-    // Explicitly trigger WebSocket sync for staff (bypasses _applyingSync guard)
     if(typeof window._ordoSyncNow==='function')window._ordoSyncNow('staff',staff);
   },[staff]);
-  useEffect(()=>{LS.s('settings',settings);if(FB.ready)FB.save('settings',settings);},[settings]);
+  useEffect(()=>{LS.s('settings',settings);if(FB.ready)FB.save('settings',settings);if(typeof window._ordoSyncNow==='function')window._ordoSyncNow('settings',settings);},[settings]);
 
   // ── Local network sync: register global so the injected WebSocket script
   //    (server.js) can push data directly into React state ─────────────────
@@ -2057,8 +2161,9 @@ function OrderScreen({table,existingOrder,onBack}){
 
       {/* Right: cart */}
       <div className="order-panel" style={{width:280,flexShrink:0,overflow:'hidden',display:'flex',flexDirection:'column'}}>
-        <div style={{padding:'10px 12px',borderBottom:'1px solid var(--border)',fontWeight:700,fontSize:13,flexShrink:0}}>
-          🛒 {t('cart')} ({cartQty})
+        <div style={{padding:'10px 12px',borderBottom:'1px solid var(--border)',fontWeight:700,fontSize:13,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <span>🛒 {t('cart')} ({cartQty})</span>
+          {cartTotal>0&&<span style={{fontWeight:800,color:'var(--primary)',fontSize:14}}>{cur} {cartTotal.toFixed(2)}</span>}
         </div>
         <div className="scroll-y" style={{flex:1,padding:8,minHeight:0}}>
           {!cart.length&&<div style={{textAlign:'center',padding:28,color:'var(--t3)',fontSize:12}}>{lang==='ar'?'اختر من القائمة':'Tap menu items to add'}</div>}
@@ -2085,7 +2190,7 @@ function OrderScreen({table,existingOrder,onBack}){
         <div className="cart-footer">
           <textarea className="input cart-note" placeholder={t('addNote')} value={note} onChange={e=>setNote(e.target.value)} rows={1} style={{marginBottom:6,fontSize:13,resize:'none'}}/>
           {cart.length>0&&(
-            <div className="row-between" style={{marginBottom:6}}>
+            <div className="row-between cart-total-row" style={{marginBottom:6}}>
               <span style={{fontSize:13,color:'var(--t2)',fontWeight:600}}>{t('total')}</span>
               <span style={{fontWeight:800,color:'var(--primary)',fontSize:16}}>{cur} {cartTotal.toFixed(2)}</span>
             </div>
