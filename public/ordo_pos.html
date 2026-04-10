@@ -341,20 +341,16 @@ input,select,textarea{-webkit-appearance:none;appearance:none;border-radius:var(
   /* Split screens */
   .order-panel{width:100%!important;border:none!important;}
   .split{flex-direction:column!important;}
-  /* Menu pane: fills leftover space */
+  /* Total height = 100dvh - top nav. Bottom nav is fixed so doesn't affect flex height,
+     but its padding pushes cart-footer content up. Menu gets the remaining space. */
   .split>.left-pane{flex:1!important;min-height:0!important;overflow:hidden!important;}
-  /* Cart panel: shrinks to content, never hides the footer */
   .split>.order-panel{
     flex:none!important;
-    height:auto!important;
-    max-height:46vh!important;
+    /* Height: enough for header + a few items + footer + nav clearance */
+    height:calc(50% + var(--bot,60px) * 0.5)!important;
     min-height:0!important;
-    display:flex!important;
-    flex-direction:column!important;
     overflow:hidden!important;
   }
-  .split>.order-panel .scroll-y{flex:1!important;min-height:0!important;overflow-y:auto!important;}
-  .split>.order-panel .cart-footer{flex-shrink:0!important;}
   .cashier-wrap{flex-direction:column!important;}
   .cashier-left{
     width:100%!important;border-right:none!important;
@@ -403,16 +399,14 @@ input,select,textarea{-webkit-appearance:none;appearance:none;border-radius:var(
   .kit-card{padding:12px;}
   .section-hdr{font-size:11px;}
 
-  /* Cart footer — always visible, never clipped */
+  /* Cart footer — clears the fixed bottom nav bar */
   .cart-footer{
-    padding:6px 10px 6px 10px;
+    padding:8px 10px calc(var(--bot,60px) + var(--safe-bot,0px) + 10px) 10px;
     border-top:1px solid var(--border);
-    flex-shrink:0!important;
+    flex-shrink:0;
     background:var(--surface);
   }
   .cart-footer .cart-note{rows:1;}
-  /* Cart total row — shown in header on mobile, hide duplicate in footer */
-  .cart-total-row{display:none!important;}
   /* Cashier right panel — ensure Mark Paid is scrollable into view */
   .cashier-bill{
     padding-bottom:calc(var(--bot,0px) + var(--safe-bot,0px) + 24px)!important;
@@ -844,7 +838,7 @@ const DEF_SETTINGS={
   vatRate:15,currency:'SAR',
   enableTips:true,enableDelivery:true,kitchenSound:true,sessionTimeout:480,
   receiptFooter:'Thank you for dining with us!',receiptFooterAr:'شكراً لزيارتكم!',
-  autoPrintKitchen:true,kitchenPrintCopies:1,thermalPaper:'80mm',kitchenPaper:'80mm',adminEmail:'',kitchenPrinterMode:'browser',kitchenPrinterIp:'',kitchenPrinterPort:9100,kitchenPrintQuality:'normal',
+  autoPrintKitchen:true,kitchenPrintCopies:1,thermalPaper:'80mm',kitchenPaper:'80mm',adminEmail:'',
   // Firebase is Ordo's backend — no client config needed
   globalExtras:[
     {id:'ge1',name:'Extra Spicy',nameAr:'حار جداً',adj:0,emoji:'🌶️'},
@@ -889,122 +883,59 @@ const DEF_TABLES=Array.from({length:20},(_,i)=>({id:i+1,num:`T${i+1}`,status:'av
 /* ======================================================
    KITCHEN TICKET PRINTER
 ====================================================== */
-/* ── Kitchen ticket HTML builder ── */
-function _buildKitchenHtml(order,settings,quality){
-  const q=quality||settings.kitchenPrintQuality||'normal';
-  const fs={small:0.82,normal:1,large:1.22}[q]||1;
-  const pw=settings.kitchenPaper==='57mm'?'50mm':settings.kitchenPaper==='A4'?'190mm':'72mm';
-  const rows=(order.items||[]).map(it=>`
-    <tr>
-      <td style="font-size:${Math.round(22*fs)}px;font-weight:900;padding:4px 8px 4px 0;vertical-align:top">${it.qty}\xd7</td>
-      <td style="padding:4px 0;vertical-align:top">
-        <div style="font-size:${Math.round(15*fs)}px;font-weight:700">${it.nameAr||it.name}</div>
-        ${it.name!==it.nameAr&&it.nameAr?`<div style="font-size:${Math.round(11*fs)}px;color:#555">${it.name}</div>`:''}
-        ${Object.keys(it.selectedMods||{}).length>0?`<div style="font-size:${Math.round(10*fs)}px;color:#333;margin-top:1px">\u2937 options</div>`:''}
-        ${it.itemNote?`<div style="font-size:${Math.round(11*fs)}px;font-style:italic;margin-top:1px">\ud83d\udcdd ${it.itemNote}</div>`:''}
-      </td>
-    </tr>`).join('');
-  return `<!DOCTYPE html><html dir="rtl"><head>
-    <meta charset="UTF-8"/><title>KT-${order.id.slice(-6)}</title>
-    <style>
-      *{margin:0;padding:0;box-sizing:border-box;}
-      body{font-family:'Courier New',monospace;width:${pw};padding:4mm;background:#fff;color:#000;word-wrap:break-word;}
-      .dashed{border-top:2px dashed #000;margin:8px 0;}
-      .center{text-align:center;}
-      .rest{font-size:${Math.round(13*fs)}px;font-weight:bold;}
-      .tbl{font-size:${Math.round(28*fs)}px;font-weight:900;margin:2px 0;}
-      .meta{font-size:${Math.round(11*fs)}px;color:#444;}
-      .rush{background:#000;color:#fff;text-align:center;padding:5px 0;font-size:${Math.round(14*fs)}px;font-weight:900;letter-spacing:2px;margin:6px 0;}
-      table{width:100%;border-collapse:collapse;}
-      .note-box{border:2px dashed #000;padding:6px 8px;margin-top:8px;font-size:${Math.round(12*fs)}px;}
-      .footer{text-align:center;font-size:${Math.round(10*fs)}px;margin-top:8px;}
-      @media print{@page{size:${settings.kitchenPaper||'80mm'} auto;margin:0mm;}html,body{width:${pw};margin:0 auto;padding:2mm 1mm;}}
-    </style>
-  </head><body>
-    <div class="center">
-      <div class="rest">${settings.restaurantName||'Kitchen'}</div>
-      <div class="tbl">\ud83e\ude91 ${order.tableNum||order.orderType||'Takeaway'}</div>
-      <div class="meta">${new Date(order.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false}) + ' \xa0|\xa0 #' + order.id.slice(-8)}</div>
-      ${order.waiterName?`<div class="meta">Waiter: ${order.waiterName}</div>`:''}
-    </div>
-    ${order.priority==='rush'?'<div class="rush">\u26a1 RUSH / \u0639\u0627\u062c\u0644 \u26a1</div>':''}
-    <div class="dashed"></div>
-    <table>${rows}</table>
-    ${order.note?('<div class="note-box">\ud83d\udcdd '+order.note+'</div>'):''}
-    <div class="dashed"></div>
-    <div class="footer">\u2014 Kitchen Copy | \u0646\u0633\u062e\u0629 \u0627\u0644\u0645\u0637\u0628\u062e \u2014</div>
-  </body></html>`;
-}
-
-/* ── ESC/POS bytes builder for network printing ── */
-function _buildEscPos(order,settings,quality){
-  const q=quality||settings.kitchenPrintQuality||'normal';
-  const ESC=0x1B,GS=0x1D;
-  const b=[];
-  const add=(...v)=>v.forEach(x=>b.push(x));
-  const txt=str=>{for(const c of(str||'')){const code=c.charCodeAt(0);b.push(code>127?0x3F:code);}};
-  const nl=()=>add(0x0A);
-  const bold=on=>add(ESC,0x45,on?1:0);
-  const align=a=>add(ESC,0x61,{left:0,center:1,right:2}[a]||0);
-  const size=big=>add(ESC,0x21,big?(q==='large'?0x30:0x10):0x00);
-  add(ESC,0x40); // init
-  add(ESC,0x74,0x00); // charset PC437
-  align('center'); bold(true); size(false);
-  txt(settings.restaurantName||'Kitchen'); nl();
-  size(true); bold(true);
-  txt(order.tableNum||order.orderType||'Takeaway'); nl();
-  size(false); bold(false);
-  txt(new Date(order.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false})+' #'+order.id.slice(-8)); nl();
-  if(order.waiterName){txt('Waiter: '+order.waiterName);nl();}
-  align('left');
-  txt('--------------------------------'); nl();
-  if(order.priority==='rush'){bold(true);align('center');txt('** RUSH / URGENT **');nl();align('left');bold(false);}
-  (order.items||[]).forEach(it=>{
-    bold(true); size(q==='large');
-    txt(it.qty+'x '+it.name); nl();
-    bold(false); size(false);
-    if(it.nameAr&&it.nameAr!==it.name){txt('   '+it.nameAr);nl();}
-    if(it.itemNote){txt('   Note: '+it.itemNote);nl();}
-  });
-  txt('--------------------------------'); nl();
-  if(order.note){bold(true);txt('NOTE: ');bold(false);txt(order.note);nl();}
-  txt('--- Kitchen Copy ---'); nl();
-  add(ESC,0x64,0x05); // feed 5 lines
-  add(GS,0x56,0x41,0x03); // full cut
-  return btoa(String.fromCharCode(...b));
-}
-
-async function printKitchenTicket(order,settings,copies){
+function printKitchenTicket(order,settings,copies){
   if(!settings.autoPrintKitchen)return;
   const n=Math.max(1,copies||settings.kitchenPrintCopies||1);
-  const mode=settings.kitchenPrinterMode||'browser';
-  const quality=settings.kitchenPrintQuality||'normal';
-
-  if(mode==='network'&&settings.kitchenPrinterIp){
-    for(let i=0;i<n;i++){
-      try{
-        const r=await fetch('/api/print-kitchen',{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({
-            printerIp:settings.kitchenPrinterIp,
-            printerPort:settings.kitchenPrinterPort||9100,
-            escposData:_buildEscPos(order,settings,quality)
-          })
-        });
-        const j=await r.json();
-        if(!j.ok)console.warn('[print] network error:',j.error);
-      }catch(e){console.warn('[print] network print failed:',e);}
-    }
-    return;
-  }
-
-  // Browser popup mode
   for(let i=0;i<n;i++){
     const w=window.open('','_blank','width=340,height=620,left=99999,top=99999');
     if(!w)return;
-    const html=_buildKitchenHtml(order,settings,quality);
-    w.document.write(html.replace('</body></html>',
-      '<script>window.onload=function(){window.print();setTimeout(function(){window.close();},2500);};<\/script></body></html>'));
+    const items=(order.items||[]).map(it=>`
+      <tr>
+        <td style="font-size:22px;font-weight:900;padding:4px 8px 4px 0;vertical-align:top">${it.qty}×</td>
+        <td style="padding:4px 0;vertical-align:top">
+          <div style="font-size:15px;font-weight:700">${it.nameAr||it.name}</div>
+          ${it.name!==it.nameAr&&it.nameAr?`<div style="font-size:12px;color:#555">${it.name}</div>`:''}
+          ${Object.keys(it.selectedMods||{}).length>0?`<div style="font-size:11px;color:#333;margin-top:1px">↳ options applied</div>`:''}
+          ${it.itemNote?`<div style="font-size:11px;font-style:italic;margin-top:1px">📝 ${it.itemNote}</div>`:''}
+        </td>
+      </tr>`).join('');
+    w.document.write(`<!DOCTYPE html><html dir="rtl"><head>
+      <meta charset="UTF-8"/>
+      <title>KT-${order.id.slice(-6)}</title>
+      <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Courier New',monospace;width:${settings.kitchenPaper==='57mm'?'50mm':settings.kitchenPaper==='A4'?'190mm':'72mm'};padding:4mm;background:#fff;color:#000;word-wrap:break-word;overflow-wrap:break-word;}
+        .dashed{border-top:2px dashed #000;margin:8px 0;}
+        .center{text-align:center;}
+        .rest{font-size:13px;font-weight:bold;}
+        .tbl{font-size:28px;font-weight:900;margin:2px 0;}
+        .meta{font-size:11px;color:#444;}
+        .rush{background:#000;color:#fff;text-align:center;padding:5px 0;font-size:14px;font-weight:900;letter-spacing:2px;margin:6px 0;}
+        table{width:100%;border-collapse:collapse;}
+        .note-box{border:2px dashed #000;padding:6px 8px;margin-top:8px;font-size:12px;}
+        .footer{text-align:center;font-size:10px;margin-top:8px;}
+        @media print{@page{size:${settings.kitchenPaper||'80mm'} auto;margin:0mm;}html,body{width:${settings.kitchenPaper==='57mm'?'50mm':settings.kitchenPaper==='A4'?'190mm':'72mm'};margin:0 auto;padding:2mm 1mm;}}
+      </style>
+    </head><body>
+      <div class="center">
+        <div class="rest">${settings.restaurantName||'Kitchen'}</div>
+        <div class="tbl">🪑 ${order.tableNum||order.orderType||'Takeaway'}</div>
+        <div class="meta">${new Date(order.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false})} &nbsp;|&nbsp; #${order.id.slice(-8)}</div>
+        ${order.waiterName?`<div class="meta">Waiter: ${order.waiterName}</div>`:''}
+      </div>
+      ${order.priority==='rush'?'<div class="rush">⚡ RUSH / عاجل ⚡</div>':''}
+      <div class="dashed"></div>
+      <table>${items}</table>
+      ${order.note?('<div class="note-box">📝 '+order.note+'</div>'):''}
+      <div class="dashed"></div>
+      <div class="footer">— Kitchen Copy | نسخة المطبخ —</div>
+      <script>
+        window.onload=function(){
+          window.print();
+          setTimeout(function(){window.close();},2500);
+        };
+      <\/script>
+    </body></html>`);
     w.document.close();
   }
 }
@@ -1258,27 +1189,15 @@ useEffect(()=>{
     ws.onopen = () => {
       console.log('[local-sync] WebSocket connected');
       setSyncStatus('live');
-      // Server sends snapshot automatically — no need for loadAll()
-      // (loadAll via REST was racing with the snapshot and could wipe data)
+      loadAll(); // refresh all state on (re)connect
     };
 
     ws.onmessage = e => {
       try {
-        const msg = JSON.parse(e.data);
+        const { col, data } = JSON.parse(e.data);
         _applyingSync = true;
-        if (msg.type === 'snapshot' && msg.store) {
-          // Full state from server on connect — always authoritative
-          const SNAP_COLS = ['orders','tables','items','cats','settings','staff'];
-          SNAP_COLS.forEach(col => {
-            if (msg.store[col] !== undefined && typeof window._ordoApplySync === 'function')
-              window._ordoApplySync(col, msg.store[col]);
-          });
-        } else if (msg.col) {
-          // Live sync update from another device
-          if (typeof window._ordoApplySync === 'function')
-            window._ordoApplySync(msg.col, msg.data);
-        }
-        setTimeout(() => { _applyingSync = false; }, 50);
+        if (typeof window._ordoApplySync === 'function') window._ordoApplySync(col, data);
+        setTimeout(() => { _applyingSync = false; }, 100);
       } catch(err) { console.warn('[local-sync] bad message', err); }
     };
 
@@ -2223,9 +2142,8 @@ function OrderScreen({table,existingOrder,onBack}){
 
       {/* Right: cart */}
       <div className="order-panel" style={{width:280,flexShrink:0,overflow:'hidden',display:'flex',flexDirection:'column'}}>
-        <div style={{padding:'8px 12px',borderBottom:'1px solid var(--border)',fontWeight:700,fontSize:13,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <span>🛒 {t('cart')} ({cartQty})</span>
-          {cartTotal>0&&<span style={{fontWeight:800,color:'var(--primary)',fontSize:13}}>{cur} {cartTotal.toFixed(2)}</span>}
+        <div style={{padding:'10px 12px',borderBottom:'1px solid var(--border)',fontWeight:700,fontSize:13,flexShrink:0}}>
+          🛒 {t('cart')} ({cartQty})
         </div>
         <div className="scroll-y" style={{flex:1,padding:8,minHeight:0}}>
           {!cart.length&&<div style={{textAlign:'center',padding:28,color:'var(--t3)',fontSize:12}}>{lang==='ar'?'اختر من القائمة':'Tap menu items to add'}</div>}
@@ -2252,7 +2170,7 @@ function OrderScreen({table,existingOrder,onBack}){
         <div className="cart-footer">
           <textarea className="input cart-note" placeholder={t('addNote')} value={note} onChange={e=>setNote(e.target.value)} rows={1} style={{marginBottom:6,fontSize:13,resize:'none'}}/>
           {cart.length>0&&(
-            <div className="row-between cart-total-row" style={{marginBottom:6}}>
+            <div className="row-between" style={{marginBottom:6}}>
               <span style={{fontSize:13,color:'var(--t2)',fontWeight:600}}>{t('total')}</span>
               <span style={{fontWeight:800,color:'var(--primary)',fontSize:16}}>{cur} {cartTotal.toFixed(2)}</span>
             </div>
@@ -3948,67 +3866,6 @@ function Settings(){
                 </div>
               </div>
             </div>
-            {/* ── Network Printer Mode ── */}
-            <div className="card" style={{marginBottom:6}}>
-              <div className="form-g" style={{marginBottom:10}}>
-                <label className="form-lbl">Print Mode</label>
-                <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
-                  {[['browser','🖨️ Browser','Pop-up & print dialog'],['network','📡 Network','Direct to IP printer']].map(([v,icon,desc])=>(
-                    <button key={v} onClick={()=>setSettings({kitchenPrinterMode:v})}
-                      style={{flex:1,minWidth:110,padding:'10px 8px',borderRadius:10,border:'2px solid',
-                        borderColor:(settings.kitchenPrinterMode||'browser')===v?'var(--blue)':'var(--border)',
-                        background:(settings.kitchenPrinterMode||'browser')===v?'rgba(59,130,246,.12)':'var(--elevated)',
-                        cursor:'pointer',textAlign:'center',transition:'all .15s'}}>
-                      <div style={{fontWeight:800,fontSize:14,color:(settings.kitchenPrinterMode||'browser')===v?'var(--blue)':'var(--t1)'}}>{icon}</div>
-                      <div style={{fontSize:11,color:'var(--t2)',marginTop:2}}>{desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {(settings.kitchenPrinterMode||'browser')==='network'&&(<>
-                <div className="form-g" style={{marginBottom:8}}>
-                  <label className="form-lbl">Printer IP Address</label>
-                  <input className="input" placeholder="192.168.1.100"
-                    value={settings.kitchenPrinterIp||''}
-                    onChange={e=>setSettings({kitchenPrinterIp:e.target.value.trim()})}/>
-                  <div style={{fontSize:11,color:'var(--t2)',marginTop:4}}>
-                    Find your printer IP from its config page or router admin panel
-                  </div>
-                </div>
-                <div className="form-g" style={{marginBottom:8}}>
-                  <label className="form-lbl">Port</label>
-                  <input className="input" placeholder="9100" type="number"
-                    value={settings.kitchenPrinterPort||9100}
-                    onChange={e=>setSettings({kitchenPrinterPort:parseInt(e.target.value)||9100})}/>
-                  <div style={{fontSize:11,color:'var(--t2)',marginTop:4}}>
-                    Default 9100 — works with Epson TM, Star TSP, Xprinter, Bixolon, SNBC
-                  </div>
-                </div>
-                <div style={{padding:'8px 10px',background:'var(--elevated)',borderRadius:8,fontSize:11,color:'var(--t2)',lineHeight:1.7}}>
-                  <strong style={{color:'var(--t1)'}}>How it works:</strong> The server sends ESC/POS commands directly to your printer over TCP port 9100 on the local network — no drivers, no dialog.
-                </div>
-              </>)}
-            </div>
-
-            {/* ── Print Quality ── */}
-            <div className="card" style={{marginBottom:6}}>
-              <div className="form-g" style={{marginBottom:0}}>
-                <label className="form-lbl">Print Quality / Font Size</label>
-                <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
-                  {[['small','Small','Compact, more per page'],['normal','Normal','Standard'],['large','Large','Easy to read']].map(([v,label,desc])=>(
-                    <button key={v} onClick={()=>setSettings({kitchenPrintQuality:v})}
-                      style={{flex:1,minWidth:80,padding:'10px 8px',borderRadius:10,border:'2px solid',
-                        borderColor:(settings.kitchenPrintQuality||'normal')===v?'var(--primary)':'var(--border)',
-                        background:(settings.kitchenPrintQuality||'normal')===v?'var(--primary-dim,rgba(139,92,246,.12))':'var(--elevated)',
-                        cursor:'pointer',textAlign:'center',transition:'all .15s'}}>
-                      <div style={{fontWeight:800,fontSize:14,color:(settings.kitchenPrintQuality||'normal')===v?'var(--primary)':'var(--t1)'}}>{label}</div>
-                      <div style={{fontSize:10,color:'var(--t2)',marginTop:2}}>{desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
             <div className="card" style={{marginBottom:16}}>
               <div className="section-hdr" style={{marginBottom:10}}>Test Kitchen Printer</div>
               <button className="btn btn-ghost btn-sm" style={{width:'100%',justifyContent:'center'}} onClick={()=>{
