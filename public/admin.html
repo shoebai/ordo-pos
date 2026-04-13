@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ordo — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0a0a0f;--s:#13131f;--card:#1a1a2e;--el:#1f1f35;
+  --gold:#c9a84c;--gold2:#e8c97a;--gold-dim:rgba(201,168,76,.1);
+  --red:#ef4444;--red-dim:rgba(239,68,68,.1);
+  --green:#10b981;--green-dim:rgba(16,185,129,.1);
+  --yellow:#f59e0b;--yellow-dim:rgba(245,158,11,.1);
+  --blue:#3b82f6;--blue-dim:rgba(59,130,246,.1);
+  --t1:#f5f0e8;--t2:#9a9080;--t3:#5a5448;
+  --border:rgba(201,168,76,.12);
+}
+body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;}
+
+/* Nav */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--s);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:12px;}
+.logo{font-family:'Instrument Serif',serif;font-size:18px;color:var(--gold2);}
+.logo span{font-size:10px;font-family:'DM Sans',sans-serif;color:var(--t3);letter-spacing:2px;text-transform:uppercase;display:block;}
+.admin-badge{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.2);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;letter-spacing:.5px;}
+
+/* Layout */
+.layout{display:flex;min-height:calc(100vh - 57px);}
+.sidebar{width:200px;background:var(--s);border-right:1px solid var(--border);padding:16px;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;}
+.main{flex:1;padding:24px;overflow:auto;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--t2);font-size:13px;font-weight:500;margin-bottom:3px;transition:.15s;border:none;background:none;width:100%;text-align:left;}
+.nav-item:hover{background:var(--el);color:var(--t1);}
+.nav-item.active{background:var(--gold-dim);color:var(--gold2);}
+.nav-item i{width:16px;text-align:center;}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.stat-icon{font-size:22px;margin-bottom:10px;}
+.stat-val{font-family:'Instrument Serif',serif;font-size:32px;color:var(--t1);line-height:1;}
+.stat-lbl{font-size:11px;color:var(--t3);margin-top:5px;text-transform:uppercase;letter-spacing:.5px;}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;}
+.tbl td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.03);font-size:13px;vertical-align:middle;}
+.tbl tr:hover td{background:rgba(255,255,255,.015);}
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;}
+.badge-green{background:var(--green-dim);color:var(--green);}
+.badge-yellow{background:var(--yellow-dim);color:var(--yellow);}
+.badge-red{background:var(--red-dim);color:var(--red);}
+.badge-blue{background:var(--blue-dim);color:var(--blue);}
+.badge-gold{background:var(--gold-dim);color:var(--gold2);}
+
+/* Inputs */
+.input{width:100%;padding:10px 12px;background:var(--el);border:1px solid rgba(255,255,255,.07);border-radius:8px;color:var(--t1);font-family:inherit;font-size:13px;outline:none;}
+.input:focus{border-color:var(--gold);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;transition:.2s;}
+.btn-gold{background:var(--gold);color:#0a0a0f;}
+.btn-gold:hover{background:var(--gold2);}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.btn-danger:hover{background:var(--red);color:#fff;}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold2);}
+.btn-sm{padding:5px 11px;font-size:12px;}
+
+/* Search */
+.search-wrap{position:relative;margin-bottom:18px;}
+.search-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:13px;}
+.search-wrap input{padding-left:34px;}
+
+/* Section headers */
+.sec-hdr{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.sec-hdr::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* Login */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:linear-gradient(135deg,#0a0a0f,#1a1a2e);}
+.login-box{width:100%;max-width:360px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;}
+.login-title{font-family:'Instrument Serif',serif;font-size:26px;color:var(--t1);text-align:center;margin-bottom:6px;}
+.login-sub{font-size:12px;color:var(--t3);text-align:center;margin-bottom:24px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px;}
+.err{color:var(--red);font-size:12px;margin-top:8px;}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.main>*{animation:fadeIn .3s ease;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
+  authDomain: "pos-ordo.firebaseapp.com",
+  projectId: "pos-ordo",
+  storageBucket: "pos-ordo.firebasestorage.app",
+  messagingSenderId: "575923763514",
+  appId: "1:575923763514:web:f81283d99aafd2460f3803",
+  measurementId: "G-PND9FKHRVF"
+};
+
+const ADMIN_EMAIL = "yshoeb52@gmail.com";
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// State
+let currentAdmin = null;
+let tenants = [];
+let activeTab = 'overview';
+let searchQuery = '';
+
+// Helper functions
+function showLoading() {
+  document.getElementById('app').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;">
+      <i class="fa fa-spinner" style="font-size:32px;animation:spin 1s linear infinite;color:var(--gold);"></i>
+      <div style="color:var(--t2);">Loading dashboard...</div>
+    </div>`;
+}
+
+function showError(message, details = '') {
+  document.getElementById('app').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
+      <div class="card" style="max-width:600px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+        <h2 style="color:var(--red);margin-bottom:12px;">Access Error</h2>
+        <p style="color:var(--t2);margin-bottom:20px;line-height:1.6;">${message}</p>
+        ${details ? `<pre style="background:var(--el);padding:12px;border-radius:8px;font-size:11px;overflow-x:auto;margin-bottom:20px;text-align:left;">${details}</pre>` : ''}
+        <div style="background:var(--el);border-radius:8px;padding:16px;text-align:left;margin-bottom:20px;">
+          <div style="font-weight:700;margin-bottom:8px;color:var(--gold);">🔧 How to Fix:</div>
+          <ol style="color:var(--t2);font-size:12px;line-height:1.8;margin-left:20px;">
+            <li>Go to <a href="https://console.firebase.google.com/project/pos-ordo/firestore/rules" target="_blank" style="color:var(--gold);">Firebase Console → Firestore → Rules</a></li>
+            <li>Replace existing rules with:</li>
+          </ol>
+          <pre style="background:#0a0a0f;padding:12px;border-radius:6px;font-size:10px;overflow-x:auto;margin-top:10px;color:#ccc;">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /tenants/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}</pre>
+          <p style="color:var(--t2);font-size:11px;margin-top:10px;">⚠️ After adding rules, click <strong style="color:var(--green);">Publish</strong> and wait 30 seconds.</p>
+        </div>
+        <button class="btn btn-gold" onclick="location.reload()" style="margin-right:10px;">
+          <i class="fa fa-sync"></i> Retry
+        </button>
+        <button class="btn btn-ghost" onclick="auth.signOut()">
+          <i class="fa fa-sign-out-alt"></i> Sign Out
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// Auth state
+auth.onAuthStateChanged(async user => {
+  console.log("Auth state changed:", user?.email);
+  
+  if (user && user.email === ADMIN_EMAIL) {
+    currentAdmin = user;
+    await loadDashboard();
+  } else if (user) {
+    await auth.signOut();
+    renderLogin('Access denied — admin only.');
+  } else {
+    renderLogin();
+  }
+});
+
+// Load all tenants with error handling
+async function loadDashboard() {
+  showLoading();
+  
+  try {
+    console.log("Attempting to load tenants from Firestore...");
+    
+    // Test connection first
+    const testDoc = await db.collection('tenants').limit(1).get();
+    console.log("Firestore connection successful, testDoc size:", testDoc.size);
+    
+    // Get all tenants
+    const snap = await db.collection('tenants').orderBy('createdAt', 'desc').get();
+    tenants = snap.docs.map(doc => ({ 
+      uid: doc.id,  // IMPORTANT: Use uid from doc.id, not doc.data().uid
+      ...doc.data() 
+    }));
+    
+    console.log(`Successfully loaded ${tenants.length} tenants`);
+    renderDashboard();
+    
+  } catch (error) {
+    console.error("Firestore error details:", error);
+    showError(
+      'Failed to load tenant data from Firestore.',
+      `Error: ${error.message || 'Permission denied. Check your security rules.'}`
+    );
+  }
+}
+
+// Render login screen
+function renderLogin(err = '') {
+  document.getElementById('app').innerHTML = `
+    <div class="login-wrap">
+      <div class="login-box">
+        <div class="login-title">Ordo Admin</div>
+        <div class="login-sub">Super admin access only</div>
+        ${err ? `<div class="err" style="margin-bottom:14px;padding:8px 12px;background:var(--red-dim);border-radius:6px;">${err}</div>` : ''}
+        <div class="field"><label>Email</label><input class="input" id="adm-email" type="email" value="${ADMIN_EMAIL}"/></div>
+        <div class="field"><label>Password</label><input class="input" id="adm-pass" type="password" onkeydown="if(event.key==='Enter')adminLogin()"/></div>
+        <div id="adm-err" class="err"></div>
+        <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" onclick="adminLogin()">Sign In →</button>
+      </div>
+    </div>`;
+}
+
+async function adminLogin() {
+  const email = document.getElementById('adm-email').value;
+  const pass = document.getElementById('adm-pass').value;
+  const errEl = document.getElementById('adm-err');
+  
+  if (!email || !pass) {
+    errEl.textContent = 'Fill in both fields.';
+    return;
+  }
+  
+  try {
+    errEl.textContent = '';
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch(e) {
+    errEl.textContent = 'Invalid credentials.';
+  }
+}
+
+// Render main dashboard
+function renderDashboard() {
+  const total = tenants.length;
+  const trials = tenants.filter(t => t.status === 'trial').length;
+  const active = tenants.filter(t => t.status === 'active').length;
+  const expired = tenants.filter(t => t.status === 'expired').length;
+  const newThisMonth = tenants.filter(t => {
+    if (!t.createdAt) return false;
+    const d = new Date(t.createdAt);
+    const n = new Date();
+    return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+  }).length;
+
+  const filtered = tenants.filter(t =>
+    !searchQuery ||
+    (t.restaurantName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (t.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (t.ownerName || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  document.getElementById('app').innerHTML = `
+    <div class="topbar">
+      <div class="logo">Ordo <span>Admin Dashboard</span></div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span class="admin-badge"><i class="fa fa-shield-alt"></i> ADMIN</span>
+        <span style="font-size:12px;color:var(--t3)"><i class="fa fa-envelope"></i> ${currentAdmin?.email || ''}</span>
+        <button class="btn btn-ghost btn-sm" onclick="auth.signOut()"><i class="fa fa-sign-out-alt"></i> Sign out</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="sidebar">
+        <button class="nav-item ${activeTab === 'overview' ? 'active' : ''}" onclick="setTab('overview')">
+          <i class="fa fa-chart-pie"></i> Overview
+        </button>
+        <button class="nav-item ${activeTab === 'tenants' ? 'active' : ''}" onclick="setTab('tenants')">
+          <i class="fa fa-building"></i> Restaurants
+        </button>
+        <button class="nav-item ${activeTab === 'revenue' ? 'active' : ''}" onclick="setTab('revenue')">
+          <i class="fa fa-coins"></i> Revenue
+        </button>
+        <button class="nav-item ${activeTab === 'expiring' ? 'active' : ''}" onclick="setTab('expiring')">
+          <i class="fa fa-clock"></i> Expiring Soon
+        </button>
+      </div>
+
+      <div class="main">
+        ${activeTab === 'overview' ? renderOverview(total, trials, active, expired, newThisMonth, tenants) : ''}
+        ${activeTab === 'tenants' ? renderTenants(filtered) : ''}
+        ${activeTab === 'revenue' ? renderRevenue(tenants) : ''}
+        ${activeTab === 'expiring' ? renderExpiring(tenants) : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderOverview(total, trials, active, expired, newMonth, tenants) {
+  const recentTenants = [...tenants].slice(0, 8);
+  return `
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-icon">🏪</div><div class="stat-val">${total}</div><div class="stat-lbl">Total Restaurants</div></div>
+      <div class="stat"><div class="stat-icon">⏳</div><div class="stat-val">${trials}</div><div class="stat-lbl">In Trial</div></div>
+      <div class="stat"><div class="stat-icon">✅</div><div class="stat-val">${active}</div><div class="stat-lbl">Active (Paid)</div></div>
+      <div class="stat"><div class="stat-icon">📅</div><div class="stat-val">${newMonth}</div><div class="stat-lbl">New This Month</div></div>
+      <div class="stat"><div class="stat-icon">⚠️</div><div class="stat-val">${expired}</div><div class="stat-lbl">Expired</div></div>
+    </div>
+    <div class="sec-hdr">Recent Signups</div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="tbl">
+        <thead><tr><th>Restaurant</th><th>Owner</th><th>Plan</th><th>Status</th><th>Joined</th></tr></thead>
+        <tbody>
+          ${recentTenants.map(t => `
+            <tr>
+              <td><strong>${t.restaurantName || '—'}</strong><br><span style="color:var(--t3);font-size:11px">${t.email || '—'}</span></td>
+              <td style="color:var(--t2)">${t.ownerName || '—'}</td>
+              <td>${getPlanBadge(t.plan)}</td>
+              <td>${getStatusBadge(t.status)}</td>
+              <td style="color:var(--t3);font-size:12px">${formatDate(t.createdAt)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderTenants(filtered) {
+  return `
+    <div class="search-wrap">
+      <i class="fa fa-search"></i>
+      <input class="input" placeholder="Search restaurants, email, owner..." value="${searchQuery}" oninput="window.searchQuery=this.value;window.renderDashboard()"/>
+    </div>
+    <div class="sec-hdr">${filtered.length} restaurant${filtered.length !== 1 ? 's' : ''}</div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Restaurant</th>
+            <th>Owner</th>
+            <th>Email</th>
+            <th>Plan</th>
+            <th>Status</th>
+            <th>Trial Ends</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.map(t => `
+            <tr>
+              <td><strong>${t.restaurantName || '—'}</strong></td>
+              <td style="color:var(--t2)">${t.ownerName || '—'}</td>
+              <td style="color:var(--t3);font-size:12px">${t.email || '—'}</td>
+              <td>${getPlanBadge(t.plan)}</td>
+              <td>${getStatusBadge(t.status)}</td>
+              <td style="color:var(--t3);font-size:12px">${formatDate(t.trialEnd)}</td>
+              <td style="color:var(--t3);font-size:12px">${formatDate(t.createdAt)}</td>
+              <td style="display:flex;gap:5px;">
+                <button class="btn btn-ghost btn-sm" onclick="viewTenant('${t.uid}')"><i class="fa fa-eye"></i></button>
+                <button class="btn btn-success btn-sm" onclick="activateTenant('${t.uid}')"><i class="fa fa-check"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="expireTenant('${t.uid}')"><i class="fa fa-ban"></i></button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderRevenue(tenants) {
+  const paid = tenants.filter(t => t.status === 'active');
+  const monthly = paid.filter(t => t.plan === 'monthly').length;
+  const annual = paid.filter(t => t.plan === 'annual').length;
+  const lifetime = paid.filter(t => t.plan === 'lifetime').length;
+  const mrr = monthly * 199 + annual * 149;
+  const arr = mrr * 12;
+  
+  return `
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-icon">💰</div><div class="stat-val">SAR ${mrr.toLocaleString()}</div><div class="stat-lbl">Monthly Recurring Revenue</div></div>
+      <div class="stat"><div class="stat-icon">📈</div><div class="stat-val">SAR ${arr.toLocaleString()}</div><div class="stat-lbl">Annual Run Rate</div></div>
+      <div class="stat"><div class="stat-icon">🔄</div><div class="stat-val">${monthly}</div><div class="stat-lbl">Monthly Subscribers</div></div>
+      <div class="stat"><div class="stat-icon">📅</div><div class="stat-val">${annual}</div><div class="stat-lbl">Annual Subscribers</div></div>
+      <div class="stat"><div class="stat-icon">♾️</div><div class="stat-val">${lifetime}</div><div class="stat-lbl">Lifetime Licenses</div></div>
+    </div>
+    <div class="sec-hdr">Paid Accounts</div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="tbl">
+        <thead><tr><th>Restaurant</th><th>Plan</th><th>Email</th><th>Paid Until</th></tr></thead>
+        <tbody>
+          ${paid.map(t => `
+            <tr>
+              <td><strong>${t.restaurantName || '—'}</strong></td>
+              <td>${getPlanBadge(t.plan)}</td>
+              <td style="color:var(--t3)">${t.email}</td>
+              <td style="color:var(--t3);font-size:12px">${formatDate(t.paidUntil)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderExpiring(tenants) {
+  const soon = tenants.filter(t => {
+    if (t.status !== 'trial') return false;
+    if (!t.trialEnd) return false;
+    const days = Math.ceil((new Date(t.trialEnd) - new Date()) / 86400000);
+    return days <= 3 && days >= 0;
+  }).sort((a, b) => new Date(a.trialEnd) - new Date(b.trialEnd));
+
+  return `
+    <div class="sec-hdr">⏰ ${soon.length} trial${soon.length !== 1 ? 's' : ''} expiring within 3 days</div>
+    ${soon.length === 0 ? '<div class="card" style="text-align:center;color:var(--t3);padding:40px;">No trials expiring soon 🎉</div>' : ''}
+    ${soon.length > 0 ? `
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="tbl">
+        <thead><tr><th>Restaurant</th><th>Email</th><th>Days Left</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${soon.map(t => {
+            const days = Math.ceil((new Date(t.trialEnd) - new Date()) / 86400000);
+            return `
+              <tr>
+                <td><strong>${t.restaurantName || '—'}</strong></td>
+                <td style="color:var(--t3)">${t.email}</td>
+                <td><span class="badge ${days <= 1 ? 'badge-red' : 'badge-yellow'}">${days} day${days !== 1 ? 's' : ''}</span></td>
+                <td style="display:flex;gap:6px;">
+                  <button class="btn btn-ghost btn-sm" onclick="extendTrial('${t.uid}')"><i class="fa fa-clock"></i> Extend 7d</button>
+                  <button class="btn btn-gold btn-sm" onclick="activateTenant('${t.uid}')"><i class="fa fa-check"></i> Activate</button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+  `;
+}
+
+// Helper functions
+function getPlanBadge(plan) {
+  const colors = { trial: 'badge-blue', monthly: 'badge-gold', annual: 'badge-purple', lifetime: 'badge-green' };
+  const labels = { trial: 'Trial', monthly: 'Monthly', annual: 'Annual', lifetime: 'Lifetime' };
+  return `<span class="badge ${colors[plan] || 'badge-blue'}">${labels[plan] || plan}</span>`;
+}
+
+function getStatusBadge(status) {
+  const colors = { trial: 'badge-yellow', active: 'badge-green', expired: 'badge-red', cancelled: 'badge-blue' };
+  const labels = { trial: 'Trial', active: 'Active', expired: 'Expired', cancelled: 'Cancelled' };
+  return `<span class="badge ${colors[status] || 'badge-blue'}">${labels[status] || status}</span>`;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    return new Date(dateStr).toLocaleDateString();
+  } catch {
+    return '—';
+  }
+}
+
+// Actions
+window.setTab = function(tab) {
+  activeTab = tab;
+  renderDashboard();
+};
+
+window.viewTenant = function(uid) {
+  const tenant = tenants.find(t => t.uid === uid);
+  if (!tenant) return;
+  
+  alert(`Restaurant: ${tenant.restaurantName}\nOwner: ${tenant.ownerName}\nEmail: ${tenant.email}\nPlan: ${tenant.plan}\nStatus: ${tenant.status}`);
+};
+
+window.activateTenant = async function(uid) {
+  if (!confirm('Activate this account?')) return;
+  try {
+    const paidUntil = new Date();
+    paidUntil.setMonth(paidUntil.getMonth() + 1);
+    await db.collection('tenants').doc(uid).update({
+      status: 'active',
+      plan: 'monthly',
+      paidUntil: paidUntil.toISOString()
+    });
+    await loadDashboard();
+    alert('✅ Account activated!');
+  } catch (error) {
+    alert('Error activating account: ' + error.message);
+  }
+};
+
+window.expireTenant = async function(uid) {
+  if (!confirm('Mark this account as expired?')) return;
+  try {
+    await db.collection('tenants').doc(uid).update({ status: 'expired' });
+    await loadDashboard();
+    alert('⚠️ Account marked as expired');
+  } catch (error) {
+    alert('Error expiring account: ' + error.message);
+  }
+};
+
+window.extendTrial = async function(uid) {
+  const tenant = tenants.find(t => t.uid === uid);
+  if (!tenant) return;
+  try {
+    const newEnd = new Date(tenant.trialEnd || new Date());
+    newEnd.setDate(newEnd.getDate() + 7);
+    await db.collection('tenants').doc(uid).update({ trialEnd: newEnd.toISOString() });
+    await loadDashboard();
+    alert('✅ Trial extended by 7 days!');
+  } catch (error) {
+    alert('Error extending trial: ' + error.message);
+  }
+};
+
+// Make functions available globally
+window.searchQuery = searchQuery;
+window.renderDashboard = renderDashboard;
+window.loadDashboard = loadDashboard;
+window.auth = auth;
+</script>
+</body>
+</html>
