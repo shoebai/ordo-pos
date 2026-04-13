@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Ordo — Admin Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -12,97 +12,154 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --bg:#0a0a0f;--s:#13131f;--card:#1a1a2e;--el:#1f1f35;
-  --gold:#c9a84c;--gold2:#e8c97a;--gold-dim:rgba(201,168,76,.1);
-  --red:#ef4444;--red-dim:rgba(239,68,68,.1);
-  --green:#10b981;--green-dim:rgba(16,185,129,.1);
-  --yellow:#f59e0b;--yellow-dim:rgba(245,158,11,.1);
-  --blue:#3b82f6;--blue-dim:rgba(59,130,246,.1);
-  --t1:#f5f0e8;--t2:#9a9080;--t3:#5a5448;
-  --border:rgba(201,168,76,.12);
+  --bg:#08080e;--s:#0f0f1a;--card:#141422;--el:#1c1c2e;
+  --gold:#d4a843;--gold2:#f0c96a;--gold-dim:rgba(212,168,67,.1);--gold-border:rgba(212,168,67,.18);
+  --red:#f04444;--red-dim:rgba(240,68,68,.1);
+  --green:#0fc977;--green-dim:rgba(15,201,119,.1);
+  --yellow:#f5a623;--yellow-dim:rgba(245,166,35,.1);
+  --blue:#4a8cf7;--blue-dim:rgba(74,140,247,.1);
+  --t1:#f0ece4;--t2:#8a8278;--t3:#4a4640;
+  --border:rgba(212,168,67,.1);
+  --sidebar-w:220px;
 }
-body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;}
+body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;font-size:14px;min-height:100vh;}
 
-/* Nav */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--s);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:12px;}
-.logo{font-family:'Instrument Serif',serif;font-size:18px;color:var(--gold2);}
-.logo span{font-size:10px;font-family:'DM Sans',sans-serif;color:var(--t3);letter-spacing:2px;text-transform:uppercase;display:block;}
-.admin-badge{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.2);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;letter-spacing:.5px;}
+/* ── Loading ── */
+#loading-screen{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:14px;}
+.spinner{width:36px;height:36px;border:3px solid var(--gold-border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* Layout */
-.layout{display:flex;min-height:calc(100vh - 57px);}
-.sidebar{width:200px;background:var(--s);border-right:1px solid var(--border);padding:16px;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;}
-.main{flex:1;padding:24px;overflow:auto;}
-.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--t2);font-size:13px;font-weight:500;margin-bottom:3px;transition:.15s;border:none;background:none;width:100%;text-align:left;}
+/* ── Login ── */
+#login-screen{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:radial-gradient(ellipse at 30% 20%,rgba(212,168,67,.06) 0%,transparent 60%),var(--bg);}
+.login-box{width:100%;max-width:380px;background:var(--card);border:1px solid var(--gold-border);border-radius:18px;padding:36px;box-shadow:0 24px 64px rgba(0,0,0,.6);}
+.login-logo{font-size:22px;font-weight:800;color:var(--gold2);letter-spacing:-0.5px;margin-bottom:4px;}
+.login-logo span{display:inline-block;background:var(--red-dim);color:var(--red);border:1px solid rgba(240,68,68,.2);font-size:9px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:1px;margin-left:8px;vertical-align:middle;}
+.login-sub{font-size:12px;color:var(--t3);margin-bottom:28px;font-family:'DM Mono',monospace;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:10px;font-weight:700;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
+.input{width:100%;padding:11px 14px;background:var(--el);border:1px solid rgba(255,255,255,.06);border-radius:9px;color:var(--t1);font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:.15s;}
+.input:focus{border-color:var(--gold);background:rgba(212,168,67,.04);}
+.input::placeholder{color:var(--t3);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;transition:.2s;letter-spacing:.3px;}
+.btn-gold{background:var(--gold);color:#08080e;width:100%;margin-top:4px;}
+.btn-gold:hover{background:var(--gold2);}
+.btn-gold:disabled{background:var(--el);color:var(--t3);cursor:not-allowed;}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(240,68,68,.2);}
+.btn-danger:hover{background:var(--red);color:#fff;}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border);font-size:12px;padding:7px 14px;}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold2);}
+.btn-sm{padding:5px 11px;font-size:11px;}
+.btn-success{background:var(--green-dim);color:var(--green);border:1px solid rgba(15,201,119,.2);}
+.btn-success:hover{background:var(--green);color:#08080e;}
+.err-msg{color:var(--red);font-size:12px;margin-top:10px;font-family:'DM Mono',monospace;background:var(--red-dim);padding:8px 12px;border-radius:7px;display:none;}
+.err-msg.show{display:block;}
+
+/* ── Main App ── */
+#app{display:none;}
+
+/* ── Topbar ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:58px;background:var(--s);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;gap:12px;flex-wrap:wrap;}
+.logo{font-size:17px;font-weight:800;color:var(--gold2);letter-spacing:-0.3px;}
+.logo span{display:block;font-size:9px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;font-weight:400;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.admin-badge{background:var(--red-dim);color:var(--red);border:1px solid rgba(240,68,68,.2);font-size:9px;font-weight:700;padding:3px 9px;border-radius:99px;letter-spacing:.7px;}
+.admin-email{font-size:11px;color:var(--t3);font-family:'DM Mono',monospace;}
+
+/* ── Layout ── */
+.layout{display:flex;min-height:calc(100vh - 58px);}
+.sidebar{width:var(--sidebar-w);background:var(--s);border-right:1px solid var(--border);padding:14px 10px;flex-shrink:0;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;}
+.main{flex:1;padding:26px;overflow:auto;}
+
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:9px;cursor:pointer;color:var(--t2);font-size:12px;font-weight:600;margin-bottom:2px;transition:.15s;border:none;background:none;width:100%;text-align:left;letter-spacing:.2px;}
 .nav-item:hover{background:var(--el);color:var(--t1);}
-.nav-item.active{background:var(--gold-dim);color:var(--gold2);}
-.nav-item i{width:16px;text-align:center;}
+.nav-item.active{background:var(--gold-dim);color:var(--gold2);border:1px solid var(--gold-border);}
+.nav-item i{width:15px;text-align:center;font-size:12px;}
 
-/* Cards */
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
-.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;}
-.stat-icon{font-size:22px;margin-bottom:10px;}
-.stat-val{font-family:'Instrument Serif',serif;font-size:32px;color:var(--t1);line-height:1;}
-.stat-lbl{font-size:11px;color:var(--t3);margin-top:5px;text-transform:uppercase;letter-spacing:.5px;}
+.nav-sep{height:1px;background:var(--border);margin:12px 4px;}
 
-/* Table */
+/* ── Stats ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:26px;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:20px 18px;transition:.2s;}
+.stat:hover{border-color:var(--gold-border);transform:translateY(-1px);}
+.stat-icon{font-size:20px;margin-bottom:10px;}
+.stat-val{font-size:30px;font-weight:800;color:var(--t1);line-height:1;font-family:'Syne',sans-serif;}
+.stat-lbl{font-size:10px;color:var(--t3);margin-top:6px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;}
+
+/* ── Table ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:20px;margin-bottom:20px;}
 .tbl{width:100%;border-collapse:collapse;}
-.tbl th{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;}
-.tbl td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.03);font-size:13px;vertical-align:middle;}
-.tbl tr:hover td{background:rgba(255,255,255,.015);}
-.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;}
+.tbl th{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;padding:11px 14px;border-bottom:1px solid var(--border);text-align:left;}
+.tbl td{padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.025);font-size:12px;vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(255,255,255,.013);}
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.3px;}
 .badge-green{background:var(--green-dim);color:var(--green);}
 .badge-yellow{background:var(--yellow-dim);color:var(--yellow);}
 .badge-red{background:var(--red-dim);color:var(--red);}
 .badge-blue{background:var(--blue-dim);color:var(--blue);}
 .badge-gold{background:var(--gold-dim);color:var(--gold2);}
 
-/* Inputs */
-.input{width:100%;padding:10px 12px;background:var(--el);border:1px solid rgba(255,255,255,.07);border-radius:8px;color:var(--t1);font-family:inherit;font-size:13px;outline:none;}
-.input:focus{border-color:var(--gold);}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;transition:.2s;}
-.btn-gold{background:var(--gold);color:#0a0a0f;}
-.btn-gold:hover{background:var(--gold2);}
-.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.2);}
-.btn-danger:hover{background:var(--red);color:#fff;}
-.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border);}
-.btn-ghost:hover{border-color:var(--gold);color:var(--gold2);}
-.btn-sm{padding:5px 11px;font-size:12px;}
-
-/* Search */
+/* ── Search ── */
 .search-wrap{position:relative;margin-bottom:18px;}
-.search-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:13px;}
-.search-wrap input{padding-left:34px;}
+.search-wrap i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:12px;}
+.search-wrap input{padding-left:36px;}
 
-/* Section headers */
-.sec-hdr{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+/* ── Section header ── */
+.sec-hdr{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
 .sec-hdr::after{content:'';flex:1;height:1px;background:var(--border);}
 
-/* Login */
-.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:linear-gradient(135deg,#0a0a0f,#1a1a2e);}
-.login-box{width:100%;max-width:360px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;}
-.login-title{font-family:'Instrument Serif',serif;font-size:26px;color:var(--t1);text-align:center;margin-bottom:6px;}
-.login-sub{font-size:12px;color:var(--t3);text-align:center;margin-bottom:24px;}
-.field{margin-bottom:14px;}
-.field label{display:block;font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px;}
-.err{color:var(--red);font-size:12px;margin-top:8px;}
+/* ── Access Denied ── */
+#access-denied{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.denied-box{max-width:460px;text-align:center;background:var(--card);border:1px solid rgba(240,68,68,.2);border-radius:16px;padding:40px;}
 
-/* Modal */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
-.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+/* ── Animations ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeUp .3s ease;}
 
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.main>*{animation:fadeIn .3s ease;}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* ── Modal ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:16px;font-weight:800;margin-bottom:18px;color:var(--t1);}
+.modal-row{margin-bottom:14px;}
+.modal-row label{display:block;font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;}
+.modal-detail{padding:10px 14px;background:var(--el);border-radius:8px;font-size:13px;color:var(--t2);font-family:'DM Mono',monospace;}
 </style>
 </head>
 <body>
 
+<!-- Loading -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div style="color:var(--t3);font-size:12px;font-family:'DM Mono',monospace;">Authenticating...</div>
+</div>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Ordo <span>ADMIN</span></div>
+    <div class="login-sub">// super-admin access only</div>
+    <div class="field"><label>Email</label><input class="input" id="adm-email" type="email" placeholder="admin@domain.com" autocomplete="email"/></div>
+    <div class="field"><label>Password</label><input class="input" id="adm-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')adminLogin()"/></div>
+    <div class="err-msg" id="adm-err"></div>
+    <button class="btn btn-gold" id="adm-btn" onclick="adminLogin()"><i class="fa fa-shield-alt"></i> Sign In Securely</button>
+  </div>
+</div>
+
+<!-- Access Denied (non-admin logged in) -->
+<div id="access-denied">
+  <div class="denied-box">
+    <div style="font-size:52px;margin-bottom:16px;">🔒</div>
+    <h2 style="color:var(--red);margin-bottom:10px;font-size:20px;">Access Denied</h2>
+    <p style="color:var(--t2);line-height:1.7;margin-bottom:22px;font-size:13px;">This panel is restricted to authorized administrators only. Your account does not have the required permissions.</p>
+    <button class="btn btn-ghost" onclick="auth.signOut()"><i class="fa fa-sign-out-alt"></i> Sign out and try another account</button>
+  </div>
+</div>
+
+<!-- Main App -->
 <div id="app"></div>
 
 <script>
-// Firebase config
+// ── Firebase Config ──────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
   authDomain: "pos-ordo.firebaseapp.com",
@@ -113,152 +170,149 @@ const firebaseConfig = {
   measurementId: "G-PND9FKHRVF"
 };
 
-const ADMIN_EMAIL = "yshoeb52@gmail.com";
+// ── ADMIN WHITELIST — only these emails can access the dashboard ──────────
+const ADMIN_EMAILS = [
+  "yshoeb52@gmail.com"
+  // Add more admin emails here if needed
+];
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db = firebase.firestore();
+const db   = firebase.firestore();
 
-// State
+// ── App State ────────────────────────────────────────────────────────────
 let currentAdmin = null;
 let tenants = [];
 let activeTab = 'overview';
 let searchQuery = '';
+let isLoggingIn = false;
 
-// Helper functions
-function showLoading() {
-  document.getElementById('app').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;">
-      <i class="fa fa-spinner" style="font-size:32px;animation:spin 1s linear infinite;color:var(--gold);"></i>
-      <div style="color:var(--t2);">Loading dashboard...</div>
-    </div>`;
+// ── UI Helpers ───────────────────────────────────────────────────────────
+function show(id) { document.getElementById(id).style.display = 'flex'; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+function hideAll() {
+  ['loading-screen','login-screen','access-denied','app'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.display = 'none';
+  });
 }
 
-function showError(message, details = '') {
-  document.getElementById('app').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
-      <div class="card" style="max-width:600px;text-align:center;">
-        <div style="font-size:48px;margin-bottom:16px;">🔒</div>
-        <h2 style="color:var(--red);margin-bottom:12px;">Access Error</h2>
-        <p style="color:var(--t2);margin-bottom:20px;line-height:1.6;">${message}</p>
-        ${details ? `<pre style="background:var(--el);padding:12px;border-radius:8px;font-size:11px;overflow-x:auto;margin-bottom:20px;text-align:left;">${details}</pre>` : ''}
-        <div style="background:var(--el);border-radius:8px;padding:16px;text-align:left;margin-bottom:20px;">
-          <div style="font-weight:700;margin-bottom:8px;color:var(--gold);">🔧 How to Fix:</div>
-          <ol style="color:var(--t2);font-size:12px;line-height:1.8;margin-left:20px;">
-            <li>Go to <a href="https://console.firebase.google.com/project/pos-ordo/firestore/rules" target="_blank" style="color:var(--gold);">Firebase Console → Firestore → Rules</a></li>
-            <li>Replace existing rules with:</li>
-          </ol>
-          <pre style="background:#0a0a0f;padding:12px;border-radius:6px;font-size:10px;overflow-x:auto;margin-top:10px;color:#ccc;">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /tenants/{document} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
-    }
+function showToast(msg, type = 'ok') {
+  let t = document.getElementById('__toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '__toast';
+    t.style.cssText = 'position:fixed;bottom:22px;right:22px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:12px;z-index:999;max-width:300px;line-height:1.5;font-family:DM Mono,monospace;transition:.3s;transform:translateY(0);';
+    document.body.appendChild(t);
   }
-}</pre>
-          <p style="color:var(--t2);font-size:11px;margin-top:10px;">⚠️ After adding rules, click <strong style="color:var(--green);">Publish</strong> and wait 30 seconds.</p>
-        </div>
-        <button class="btn btn-gold" onclick="location.reload()" style="margin-right:10px;">
-          <i class="fa fa-sync"></i> Retry
-        </button>
-        <button class="btn btn-ghost" onclick="auth.signOut()">
-          <i class="fa fa-sign-out-alt"></i> Sign Out
-        </button>
-      </div>
-    </div>
-  `;
+  t.textContent = msg;
+  t.style.borderColor = type === 'ok' ? 'rgba(15,201,119,.4)' : 'rgba(240,68,68,.4)';
+  t.style.color = type === 'ok' ? 'var(--green)' : 'var(--red)';
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.display = 'none'; }, 3500);
 }
 
-// Auth state
+// ── Auth State Listener ──────────────────────────────────────────────────
 auth.onAuthStateChanged(async user => {
-  console.log("Auth state changed:", user?.email);
-  
-  if (user && user.email === ADMIN_EMAIL) {
-    currentAdmin = user;
-    await loadDashboard();
-  } else if (user) {
-    await auth.signOut();
-    renderLogin('Access denied — admin only.');
-  } else {
-    renderLogin();
-  }
-});
+  hideAll();
 
-// Load all tenants with error handling
-async function loadDashboard() {
-  showLoading();
-  
-  try {
-    console.log("Attempting to load tenants from Firestore...");
-    
-    // Test connection first
-    const testDoc = await db.collection('tenants').limit(1).get();
-    console.log("Firestore connection successful, testDoc size:", testDoc.size);
-    
-    // Get all tenants
-    const snap = await db.collection('tenants').orderBy('createdAt', 'desc').get();
-    tenants = snap.docs.map(doc => ({ 
-      uid: doc.id,  // IMPORTANT: Use uid from doc.id, not doc.data().uid
-      ...doc.data() 
-    }));
-    
-    console.log(`Successfully loaded ${tenants.length} tenants`);
-    renderDashboard();
-    
-  } catch (error) {
-    console.error("Firestore error details:", error);
-    showError(
-      'Failed to load tenant data from Firestore.',
-      `Error: ${error.message || 'Permission denied. Check your security rules.'}`
-    );
-  }
-}
-
-// Render login screen
-function renderLogin(err = '') {
-  document.getElementById('app').innerHTML = `
-    <div class="login-wrap">
-      <div class="login-box">
-        <div class="login-title">Ordo Admin</div>
-        <div class="login-sub">Super admin access only</div>
-        ${err ? `<div class="err" style="margin-bottom:14px;padding:8px 12px;background:var(--red-dim);border-radius:6px;">${err}</div>` : ''}
-        <div class="field"><label>Email</label><input class="input" id="adm-email" type="email" value="${ADMIN_EMAIL}"/></div>
-        <div class="field"><label>Password</label><input class="input" id="adm-pass" type="password" onkeydown="if(event.key==='Enter')adminLogin()"/></div>
-        <div id="adm-err" class="err"></div>
-        <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" onclick="adminLogin()">Sign In →</button>
-      </div>
-    </div>`;
-}
-
-async function adminLogin() {
-  const email = document.getElementById('adm-email').value;
-  const pass = document.getElementById('adm-pass').value;
-  const errEl = document.getElementById('adm-err');
-  
-  if (!email || !pass) {
-    errEl.textContent = 'Fill in both fields.';
+  if (!user) {
+    show('login-screen');
     return;
   }
-  
+
+  // Strict admin check — sign out immediately if not whitelisted
+  if (!ADMIN_EMAILS.includes(user.email)) {
+    await auth.signOut();
+    show('access-denied');
+    return;
+  }
+
+  // Verified admin
+  currentAdmin = user;
+  show('app');
+  await loadDashboard();
+});
+
+// ── Login ────────────────────────────────────────────────────────────────
+async function adminLogin() {
+  if (isLoggingIn) return;
+  const email = document.getElementById('adm-email').value.trim();
+  const pass  = document.getElementById('adm-pass').value;
+  const btn   = document.getElementById('adm-btn');
+  const errEl = document.getElementById('adm-err');
+  errEl.classList.remove('show');
+
+  if (!email || !pass) { showErr('Please fill in both fields.'); return; }
+
+  // Pre-check before even hitting Firebase
+  if (!ADMIN_EMAILS.includes(email)) {
+    showErr('This account is not authorized.');
+    return;
+  }
+
+  isLoggingIn = true;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Verifying...';
+
   try {
-    errEl.textContent = '';
     await auth.signInWithEmailAndPassword(email, pass);
   } catch(e) {
-    errEl.textContent = 'Invalid credentials.';
+    const msgs = {
+      'auth/user-not-found': 'No account found with that email.',
+      'auth/wrong-password': 'Incorrect password.',
+      'auth/invalid-credential': 'Invalid credentials.',
+      'auth/too-many-requests': 'Too many attempts. Please wait and try again.',
+      'auth/network-request-failed': 'Network error. Check your connection.'
+    };
+    showErr(msgs[e.code] || 'Authentication failed.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa fa-shield-alt"></i> Sign In Securely';
+    isLoggingIn = false;
+  }
+
+  function showErr(msg) {
+    errEl.textContent = msg;
+    errEl.classList.add('show');
   }
 }
 
-// Render main dashboard
+// ── Load Dashboard Data ──────────────────────────────────────────────────
+async function loadDashboard() {
+  document.getElementById('app').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:calc(100vh - 58px);flex-direction:column;gap:12px;">
+      <div class="spinner"></div>
+      <div style="color:var(--t3);font-size:12px;font-family:'DM Mono',monospace;">Loading tenant data...</div>
+    </div>`;
+
+  try {
+    const snap = await db.collection('tenants').orderBy('createdAt', 'desc').get();
+    tenants = snap.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+    renderDashboard();
+  } catch(error) {
+    document.getElementById('app').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 58px);padding:20px;">
+        <div class="denied-box" style="border-color:var(--gold-border);">
+          <div style="font-size:40px;margin-bottom:14px;">⚠️</div>
+          <h3 style="color:var(--yellow);margin-bottom:10px;">Firestore Error</h3>
+          <p style="color:var(--t2);font-size:12px;margin-bottom:18px;">${error.message}</p>
+          <button class="btn btn-ghost" onclick="loadDashboard()"><i class="fa fa-sync"></i> Retry</button>
+          <button class="btn btn-danger" style="margin-left:8px;" onclick="auth.signOut()"><i class="fa fa-sign-out-alt"></i> Sign Out</button>
+        </div>
+      </div>`;
+  }
+}
+
+// ── Render Dashboard Shell ───────────────────────────────────────────────
 function renderDashboard() {
-  const total = tenants.length;
-  const trials = tenants.filter(t => t.status === 'trial').length;
-  const active = tenants.filter(t => t.status === 'active').length;
-  const expired = tenants.filter(t => t.status === 'expired').length;
-  const newThisMonth = tenants.filter(t => {
+  const total      = tenants.length;
+  const trials     = tenants.filter(t => t.status === 'trial').length;
+  const active     = tenants.filter(t => t.status === 'active').length;
+  const expired    = tenants.filter(t => t.status === 'expired').length;
+  const newMonth   = tenants.filter(t => {
     if (!t.createdAt) return false;
-    const d = new Date(t.createdAt);
-    const n = new Date();
+    const d = new Date(t.createdAt), n = new Date();
     return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
   }).length;
 
@@ -272,41 +326,34 @@ function renderDashboard() {
   document.getElementById('app').innerHTML = `
     <div class="topbar">
       <div class="logo">Ordo <span>Admin Dashboard</span></div>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <span class="admin-badge"><i class="fa fa-shield-alt"></i> ADMIN</span>
-        <span style="font-size:12px;color:var(--t3)"><i class="fa fa-envelope"></i> ${currentAdmin?.email || ''}</span>
-        <button class="btn btn-ghost btn-sm" onclick="auth.signOut()"><i class="fa fa-sign-out-alt"></i> Sign out</button>
+      <div class="topbar-right">
+        <span class="admin-badge"><i class="fa fa-shield-halved"></i> ADMIN</span>
+        <span class="admin-email">${currentAdmin?.email || ''}</span>
+        <button class="btn btn-ghost btn-sm" onclick="loadDashboard()"><i class="fa fa-sync"></i> Refresh</button>
+        <button class="btn btn-danger btn-sm" onclick="auth.signOut()"><i class="fa fa-sign-out-alt"></i> Sign out</button>
       </div>
     </div>
-
     <div class="layout">
       <div class="sidebar">
-        <button class="nav-item ${activeTab === 'overview' ? 'active' : ''}" onclick="setTab('overview')">
-          <i class="fa fa-chart-pie"></i> Overview
-        </button>
-        <button class="nav-item ${activeTab === 'tenants' ? 'active' : ''}" onclick="setTab('tenants')">
-          <i class="fa fa-building"></i> Restaurants
-        </button>
-        <button class="nav-item ${activeTab === 'revenue' ? 'active' : ''}" onclick="setTab('revenue')">
-          <i class="fa fa-coins"></i> Revenue
-        </button>
-        <button class="nav-item ${activeTab === 'expiring' ? 'active' : ''}" onclick="setTab('expiring')">
-          <i class="fa fa-clock"></i> Expiring Soon
-        </button>
+        <button class="nav-item ${activeTab==='overview'?'active':''}" onclick="setTab('overview')"><i class="fa fa-chart-pie"></i> Overview</button>
+        <button class="nav-item ${activeTab==='tenants'?'active':''}" onclick="setTab('tenants')"><i class="fa fa-building"></i> Restaurants</button>
+        <button class="nav-item ${activeTab==='revenue'?'active':''}" onclick="setTab('revenue')"><i class="fa fa-coins"></i> Revenue</button>
+        <button class="nav-item ${activeTab==='expiring'?'active':''}" onclick="setTab('expiring')"><i class="fa fa-clock"></i> Expiring Soon</button>
+        <div class="nav-sep"></div>
+        <div style="padding:10px 13px;font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;">${total} total tenants</div>
       </div>
-
-      <div class="main">
-        ${activeTab === 'overview' ? renderOverview(total, trials, active, expired, newThisMonth, tenants) : ''}
-        ${activeTab === 'tenants' ? renderTenants(filtered) : ''}
-        ${activeTab === 'revenue' ? renderRevenue(tenants) : ''}
-        ${activeTab === 'expiring' ? renderExpiring(tenants) : ''}
+      <div class="main fade-in" id="main-content">
+        ${activeTab==='overview' ? renderOverview(total,trials,active,expired,newMonth,tenants) : ''}
+        ${activeTab==='tenants' ? renderTenants(filtered) : ''}
+        ${activeTab==='revenue' ? renderRevenue(tenants) : ''}
+        ${activeTab==='expiring' ? renderExpiring(tenants) : ''}
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
+// ── Tab Sections ─────────────────────────────────────────────────────────
 function renderOverview(total, trials, active, expired, newMonth, tenants) {
-  const recentTenants = [...tenants].slice(0, 8);
+  const recentTenants = [...tenants].slice(0, 10);
   return `
     <div class="stat-grid">
       <div class="stat"><div class="stat-icon">🏪</div><div class="stat-val">${total}</div><div class="stat-lbl">Total Restaurants</div></div>
@@ -322,71 +369,55 @@ function renderOverview(total, trials, active, expired, newMonth, tenants) {
         <tbody>
           ${recentTenants.map(t => `
             <tr>
-              <td><strong>${t.restaurantName || '—'}</strong><br><span style="color:var(--t3);font-size:11px">${t.email || '—'}</span></td>
-              <td style="color:var(--t2)">${t.ownerName || '—'}</td>
+              <td><strong>${esc(t.restaurantName || '—')}</strong><br><span style="color:var(--t3);font-size:10px;font-family:'DM Mono',monospace;">${esc(t.email || '—')}</span></td>
+              <td style="color:var(--t2)">${esc(t.ownerName || '—')}</td>
               <td>${getPlanBadge(t.plan)}</td>
               <td>${getStatusBadge(t.status)}</td>
-              <td style="color:var(--t3);font-size:12px">${formatDate(t.createdAt)}</td>
-            </tr>
-          `).join('')}
+              <td style="color:var(--t3);font-size:11px;font-family:'DM Mono',monospace;">${formatDate(t.createdAt)}</td>
+            </tr>`).join('')}
         </tbody>
       </table>
-    </div>
-  `;
+    </div>`;
 }
 
 function renderTenants(filtered) {
   return `
     <div class="search-wrap">
       <i class="fa fa-search"></i>
-      <input class="input" placeholder="Search restaurants, email, owner..." value="${searchQuery}" oninput="window.searchQuery=this.value;window.renderDashboard()"/>
+      <input class="input" placeholder="Search by name, email, owner..." value="${esc(searchQuery)}" oninput="searchQuery=this.value;renderDashboard()"/>
     </div>
     <div class="sec-hdr">${filtered.length} restaurant${filtered.length !== 1 ? 's' : ''}</div>
     <div class="card" style="padding:0;overflow:hidden;">
       <table class="tbl">
-        <thead>
-          <tr>
-            <th>Restaurant</th>
-            <th>Owner</th>
-            <th>Email</th>
-            <th>Plan</th>
-            <th>Status</th>
-            <th>Trial Ends</th>
-            <th>Joined</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Restaurant</th><th>Owner</th><th>Email</th><th>Plan</th><th>Status</th><th>Trial Ends</th><th>Joined</th><th>Actions</th></tr></thead>
         <tbody>
           ${filtered.map(t => `
             <tr>
-              <td><strong>${t.restaurantName || '—'}</strong></td>
-              <td style="color:var(--t2)">${t.ownerName || '—'}</td>
-              <td style="color:var(--t3);font-size:12px">${t.email || '—'}</td>
+              <td><strong>${esc(t.restaurantName || '—')}</strong></td>
+              <td style="color:var(--t2)">${esc(t.ownerName || '—')}</td>
+              <td style="color:var(--t3);font-size:11px;font-family:'DM Mono',monospace;">${esc(t.email || '—')}</td>
               <td>${getPlanBadge(t.plan)}</td>
               <td>${getStatusBadge(t.status)}</td>
-              <td style="color:var(--t3);font-size:12px">${formatDate(t.trialEnd)}</td>
-              <td style="color:var(--t3);font-size:12px">${formatDate(t.createdAt)}</td>
-              <td style="display:flex;gap:5px;">
-                <button class="btn btn-ghost btn-sm" onclick="viewTenant('${t.uid}')"><i class="fa fa-eye"></i></button>
-                <button class="btn btn-success btn-sm" onclick="activateTenant('${t.uid}')"><i class="fa fa-check"></i></button>
-                <button class="btn btn-danger btn-sm" onclick="expireTenant('${t.uid}')"><i class="fa fa-ban"></i></button>
+              <td style="color:var(--t3);font-size:11px;font-family:'DM Mono',monospace;">${formatDate(t.trialEnd)}</td>
+              <td style="color:var(--t3);font-size:11px;font-family:'DM Mono',monospace;">${formatDate(t.createdAt)}</td>
+              <td style="display:flex;gap:5px;flex-wrap:wrap;">
+                <button class="btn btn-ghost btn-sm" title="View" onclick="viewTenant('${t.uid}')"><i class="fa fa-eye"></i></button>
+                <button class="btn btn-success btn-sm" title="Activate" onclick="activateTenant('${t.uid}')"><i class="fa fa-check"></i></button>
+                <button class="btn btn-danger btn-sm" title="Expire" onclick="expireTenant('${t.uid}')"><i class="fa fa-ban"></i></button>
               </td>
-            </tr>
-          `).join('')}
+            </tr>`).join('')}
         </tbody>
       </table>
-    </div>
-  `;
+    </div>`;
 }
 
 function renderRevenue(tenants) {
-  const paid = tenants.filter(t => t.status === 'active');
+  const paid    = tenants.filter(t => t.status === 'active');
   const monthly = paid.filter(t => t.plan === 'monthly').length;
-  const annual = paid.filter(t => t.plan === 'annual').length;
-  const lifetime = paid.filter(t => t.plan === 'lifetime').length;
-  const mrr = monthly * 199 + annual * 149;
-  const arr = mrr * 12;
-  
+  const annual  = paid.filter(t => t.plan === 'annual').length;
+  const lifetime= paid.filter(t => t.plan === 'lifetime').length;
+  const mrr     = monthly * 199 + annual * 149;
+  const arr     = mrr * 12;
   return `
     <div class="stat-grid">
       <div class="stat"><div class="stat-icon">💰</div><div class="stat-val">SAR ${mrr.toLocaleString()}</div><div class="stat-lbl">Monthly Recurring Revenue</div></div>
@@ -402,136 +433,121 @@ function renderRevenue(tenants) {
         <tbody>
           ${paid.map(t => `
             <tr>
-              <td><strong>${t.restaurantName || '—'}</strong></td>
+              <td><strong>${esc(t.restaurantName || '—')}</strong></td>
               <td>${getPlanBadge(t.plan)}</td>
-              <td style="color:var(--t3)">${t.email}</td>
-              <td style="color:var(--t3);font-size:12px">${formatDate(t.paidUntil)}</td>
-            </tr>
-          `).join('')}
+              <td style="color:var(--t3);font-size:11px;font-family:'DM Mono',monospace;">${esc(t.email)}</td>
+              <td style="color:var(--t3);font-size:11px;font-family:'DM Mono',monospace;">${formatDate(t.paidUntil)}</td>
+            </tr>`).join('')}
         </tbody>
       </table>
-    </div>
-  `;
+    </div>`;
 }
 
 function renderExpiring(tenants) {
   const soon = tenants.filter(t => {
-    if (t.status !== 'trial') return false;
-    if (!t.trialEnd) return false;
+    if (t.status !== 'trial' || !t.trialEnd) return false;
     const days = Math.ceil((new Date(t.trialEnd) - new Date()) / 86400000);
     return days <= 3 && days >= 0;
   }).sort((a, b) => new Date(a.trialEnd) - new Date(b.trialEnd));
 
   return `
     <div class="sec-hdr">⏰ ${soon.length} trial${soon.length !== 1 ? 's' : ''} expiring within 3 days</div>
-    ${soon.length === 0 ? '<div class="card" style="text-align:center;color:var(--t3);padding:40px;">No trials expiring soon 🎉</div>' : ''}
-    ${soon.length > 0 ? `
-    <div class="card" style="padding:0;overflow:hidden;">
-      <table class="tbl">
-        <thead><tr><th>Restaurant</th><th>Email</th><th>Days Left</th><th>Actions</th></tr></thead>
-        <tbody>
-          ${soon.map(t => {
-            const days = Math.ceil((new Date(t.trialEnd) - new Date()) / 86400000);
-            return `
-              <tr>
-                <td><strong>${t.restaurantName || '—'}</strong></td>
-                <td style="color:var(--t3)">${t.email}</td>
-                <td><span class="badge ${days <= 1 ? 'badge-red' : 'badge-yellow'}">${days} day${days !== 1 ? 's' : ''}</span></td>
-                <td style="display:flex;gap:6px;">
-                  <button class="btn btn-ghost btn-sm" onclick="extendTrial('${t.uid}')"><i class="fa fa-clock"></i> Extend 7d</button>
-                  <button class="btn btn-gold btn-sm" onclick="activateTenant('${t.uid}')"><i class="fa fa-check"></i> Activate</button>
-                </td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>` : ''}
-  `;
+    ${soon.length === 0
+      ? '<div class="card" style="text-align:center;color:var(--t3);padding:40px;font-size:13px;">No trials expiring soon 🎉</div>'
+      : `<div class="card" style="padding:0;overflow:hidden;">
+          <table class="tbl">
+            <thead><tr><th>Restaurant</th><th>Email</th><th>Days Left</th><th>Actions</th></tr></thead>
+            <tbody>
+              ${soon.map(t => {
+                const days = Math.ceil((new Date(t.trialEnd) - new Date()) / 86400000);
+                return `<tr>
+                  <td><strong>${esc(t.restaurantName || '—')}</strong></td>
+                  <td style="color:var(--t3);font-size:11px;font-family:'DM Mono',monospace;">${esc(t.email)}</td>
+                  <td><span class="badge ${days <= 1 ? 'badge-red' : 'badge-yellow'}">${days} day${days !== 1 ? 's' : ''}</span></td>
+                  <td style="display:flex;gap:6px;">
+                    <button class="btn btn-ghost btn-sm" onclick="extendTrial('${t.uid}')"><i class="fa fa-clock"></i> +7 days</button>
+                    <button class="btn btn-gold btn-sm" onclick="activateTenant('${t.uid}')"><i class="fa fa-check"></i> Activate</button>
+                  </td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`}`;
 }
 
-// Helper functions
+// ── Helpers ──────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 function getPlanBadge(plan) {
-  const colors = { trial: 'badge-blue', monthly: 'badge-gold', annual: 'badge-purple', lifetime: 'badge-green' };
-  const labels = { trial: 'Trial', monthly: 'Monthly', annual: 'Annual', lifetime: 'Lifetime' };
-  return `<span class="badge ${colors[plan] || 'badge-blue'}">${labels[plan] || plan}</span>`;
+  const m = { trial:'badge-blue', monthly:'badge-gold', annual:'badge-green', lifetime:'badge-red' };
+  const l = { trial:'Trial', monthly:'Monthly', annual:'Annual', lifetime:'Lifetime' };
+  return `<span class="badge ${m[plan]||'badge-blue'}">${l[plan]||plan||'—'}</span>`;
 }
-
 function getStatusBadge(status) {
-  const colors = { trial: 'badge-yellow', active: 'badge-green', expired: 'badge-red', cancelled: 'badge-blue' };
-  const labels = { trial: 'Trial', active: 'Active', expired: 'Expired', cancelled: 'Cancelled' };
-  return `<span class="badge ${colors[status] || 'badge-blue'}">${labels[status] || status}</span>`;
+  const m = { trial:'badge-yellow', active:'badge-green', expired:'badge-red', cancelled:'badge-blue' };
+  const l = { trial:'Trial', active:'Active', expired:'Expired', cancelled:'Cancelled' };
+  return `<span class="badge ${m[status]||'badge-blue'}">${l[status]||status||'—'}</span>`;
+}
+function formatDate(d) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); } catch { return '—'; }
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    return new Date(dateStr).toLocaleDateString();
-  } catch {
-    return '—';
-  }
-}
-
-// Actions
-window.setTab = function(tab) {
-  activeTab = tab;
-  renderDashboard();
-};
+// ── Actions ──────────────────────────────────────────────────────────────
+window.setTab = (tab) => { activeTab = tab; renderDashboard(); };
 
 window.viewTenant = function(uid) {
-  const tenant = tenants.find(t => t.uid === uid);
-  if (!tenant) return;
-  
-  alert(`Restaurant: ${tenant.restaurantName}\nOwner: ${tenant.ownerName}\nEmail: ${tenant.email}\nPlan: ${tenant.plan}\nStatus: ${tenant.status}`);
+  const t = tenants.find(t => t.uid === uid);
+  if (!t) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-title">🏪 ${esc(t.restaurantName || 'Restaurant')}</div>
+      ${[
+        ['Owner', t.ownerName],['Email', t.email],['Phone', t.phone],
+        ['Plan', getPlanBadge(t.plan)],['Status', getStatusBadge(t.status)],
+        ['Trial End', formatDate(t.trialEnd)],['Paid Until', formatDate(t.paidUntil)],
+        ['Joined', formatDate(t.createdAt)],['UID', t.uid]
+      ].map(([k,v]) => `<div class="modal-row"><label>${k}</label><div class="modal-detail">${v||'—'}</div></div>`).join('')}
+      <button class="btn btn-ghost" style="margin-top:8px;width:100%;" onclick="this.closest('.overlay').remove()">Close</button>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 };
 
 window.activateTenant = async function(uid) {
-  if (!confirm('Activate this account?')) return;
+  if (!confirm('Activate this account with a 1-month subscription?')) return;
   try {
     const paidUntil = new Date();
     paidUntil.setMonth(paidUntil.getMonth() + 1);
-    await db.collection('tenants').doc(uid).update({
-      status: 'active',
-      plan: 'monthly',
-      paidUntil: paidUntil.toISOString()
-    });
+    await db.collection('tenants').doc(uid).update({ status:'active', plan:'monthly', paidUntil: paidUntil.toISOString() });
+    showToast('✅ Account activated!', 'ok');
     await loadDashboard();
-    alert('✅ Account activated!');
-  } catch (error) {
-    alert('Error activating account: ' + error.message);
-  }
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
 };
 
 window.expireTenant = async function(uid) {
   if (!confirm('Mark this account as expired?')) return;
   try {
     await db.collection('tenants').doc(uid).update({ status: 'expired' });
+    showToast('⚠️ Account marked as expired', 'ok');
     await loadDashboard();
-    alert('⚠️ Account marked as expired');
-  } catch (error) {
-    alert('Error expiring account: ' + error.message);
-  }
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
 };
 
 window.extendTrial = async function(uid) {
-  const tenant = tenants.find(t => t.uid === uid);
-  if (!tenant) return;
+  const t = tenants.find(t => t.uid === uid);
+  if (!t) return;
   try {
-    const newEnd = new Date(tenant.trialEnd || new Date());
+    const newEnd = new Date(t.trialEnd || new Date());
     newEnd.setDate(newEnd.getDate() + 7);
     await db.collection('tenants').doc(uid).update({ trialEnd: newEnd.toISOString() });
+    showToast('✅ Trial extended by 7 days!', 'ok');
     await loadDashboard();
-    alert('✅ Trial extended by 7 days!');
-  } catch (error) {
-    alert('Error extending trial: ' + error.message);
-  }
+  } catch(e) { showToast('Error: ' + e.message, 'err'); }
 };
-
-// Make functions available globally
-window.searchQuery = searchQuery;
-window.renderDashboard = renderDashboard;
-window.loadDashboard = loadDashboard;
-window.auth = auth;
 </script>
 </body>
 </html>

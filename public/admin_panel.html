@@ -4,148 +4,174 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Ordo POS — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <style>
-/* ── Reset & Base ────────────────────────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg0:#07070f;--bg1:#0d0d14;--bg2:#13131f;--bg3:#1a1a28;
-  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
-  --gold:#fbbf24;--gold2:#f59e0b;
-  --text:#e2e8f0;--muted:#94a3b8;--hint:#475569;
-  --blue:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --gold:#d4a843;--gold2:#f0c96a;--gold-dim:rgba(212,168,67,.1);--gold-border:rgba(212,168,67,.18);
+  --text:#e8e4dc;--muted:#8a8278;--hint:#4a4640;
+  --blue:#4a8cf7;--green:#0fc977;--red:#f04444;--orange:#f97316;
   --r:10px;--r2:14px;
 }
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg0);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+body{font-family:'Syne',system-ui,sans-serif;background:var(--bg0);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
 
-/* ── Login Screen ────────────────────────────────────────────────────────────── */
-#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
-.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:36px 32px;width:100%;max-width:380px}
-.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.logo-mark{color:var(--gold);font-size:22px;font-weight:800;letter-spacing:-0.5px}
-.logo-badge{background:rgba(251,191,36,0.12);color:var(--gold);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:0.5px}
-.login-sub{color:var(--hint);font-size:13px;margin-bottom:28px}
-.field-label{display:block;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
-.field-input{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;transition:border-color .15s;margin-bottom:16px}
-.field-input:focus{border-color:var(--gold)}
+/* ── Loading ── */
+#loading-screen{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:14px;}
+.spinner{width:34px;height:34px;border:2px solid var(--gold-border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Login Screen ── */
+#login-screen{display:none;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:radial-gradient(ellipse at 60% 30%,rgba(212,168,67,.05) 0%,transparent 60%),var(--bg0);}
+.login-card{background:var(--bg2);border:1px solid var(--gold-border);border-radius:var(--r2);padding:36px 32px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,.7);}
+.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:5px}
+.logo-mark{color:var(--gold);font-size:20px;font-weight:800;letter-spacing:-0.5px}
+.logo-badge{background:var(--gold-dim);color:var(--gold);font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:1px}
+.login-sub{color:var(--hint);font-size:12px;margin-bottom:26px;font-family:'DM Mono',monospace;}
+.field-label{display:block;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
+.field-input{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:11px 14px;font-size:13px;color:var(--text);font-family:'Syne',sans-serif;outline:none;transition:border-color .15s;margin-bottom:15px}
+.field-input:focus{border-color:var(--gold);background:rgba(212,168,67,.03)}
 .field-input::placeholder{color:var(--hint)}
-.btn-primary{width:100%;background:var(--gold);color:#0d0d14;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s}
+.btn-primary{width:100%;background:var(--gold);color:#07070f;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;transition:background .15s;font-family:'Syne',sans-serif;letter-spacing:.3px;}
 .btn-primary:hover{background:var(--gold2)}
 .btn-primary:disabled{background:var(--bg3);color:var(--hint);cursor:not-allowed}
-.err-msg{color:var(--red);font-size:13px;margin-top:10px;display:none}
+.err-msg{color:var(--red);font-size:12px;margin-top:10px;display:none;background:rgba(240,68,68,.08);padding:8px 12px;border-radius:7px;font-family:'DM Mono',monospace;}
 
-/* ── Dashboard Layout ────────────────────────────────────────────────────────── */
+/* ── Access Denied ── */
+#access-denied{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.denied-card{max-width:440px;width:100%;background:var(--bg2);border:1px solid rgba(240,68,68,.2);border-radius:var(--r2);padding:40px;text-align:center;}
+
+/* ── Dashboard Layout ── */
 #dashboard{display:none;height:100vh;flex-direction:column}
-.topbar{display:flex;align-items:center;gap:16px;padding:0 24px;height:56px;background:var(--bg1);border-bottom:1px solid var(--border);flex-shrink:0}
-.topbar-logo{color:var(--gold);font-size:17px;font-weight:800;letter-spacing:-0.3px;margin-right:auto}
-.topbar-admin{color:var(--muted);font-size:13px}
+.topbar{display:flex;align-items:center;gap:14px;padding:0 24px;height:56px;background:var(--bg1);border-bottom:1px solid var(--border);flex-shrink:0}
+.topbar-logo{color:var(--gold);font-size:16px;font-weight:800;letter-spacing:-0.3px;margin-right:auto}
+.topbar-admin{color:var(--muted);font-size:12px;font-family:'DM Mono',monospace;}
 .topbar-admin span{color:var(--text)}
-.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;transition:all .15s}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:7px;cursor:pointer;font-size:12px;transition:all .15s;font-family:'Syne',sans-serif;}
 .btn-ghost:hover{border-color:var(--border2);color:var(--text)}
 
 .main-area{display:flex;flex:1;overflow:hidden}
 
-/* ── Sidebar ─────────────────────────────────────────────────────────────────── */
+/* ── Sidebar ── */
 .sidebar{width:260px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
-.sidebar-head{padding:16px 16px 8px;font-size:11px;color:var(--hint);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center}
-.sidebar-head .refresh-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:16px;padding:2px;transition:color .15s}
+.sidebar-head{padding:14px 14px 6px;font-size:10px;color:var(--hint);font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:flex;justify-content:space-between;align-items:center}
+.sidebar-head .refresh-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:15px;padding:2px;transition:color .15s;font-family:monospace;}
 .sidebar-head .refresh-btn:hover{color:var(--text)}
 .client-list{flex:1;overflow-y:auto;padding:4px 8px 8px}
 .client-item{padding:10px 10px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;display:flex;flex-direction:column;gap:3px;position:relative}
 .client-item:hover{background:var(--bg3)}
-.client-item.active{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2)}
-.client-name{font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px}
-.client-email{color:var(--hint);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.client-item.active{background:var(--gold-dim);border:1px solid var(--gold-border)}
+.client-name{font-weight:700;font-size:12px;display:flex;align-items:center;gap:7px}
+.client-email{color:var(--hint);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'DM Mono',monospace;}
 .status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .status-dot.online{background:var(--green)}
 .status-dot.offline{background:var(--hint)}
 .status-dot.locked{background:var(--red)}
-.client-lastseen{color:var(--hint);font-size:11px}
-.broadcast-all-btn{margin:8px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);color:var(--gold);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;text-align:left}
-.broadcast-all-btn:hover{background:rgba(251,191,36,0.15)}
+.client-lastseen{color:var(--hint);font-size:11px;font-family:'DM Mono',monospace;}
+.broadcast-all-btn{margin:8px;background:var(--gold-dim);border:1px solid var(--gold-border);color:var(--gold);border-radius:8px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s;text-align:left;font-family:'Syne',sans-serif;}
+.broadcast-all-btn:hover{background:rgba(212,168,67,.18)}
 
-/* ── Command Panel ───────────────────────────────────────────────────────────── */
-.command-panel{flex:1;overflow-y:auto;padding:24px}
-.panel-header{margin-bottom:24px}
-.panel-title{font-size:20px;font-weight:700;margin-bottom:4px}
-.panel-sub{color:var(--muted);font-size:13px}
+/* ── Command Panel ── */
+.command-panel{flex:1;overflow-y:auto;padding:26px}
+.panel-header{margin-bottom:22px}
+.panel-title{font-size:19px;font-weight:800;margin-bottom:4px;letter-spacing:-0.3px;}
+.panel-sub{color:var(--muted);font-size:12px;font-family:'DM Mono',monospace;}
 .no-client{display:flex;align-items:center;justify-content:center;height:100%;color:var(--hint);flex-direction:column;gap:12px}
-.no-client-icon{font-size:40px;opacity:0.4}
+.no-client-icon{font-size:38px;opacity:0.3}
 
-/* ── Command Cards ───────────────────────────────────────────────────────────── */
+/* ── Command Cards ── */
 .cmd-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:900px){.cmd-grid{grid-template-columns:1fr}}
-.cmd-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;display:flex;flex-direction:column;gap:14px}
-.cmd-card-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.cmd-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;display:flex;flex-direction:column;gap:13px;transition:border-color .15s;}
+.cmd-card:hover{border-color:var(--border2);}
+.cmd-card-title{font-size:12px;font-weight:800;display:flex;align-items:center;gap:9px;letter-spacing:.2px;}
 .cmd-card-title .icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.icon-blue{background:rgba(59,130,246,0.15);color:var(--blue)}
-.icon-gold{background:rgba(251,191,36,0.12);color:var(--gold)}
-.icon-red{background:rgba(239,68,68,0.12);color:var(--red)}
-.icon-green{background:rgba(34,197,94,0.12);color:var(--green)}
+.icon-blue{background:rgba(74,140,247,0.14);color:var(--blue)}
+.icon-gold{background:var(--gold-dim);color:var(--gold)}
+.icon-red{background:rgba(240,68,68,0.12);color:var(--red)}
+.icon-green{background:rgba(15,201,119,0.12);color:var(--green)}
 .icon-orange{background:rgba(249,115,22,0.12);color:var(--orange)}
 
-.cmd-textarea{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:'Cascadia Code','Consolas',monospace;resize:vertical;outline:none;transition:border-color .15s;min-height:80px}
+.cmd-textarea{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:'DM Mono',monospace;resize:vertical;outline:none;transition:border-color .15s;min-height:80px}
 .cmd-textarea:focus{border-color:var(--gold)}
 .cmd-textarea::placeholder{color:var(--hint)}
-.cmd-input{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s}
+.cmd-input{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s;font-family:'Syne',sans-serif;}
 .cmd-input:focus{border-color:var(--gold)}
 .cmd-input::placeholder{color:var(--hint)}
-.cmd-select{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;appearance:none;cursor:pointer}
+.cmd-select{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;appearance:none;cursor:pointer;font-family:'Syne',sans-serif;}
 .cmd-select:focus{border-color:var(--gold)}
 
 .cmd-row{display:flex;gap:8px;align-items:flex-end}
 .cmd-row .cmd-input{flex:1}
-.btn-send{background:var(--gold);color:#0d0d14;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;white-space:nowrap;flex-shrink:0}
+.btn-send{background:var(--gold);color:#07070f;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:800;cursor:pointer;transition:background .15s;white-space:nowrap;flex-shrink:0;font-family:'Syne',sans-serif;}
 .btn-send:hover{background:var(--gold2)}
 .btn-send:disabled{background:var(--bg3);color:var(--hint);cursor:not-allowed}
-.btn-danger{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
-.btn-danger:hover{background:rgba(239,68,68,0.25)}
-.btn-success{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
-.btn-success:hover{background:rgba(34,197,94,0.25)}
+.btn-danger{background:rgba(240,68,68,0.12);color:var(--red);border:1px solid rgba(240,68,68,0.22);border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;font-family:'Syne',sans-serif;}
+.btn-danger:hover{background:rgba(240,68,68,0.22)}
+.btn-success{background:rgba(15,201,119,0.12);color:var(--green);border:1px solid rgba(15,201,119,0.22);border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;font-family:'Syne',sans-serif;}
+.btn-success:hover{background:rgba(15,201,119,0.22)}
 
-/* ── Toast / Feedback ────────────────────────────────────────────────────────── */
-#toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:13px;display:none;z-index:999;max-width:300px;line-height:1.5}
+/* ── Toast ── */
+#toast{position:fixed;bottom:22px;right:22px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:12px;display:none;z-index:999;max-width:300px;line-height:1.5;font-family:'DM Mono',monospace;}
 #toast.show{display:block}
-#toast.ok{border-color:rgba(34,197,94,0.4);color:var(--green)}
-#toast.err{border-color:rgba(239,68,68,0.4);color:var(--red)}
+#toast.ok{border-color:rgba(15,201,119,.35);color:var(--green)}
+#toast.err{border-color:rgba(240,68,68,.35);color:var(--red)}
 
-/* ── Command history log ─────────────────────────────────────────────────────── */
-.log-area{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:12px;max-height:180px;overflow-y:auto;font-size:12px;font-family:'Cascadia Code','Consolas',monospace;color:var(--muted)}
+/* ── Log ── */
+.log-area{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:12px;max-height:180px;overflow-y:auto;font-size:12px;font-family:'DM Mono',monospace;color:var(--muted)}
 .log-entry{margin-bottom:4px;display:flex;gap:8px}
 .log-time{color:var(--hint);flex-shrink:0}
 .log-ok{color:var(--green)}
 .log-err{color:var(--red)}
 
-/* ── Section divider ─────────────────────────────────────────────────────────── */
-.section-label{font-size:11px;color:var(--hint);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 12px}
-.client-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
+/* ── Section ── */
+.section-label{font-size:10px;color:var(--hint);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin:22px 0 11px}
+.client-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
-.stat-val{font-size:22px;font-weight:700;color:var(--gold)}
-.stat-lbl{font-size:12px;color:var(--muted);margin-top:2px}
+.stat-val{font-size:20px;font-weight:800;color:var(--gold)}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
 </style>
 </head>
 <body>
 
-<!-- ── LOGIN ──────────────────────────────────────────────────────────────────── -->
+<!-- Loading -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div style="color:var(--hint);font-size:12px;font-family:'DM Mono',monospace;">Authenticating...</div>
+</div>
+
+<!-- Login Screen -->
 <div id="login-screen">
   <div class="login-card">
     <div class="logo-row">
       <span class="logo-mark">✦ Ordo POS</span>
       <span class="logo-badge">ADMIN</span>
     </div>
-    <div class="login-sub">Sign in to manage all client installations</div>
+    <div class="login-sub">// authorized personnel only</div>
     <label class="field-label">Email</label>
-    <input id="l-email" class="field-input" type="email" placeholder="admin@yourcompany.com" autofocus/>
+    <input id="l-email" class="field-input" type="email" placeholder="admin@yourcompany.com" autocomplete="email" autofocus/>
     <label class="field-label">Password</label>
-    <input id="l-pass" class="field-input" type="password" placeholder="Your admin password"/>
+    <input id="l-pass" class="field-input" type="password" placeholder="Your admin password" autocomplete="current-password"/>
     <button class="btn-primary" id="l-btn" onclick="doLogin()">Sign in →</button>
     <div class="err-msg" id="l-err"></div>
   </div>
 </div>
 
-<!-- ── DASHBOARD ──────────────────────────────────────────────────────────────── -->
+<!-- Access Denied -->
+<div id="access-denied">
+  <div class="denied-card">
+    <div style="font-size:50px;margin-bottom:16px;">🔒</div>
+    <h2 style="color:var(--red);margin-bottom:10px;font-size:19px;font-weight:800;">Access Denied</h2>
+    <p style="color:var(--muted);line-height:1.7;font-size:13px;margin-bottom:22px;">This panel is restricted to authorized administrators only. Your account does not have the required permissions.</p>
+    <button class="btn-ghost" onclick="auth.signOut()">← Sign out and try another account</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
 <div id="dashboard">
   <div class="topbar">
     <span class="topbar-logo">✦ Ordo POS Admin</span>
@@ -154,7 +180,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg0);color:var
   </div>
   <div class="main-area">
 
-    <!-- SIDEBAR -->
+    <!-- Sidebar -->
     <div class="sidebar">
       <button class="broadcast-all-btn" onclick="selectAllClients()">⚡ Broadcast to all clients</button>
       <div class="sidebar-head">
@@ -162,49 +188,35 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg0);color:var
         <button class="refresh-btn" onclick="refreshClients()" title="Refresh">↻</button>
       </div>
       <div class="client-list" id="client-list">
-        <div style="padding:12px;color:var(--hint);font-size:13px">Loading…</div>
+        <div style="padding:12px;color:var(--hint);font-size:12px;font-family:'DM Mono',monospace">Loading…</div>
       </div>
     </div>
 
-    <!-- COMMAND PANEL -->
+    <!-- Command Panel -->
     <div class="command-panel" id="command-panel">
       <div class="no-client" id="no-client">
         <div class="no-client-icon">📡</div>
-        <div>Select a client from the sidebar<br>or broadcast to all</div>
+        <div style="font-size:13px;">Select a client from the sidebar<br>or broadcast to all</div>
       </div>
 
       <div id="client-commands" style="display:none">
         <div class="panel-header">
           <div class="panel-title" id="cp-title">Client Name</div>
-          <div class="panel-sub" id="cp-sub">Last seen: —</div>
+          <div class="panel-sub" id="cp-sub">—</div>
         </div>
 
-        <!-- Stats row -->
         <div class="client-stats">
-          <div class="stat-card">
-            <div class="stat-val" id="stat-status">—</div>
-            <div class="stat-lbl">Status</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-val" id="stat-seen">—</div>
-            <div class="stat-lbl">Last seen</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-val" id="stat-ver">—</div>
-            <div class="stat-lbl">Version</div>
-          </div>
+          <div class="stat-card"><div class="stat-val" id="stat-status">—</div><div class="stat-lbl">Status</div></div>
+          <div class="stat-card"><div class="stat-val" id="stat-seen">—</div><div class="stat-lbl">Last seen</div></div>
+          <div class="stat-card"><div class="stat-val" id="stat-ver">—</div><div class="stat-lbl">Version</div></div>
         </div>
 
         <div class="section-label">Commands</div>
-
         <div class="cmd-grid">
 
           <!-- Broadcast message -->
           <div class="cmd-card">
-            <div class="cmd-card-title">
-              <div class="icon icon-blue">💬</div>
-              Broadcast message
-            </div>
+            <div class="cmd-card-title"><div class="icon icon-blue">💬</div>Broadcast message</div>
             <input id="msg-text" class="cmd-input" type="text" placeholder="e.g. Kitchen printer offline — use manual tickets"/>
             <div class="cmd-row">
               <select id="msg-level" class="cmd-select">
@@ -218,10 +230,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg0);color:var
 
           <!-- Lock / Unlock -->
           <div class="cmd-card">
-            <div class="cmd-card-title">
-              <div class="icon icon-red">🔒</div>
-              Lock / Unlock POS
-            </div>
+            <div class="cmd-card-title"><div class="icon icon-red">🔒</div>Lock / Unlock POS</div>
             <input id="lock-reason" class="cmd-input" type="text" placeholder="Reason (shown to cashier)"/>
             <div style="display:flex;gap:8px">
               <button class="btn-danger" style="flex:1" onclick="sendCmd('lock')">🔒 Lock</button>
@@ -231,21 +240,15 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg0);color:var
 
           <!-- Push menu -->
           <div class="cmd-card">
-            <div class="cmd-card-title">
-              <div class="icon icon-gold">🍽</div>
-              Push menu items
-            </div>
-            <div style="font-size:12px;color:var(--muted)">Paste a JSON array of items — replaces the entire menu on the client.</div>
+            <div class="cmd-card-title"><div class="icon icon-gold">🍽</div>Push menu items</div>
+            <div style="font-size:12px;color:var(--muted)">Paste a JSON array — replaces the entire menu on the client.</div>
             <textarea id="menu-json" class="cmd-textarea" rows="5" placeholder='[{"id":"1","name":"Burger","nameAr":"برجر","price":25,"cat":"Mains"},...]'></textarea>
             <button class="btn-send" onclick="sendCmd('push_menu')">Push menu →</button>
           </div>
 
           <!-- Push settings -->
           <div class="cmd-card">
-            <div class="cmd-card-title">
-              <div class="icon icon-gold">⚙</div>
-              Push settings
-            </div>
+            <div class="cmd-card-title"><div class="icon icon-gold">⚙</div>Push settings</div>
             <div style="font-size:12px;color:var(--muted)">Paste a JSON object — merged with existing settings.</div>
             <textarea id="settings-json" class="cmd-textarea" rows="5" placeholder='{"currency":"SAR","vatRate":15,"receiptFooter":"Thank you!"}'></textarea>
             <button class="btn-send" onclick="sendCmd('push_settings')">Push settings →</button>
@@ -253,41 +256,33 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg0);color:var
 
           <!-- Force reload -->
           <div class="cmd-card">
-            <div class="cmd-card-title">
-              <div class="icon icon-orange">🔄</div>
-              Force reload
-            </div>
-            <div style="font-size:12px;color:var(--muted)">All open POS browser tabs on this client will reload immediately.</div>
+            <div class="cmd-card-title"><div class="icon icon-orange">🔄</div>Force reload</div>
+            <div style="font-size:12px;color:var(--muted)">All open POS tabs on this client will reload immediately.</div>
             <button class="btn-send" onclick="sendCmd('force_reload')">Reload POS →</button>
           </div>
 
           <!-- Clear orders -->
           <div class="cmd-card">
-            <div class="cmd-card-title">
-              <div class="icon icon-red">🗑</div>
-              Clear orders
-            </div>
-            <div style="font-size:12px;color:var(--muted)">Permanently deletes all orders from this client. Useful for end-of-day or demo resets.</div>
+            <div class="cmd-card-title"><div class="icon icon-red">🗑</div>Clear orders</div>
+            <div style="font-size:12px;color:var(--muted)">Permanently deletes all orders from this client. Cannot be undone.</div>
             <button class="btn-danger" onclick="confirmClear()">Clear all orders</button>
           </div>
 
-        </div><!-- /.cmd-grid -->
+        </div>
 
-        <!-- Command log -->
         <div class="section-label">Recent commands</div>
         <div class="log-area" id="cmd-log">
           <div class="log-entry"><span class="log-time">—</span><span>No commands sent yet this session</span></div>
         </div>
-
-      </div><!-- /#client-commands -->
-    </div><!-- /.command-panel -->
+      </div>
+    </div>
   </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-// ── Firebase init ──────────────────────────────────────────────────────────────
+// ── Firebase init ───────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey:            "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
   authDomain:        "pos-ordo.firebaseapp.com",
@@ -301,68 +296,118 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
-// ── State ──────────────────────────────────────────────────────────────────────
+// ── ADMIN WHITELIST ─────────────────────────────────────────────────────
+const ADMIN_EMAILS = [
+  "yshoeb52@gmail.com"
+  // Add additional admin emails here
+];
+
+// ── State ───────────────────────────────────────────────────────────────
 let selectedClientId   = null;
 let selectedClientData = null;
 let broadcastMode      = false;
 let allClients         = [];
 let clientsUnsubscribe = null;
+let isLoggingIn        = false;
 
-// ── Auth ───────────────────────────────────────────────────────────────────────
-auth.onAuthStateChanged(user => {
-  if (user) {
-    document.getElementById('login-screen').style.display = 'none';
-    const d = document.getElementById('dashboard');
-    d.style.display = 'flex';
-    document.getElementById('admin-email').textContent = user.email;
-    startClientListener();
-  } else {
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('dashboard').style.display = 'none';
-    if (clientsUnsubscribe) { clientsUnsubscribe(); clientsUnsubscribe = null; }
+// ── UI helpers ──────────────────────────────────────────────────────────
+function showScreen(id) {
+  ['loading-screen','login-screen','access-denied','dashboard'].forEach(s => {
+    const el = document.getElementById(s);
+    el.style.display = s === id ? (s === 'dashboard' ? 'flex' : 'flex') : 'none';
+  });
+}
+
+// ── Auth State ──────────────────────────────────────────────────────────
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    showScreen('login-screen');
+    return;
   }
+
+  // Strict admin check — sign out non-admin users immediately
+  if (!ADMIN_EMAILS.includes(user.email)) {
+    await auth.signOut();
+    showScreen('access-denied');
+    return;
+  }
+
+  // Verified admin
+  document.getElementById('admin-email').textContent = user.email;
+  showScreen('dashboard');
+  startClientListener();
 });
 
+// ── Login ───────────────────────────────────────────────────────────────
 function doLogin() {
+  if (isLoggingIn) return;
   const email = document.getElementById('l-email').value.trim();
   const pass  = document.getElementById('l-pass').value;
   const btn   = document.getElementById('l-btn');
   const err   = document.getElementById('l-err');
   err.style.display = 'none';
+
   if (!email || !pass) { showLoginErr('Please enter email and password.'); return; }
-  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  // Pre-check before Firebase call
+  if (!ADMIN_EMAILS.includes(email)) {
+    showLoginErr('This account is not authorized to access this panel.');
+    return;
+  }
+
+  isLoggingIn = true;
+  btn.disabled = true;
+  btn.textContent = 'Verifying...';
+
   auth.signInWithEmailAndPassword(email, pass)
-    .catch(e => { showLoginErr(friendlyAuthErr(e.code)); btn.disabled=false; btn.textContent='Sign in →'; });
+    .catch(e => {
+      showLoginErr(friendlyAuthErr(e.code));
+      btn.disabled = false;
+      btn.textContent = 'Sign in →';
+      isLoggingIn = false;
+    });
 }
+
 function showLoginErr(msg) {
   const el = document.getElementById('l-err');
-  el.textContent = msg; el.style.display = 'block';
+  el.textContent = msg;
+  el.style.display = 'block';
 }
+
 function friendlyAuthErr(code) {
-  if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential')
-    return 'Incorrect email or password.';
-  if (code === 'auth/too-many-requests') return 'Too many attempts. Try again later.';
-  return 'Sign in failed. Check your credentials.';
+  const msgs = {
+    'auth/user-not-found': 'No account found with that email.',
+    'auth/wrong-password': 'Incorrect password.',
+    'auth/invalid-credential': 'Invalid email or password.',
+    'auth/too-many-requests': 'Too many attempts. Please wait and try again.',
+    'auth/network-request-failed': 'Network error. Check your connection.'
+  };
+  return msgs[code] || 'Authentication failed.';
 }
+
 function doLogout() { auth.signOut(); }
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+  if (e.key === 'Enter') {
+    const ls = document.getElementById('login-screen');
+    if (ls && ls.style.display !== 'none') doLogin();
+  }
 });
 
-// ── Client list ────────────────────────────────────────────────────────────────
+// ── Client list listener ────────────────────────────────────────────────
 function startClientListener() {
   clientsUnsubscribe = db.collection('clients').onSnapshot(snap => {
     allClients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderClientList();
-    // If a client is selected, refresh their stats
     if (selectedClientId) {
       const fresh = allClients.find(c => c.id === selectedClientId);
       if (fresh) updateStats(fresh);
     }
   }, err => console.error('clients listener:', err));
 }
+
 function refreshClients() {
-  document.getElementById('client-list').innerHTML = '<div style="padding:12px;color:var(--hint);font-size:13px">Refreshing…</div>';
+  document.getElementById('client-list').innerHTML = '<div style="padding:12px;color:var(--hint);font-size:12px;font-family:DM Mono,monospace">Refreshing…</div>';
   if (clientsUnsubscribe) { clientsUnsubscribe(); startClientListener(); }
 }
 
@@ -370,6 +415,7 @@ function isOnline(lastSeen) {
   if (!lastSeen) return false;
   return (Date.now() - new Date(lastSeen).getTime()) < 10 * 60 * 1000;
 }
+
 function timeSince(iso) {
   if (!iso) return 'Never';
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -382,7 +428,7 @@ function timeSince(iso) {
 function renderClientList() {
   const el = document.getElementById('client-list');
   if (!allClients.length) {
-    el.innerHTML = '<div style="padding:12px;color:var(--hint);font-size:13px">No clients registered yet</div>';
+    el.innerHTML = '<div style="padding:12px;color:var(--hint);font-size:12px;font-family:DM Mono,monospace">No clients registered yet</div>';
     return;
   }
   el.innerHTML = allClients.map(c => {
@@ -390,11 +436,11 @@ function renderClientList() {
     const locked = c.locked;
     const dotCls = locked ? 'locked' : (online ? 'online' : 'offline');
     const active = c.id === selectedClientId ? 'active' : '';
-    return `<div class="client-item ${active}" onclick="selectClient('${c.id}')">
+    return `<div class="client-item ${active}" onclick="selectClient('${esc(c.id)}')">
       <div class="client-name">
         <span class="status-dot ${dotCls}"></span>
         ${esc(c.clientName || c.id)}
-        ${locked ? '<span style="font-size:10px;color:var(--red)">LOCKED</span>' : ''}
+        ${locked ? '<span style="font-size:9px;color:var(--red);font-weight:700">LOCKED</span>' : ''}
       </div>
       <div class="client-email">${esc(c.adminEmail || '—')}</div>
       <div class="client-lastseen">${timeSince(c.lastSeen)}</div>
@@ -409,6 +455,7 @@ function selectClient(id) {
   renderClientList();
   showCommandPanel(selectedClientData);
 }
+
 function selectAllClients() {
   broadcastMode = true;
   selectedClientId = '__all__';
@@ -416,70 +463,69 @@ function selectAllClients() {
   renderClientList();
   showCommandPanel(null, true);
 }
+
 function showCommandPanel(client, allMode = false) {
   document.getElementById('no-client').style.display = 'none';
   document.getElementById('client-commands').style.display = 'block';
   if (allMode) {
     document.getElementById('cp-title').textContent = 'All clients (' + allClients.length + ')';
-    document.getElementById('cp-sub').textContent = 'Command will be sent to every registered client';
-    document.getElementById('stat-status').textContent = allClients.length;
-    document.getElementById('stat-status').style.color = 'var(--gold)';
+    document.getElementById('cp-sub').textContent   = 'Command will be sent to every registered client';
+    const st = document.getElementById('stat-status');
+    st.textContent = allClients.length;
+    st.style.color = 'var(--gold)';
     document.getElementById('stat-seen').textContent = '—';
-    document.getElementById('stat-ver').textContent = '—';
+    document.getElementById('stat-ver').textContent  = '—';
   } else {
     updateStats(client);
   }
   clearLog();
 }
+
 function updateStats(c) {
   document.getElementById('cp-title').textContent = c.clientName || c.id;
-  document.getElementById('cp-sub').textContent = 'ID: ' + c.id + (c.adminEmail ? '  ·  ' + c.adminEmail : '');
+  document.getElementById('cp-sub').textContent   = 'ID: ' + c.id + (c.adminEmail ? '  ·  ' + c.adminEmail : '');
   const online = isOnline(c.lastSeen);
   const locked = c.locked;
-  const stEl = document.getElementById('stat-status');
+  const stEl   = document.getElementById('stat-status');
   stEl.textContent = locked ? 'Locked' : (online ? 'Online' : 'Offline');
   stEl.style.color = locked ? 'var(--red)' : (online ? 'var(--green)' : 'var(--muted)');
   document.getElementById('stat-seen').textContent = timeSince(c.lastSeen);
-  document.getElementById('stat-ver').textContent = c.version || '—';
+  document.getElementById('stat-ver').textContent  = c.version || '—';
 }
 
-// ── Send commands ──────────────────────────────────────────────────────────────
+// ── Send commands ───────────────────────────────────────────────────────
 async function sendCmd(type) {
   if (!selectedClientId) return;
-
   let payload = {};
-  let ok = true;
 
   try {
     switch(type) {
-      case 'broadcast_message':
+      case 'broadcast_message': {
         const msg = document.getElementById('msg-text').value.trim();
         if (!msg) { toast('Enter a message to broadcast', 'err'); return; }
         payload = { message: msg, level: document.getElementById('msg-level').value };
         break;
-
+      }
       case 'lock':
         payload = { reason: document.getElementById('lock-reason').value.trim() || 'Locked by administrator.' };
         break;
-
       case 'unlock':
         payload = {};
         break;
-
-      case 'push_menu':
-        const menuRaw = document.getElementById('menu-json').value.trim();
-        if (!menuRaw) { toast('Paste menu JSON first', 'err'); return; }
-        try { payload = { items: JSON.parse(menuRaw) }; }
+      case 'push_menu': {
+        const raw = document.getElementById('menu-json').value.trim();
+        if (!raw) { toast('Paste menu JSON first', 'err'); return; }
+        try { payload = { items: JSON.parse(raw) }; }
         catch { toast('Invalid JSON — check syntax', 'err'); return; }
         break;
-
-      case 'push_settings':
-        const setRaw = document.getElementById('settings-json').value.trim();
-        if (!setRaw) { toast('Paste settings JSON first', 'err'); return; }
-        try { payload = JSON.parse(setRaw); }
+      }
+      case 'push_settings': {
+        const raw = document.getElementById('settings-json').value.trim();
+        if (!raw) { toast('Paste settings JSON first', 'err'); return; }
+        try { payload = JSON.parse(raw); }
         catch { toast('Invalid JSON — check syntax', 'err'); return; }
         break;
-
+      }
       case 'force_reload':
       case 'clear_orders':
         payload = {};
@@ -511,18 +557,19 @@ function confirmClear() {
   }
 }
 
-// ── Log ────────────────────────────────────────────────────────────────────────
+// ── Log ─────────────────────────────────────────────────────────────────
 function logEntry(type, detail, success) {
-  const el = document.getElementById('cmd-log');
-  const t  = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const el  = document.getElementById('cmd-log');
+  const t   = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const cls = success ? 'log-ok' : 'log-err';
-  el.innerHTML = `<div class="log-entry"><span class="log-time">${t}</span><span class="${cls}">${type}</span><span style="color:var(--hint)"> ${detail}</span></div>` + el.innerHTML;
+  el.innerHTML = `<div class="log-entry"><span class="log-time">${t}</span><span class="${cls}">${esc(type)}</span><span style="color:var(--hint)"> ${esc(detail)}</span></div>` + el.innerHTML;
 }
+
 function clearLog() {
   document.getElementById('cmd-log').innerHTML = '<div class="log-entry"><span class="log-time">—</span><span>No commands sent yet this session</span></div>';
 }
 
-// ── Toast ──────────────────────────────────────────────────────────────────────
+// ── Toast ────────────────────────────────────────────────────────────────
 let toastTimer;
 function toast(msg, type = 'ok') {
   const el = document.getElementById('toast');
@@ -532,8 +579,10 @@ function toast(msg, type = 'ok') {
   toastTimer = setTimeout(() => { el.className = ''; }, 3500);
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// ── Helpers ──────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 </script>
 </body>
 </html>
