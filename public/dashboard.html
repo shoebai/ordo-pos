@@ -284,11 +284,29 @@ main{flex:1;padding:40px 5% 60px;max-width:900px;margin:0 auto;width:100%;}
       <div class="step-text"><strong>Click "Ordo POS" on your Desktop</strong> — opens at <code style="font-size:11px;background:var(--ink3);padding:1px 6px;border-radius:4px;color:var(--gold2)">localhost:3000</code>. Other devices connect via your PC's IP address.</div>
     </div>
 
-    <button class="dl-btn" id="dl-btn" onclick="downloadPackage()">
+    <!-- Shown to paid users -->
+    <button class="dl-btn" id="dl-btn" onclick="downloadPackage()" style="display:none">
       ⬇ Download Ordo POS (Windows)
     </button>
-    <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--t3)">
-      Requires Windows 7/8/10/11 · Node.js auto-installed · Free
+
+    <!-- Shown to trial / free users -->
+    <div id="dl-locked" style="display:none;margin-top:20px;text-align:center;
+      background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);
+      border-radius:var(--rs);padding:18px 16px;">
+      <div style="font-size:22px;margin-bottom:8px;">🔒</div>
+      <div style="font-size:14px;font-weight:600;color:var(--cream);margin-bottom:6px;">Paid Plan Required</div>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:14px;line-height:1.6;">
+        Download is available on Monthly, Annual, and Lifetime plans.<br>Upgrade to unlock the Windows app.
+      </div>
+      <a href="pricing.html" style="display:inline-block;padding:10px 22px;background:var(--gold);
+        color:var(--ink);border-radius:var(--rs);font-size:13px;font-weight:600;text-decoration:none;transition:.18s;"
+        onmouseover="this.style.background='var(--gold2)'" onmouseout="this.style.background='var(--gold)'">
+        View Plans →
+      </a>
+    </div>
+
+    <div id="dl-hint" style="text-align:center;margin-top:10px;font-size:11px;color:var(--t3);display:none">
+      Requires Windows 7/8/10/11 · Self-contained installer · No Node.js needed
     </div>
   </div>
 </div>
@@ -355,6 +373,7 @@ function populateDashboard(d, user) {
   const restName  = d.restaurantName || 'Your Restaurant';
   const ownerName = d.ownerName      || user.displayName || '';
   const plan      = d.plan           || 'trial';
+  currentPlan = plan; // used by openDownloadModal
   const createdAt = d.createdAt ? new Date(d.createdAt) : null;
 
   // Welcome header
@@ -409,56 +428,40 @@ function signOut() {
 }
 
 // ── Download modal ──────────────────────────────────────────────
+// currentPlan is set in populateDashboard
+let currentPlan = 'trial';
+
 function openDownloadModal() {
+  const isPaid = ['monthly','annual','lifetime'].includes(currentPlan);
+  document.getElementById('dl-btn').style.display    = isPaid ? 'flex' : 'none';
+  document.getElementById('dl-locked').style.display = isPaid ? 'none'  : 'block';
+  document.getElementById('dl-hint').style.display   = isPaid ? 'block' : 'none';
   document.getElementById('dl-overlay').classList.add('show');
 }
 function closeDownloadModal() {
   document.getElementById('dl-overlay').classList.remove('show');
 }
 
-// ── Download package ─────────────────────────────────────────────
-// Generates a ZIP on-the-fly containing the 5 server files
-// (requires JSZip — loaded below if download is triggered)
+// ── Download ordopos.exe ─────────────────────────────────────────
+// Only reachable by paid users (button is hidden for trial/free).
+// Place ordopos.exe in the same folder as this HTML file.
 async function downloadPackage() {
   const btn = document.getElementById('dl-btn');
   btn.disabled = true;
   btn.innerHTML = '<span style="width:16px;height:16px;border:2px solid rgba(0,0,0,.25);border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></span> Preparing…';
 
   try {
-    // Load JSZip dynamically
-    if (!window.JSZip) {
-      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
-    }
+    const res = await fetch('ordopos.exe');
+    if (!res.ok) throw new Error('File not found');
 
-    const zip = new JSZip();
-    const folder = zip.folder('Ordo POS');
-
-    // Fetch all required files
-    const files = [
-      { name:'ordo_pos.html',    url:'ordo_pos.html'    },
-      { name:'server.js',        url:'server.js'        },
-      { name:'package.json',     url:'package.json'     },
-      { name:'package-lock.json',url:'package-lock.json'},
-      { name:'setup.bat',        url:'setup.bat'        },
-      { name:'README.md',        url:'README.md'        },
-    ];
-
-    const results = await Promise.allSettled(
-      files.map(f => fetch(f.url).then(r => r.ok ? r.arrayBuffer() : null).then(buf => ({...f, buf})))
-    );
-
-    for (const r of results) {
-      if (r.status === 'fulfilled' && r.value.buf) {
-        folder.file(r.value.name, r.value.buf);
-      }
-    }
-
-    const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{ level:6 }});
+    const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = 'Ordo-POS-Local.zip';
+    a.download = 'ordopos.exe';
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
     btn.innerHTML = '✓ Download started!';
@@ -471,16 +474,8 @@ async function downloadPackage() {
     console.error('Download error:', e);
     btn.disabled = false;
     btn.innerHTML = '⬇ Download Ordo POS (Windows)';
-    alert('Download failed. Please try again or contact support.');
+    alert('Download failed — ordopos.exe not found on the server. Please contact support.');
   }
-}
-
-function loadScript(src) {
-  return new Promise((res, rej) => {
-    const s = document.createElement('script');
-    s.src = src; s.onload = res; s.onerror = rej;
-    document.head.appendChild(s);
-  });
 }
 </script>
 </body>
