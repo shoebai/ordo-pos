@@ -2,536 +2,538 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Ordo — Admin Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ordo POS — Admin Panel</title>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
+/* ── Reset & Base ────────────────────────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0a0a0f;--s:#13131f;--card:#1a1a2e;--el:#1f1f35;
-  --gold:#c9a84c;--gold2:#e8c97a;--gold-dim:rgba(201,168,76,.1);
-  --red:#ef4444;--red-dim:rgba(239,68,68,.1);
-  --green:#10b981;--green-dim:rgba(16,185,129,.1);
-  --yellow:#f59e0b;--yellow-dim:rgba(245,158,11,.1);
-  --blue:#3b82f6;--blue-dim:rgba(59,130,246,.1);
-  --t1:#f5f0e8;--t2:#9a9080;--t3:#5a5448;
-  --border:rgba(201,168,76,.12);
+  --bg0:#07070f;--bg1:#0d0d14;--bg2:#13131f;--bg3:#1a1a28;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --gold:#fbbf24;--gold2:#f59e0b;
+  --text:#e2e8f0;--muted:#94a3b8;--hint:#475569;
+  --blue:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;
+  --r:10px;--r2:14px;
 }
-body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg0);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
 
-/* Nav */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--s);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:12px;}
-.logo{font-family:'Instrument Serif',serif;font-size:18px;color:var(--gold2);}
-.logo span{font-size:10px;font-family:'DM Sans',sans-serif;color:var(--t3);letter-spacing:2px;text-transform:uppercase;display:block;}
-.admin-badge{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.2);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;letter-spacing:.5px;}
+/* ── Login Screen ────────────────────────────────────────────────────────────── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:36px 32px;width:100%;max-width:380px}
+.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.logo-mark{color:var(--gold);font-size:22px;font-weight:800;letter-spacing:-0.5px}
+.logo-badge{background:rgba(251,191,36,0.12);color:var(--gold);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:0.5px}
+.login-sub{color:var(--hint);font-size:13px;margin-bottom:28px}
+.field-label{display:block;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.field-input{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;transition:border-color .15s;margin-bottom:16px}
+.field-input:focus{border-color:var(--gold)}
+.field-input::placeholder{color:var(--hint)}
+.btn-primary{width:100%;background:var(--gold);color:#0d0d14;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s}
+.btn-primary:hover{background:var(--gold2)}
+.btn-primary:disabled{background:var(--bg3);color:var(--hint);cursor:not-allowed}
+.err-msg{color:var(--red);font-size:13px;margin-top:10px;display:none}
 
-/* Layout */
-.layout{display:flex;min-height:calc(100vh - 57px);}
-.sidebar{width:200px;background:var(--s);border-right:1px solid var(--border);padding:16px;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;}
-.main{flex:1;padding:24px;overflow:auto;}
-.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--t2);font-size:13px;font-weight:500;margin-bottom:3px;transition:.15s;border:none;background:none;width:100%;text-align:left;}
-.nav-item:hover{background:var(--el);color:var(--t1);}
-.nav-item.active{background:var(--gold-dim);color:var(--gold2);}
-.nav-item i{width:16px;text-align:center;}
+/* ── Dashboard Layout ────────────────────────────────────────────────────────── */
+#dashboard{display:none;height:100vh;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:16px;padding:0 24px;height:56px;background:var(--bg1);border-bottom:1px solid var(--border);flex-shrink:0}
+.topbar-logo{color:var(--gold);font-size:17px;font-weight:800;letter-spacing:-0.3px;margin-right:auto}
+.topbar-admin{color:var(--muted);font-size:13px}
+.topbar-admin span{color:var(--text)}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;transition:all .15s}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
 
-/* Cards */
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
-.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;}
-.stat-icon{font-size:22px;margin-bottom:10px;}
-.stat-val{font-family:'Instrument Serif',serif;font-size:32px;color:var(--t1);line-height:1;}
-.stat-lbl{font-size:11px;color:var(--t3);margin-top:5px;text-transform:uppercase;letter-spacing:.5px;}
+.main-area{display:flex;flex:1;overflow:hidden}
 
-/* Table */
-.tbl{width:100%;border-collapse:collapse;}
-.tbl th{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;}
-.tbl td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.03);font-size:13px;vertical-align:middle;}
-.tbl tr:hover td{background:rgba(255,255,255,.015);}
-.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;}
-.badge-green{background:var(--green-dim);color:var(--green);}
-.badge-yellow{background:var(--yellow-dim);color:var(--yellow);}
-.badge-red{background:var(--red-dim);color:var(--red);}
-.badge-blue{background:var(--blue-dim);color:var(--blue);}
-.badge-gold{background:var(--gold-dim);color:var(--gold2);}
+/* ── Sidebar ─────────────────────────────────────────────────────────────────── */
+.sidebar{width:260px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-head{padding:16px 16px 8px;font-size:11px;color:var(--hint);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center}
+.sidebar-head .refresh-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:16px;padding:2px;transition:color .15s}
+.sidebar-head .refresh-btn:hover{color:var(--text)}
+.client-list{flex:1;overflow-y:auto;padding:4px 8px 8px}
+.client-item{padding:10px 10px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;display:flex;flex-direction:column;gap:3px;position:relative}
+.client-item:hover{background:var(--bg3)}
+.client-item.active{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2)}
+.client-name{font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px}
+.client-email{color:var(--hint);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.status-dot.online{background:var(--green)}
+.status-dot.offline{background:var(--hint)}
+.status-dot.locked{background:var(--red)}
+.client-lastseen{color:var(--hint);font-size:11px}
+.broadcast-all-btn{margin:8px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);color:var(--gold);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;text-align:left}
+.broadcast-all-btn:hover{background:rgba(251,191,36,0.15)}
 
-/* Inputs */
-.input{width:100%;padding:10px 12px;background:var(--el);border:1px solid rgba(255,255,255,.07);border-radius:8px;color:var(--t1);font-family:inherit;font-size:13px;outline:none;}
-.input:focus{border-color:var(--gold);}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;transition:.2s;}
-.btn-gold{background:var(--gold);color:#0a0a0f;}
-.btn-gold:hover{background:var(--gold2);}
-.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.2);}
-.btn-danger:hover{background:var(--red);color:#fff;}
-.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border);}
-.btn-ghost:hover{border-color:var(--gold);color:var(--gold2);}
-.btn-sm{padding:5px 11px;font-size:12px;}
+/* ── Command Panel ───────────────────────────────────────────────────────────── */
+.command-panel{flex:1;overflow-y:auto;padding:24px}
+.panel-header{margin-bottom:24px}
+.panel-title{font-size:20px;font-weight:700;margin-bottom:4px}
+.panel-sub{color:var(--muted);font-size:13px}
+.no-client{display:flex;align-items:center;justify-content:center;height:100%;color:var(--hint);flex-direction:column;gap:12px}
+.no-client-icon{font-size:40px;opacity:0.4}
 
-/* Search */
-.search-wrap{position:relative;margin-bottom:18px;}
-.search-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:13px;}
-.search-wrap input{padding-left:34px;}
+/* ── Command Cards ───────────────────────────────────────────────────────────── */
+.cmd-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.cmd-grid{grid-template-columns:1fr}}
+.cmd-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;display:flex;flex-direction:column;gap:14px}
+.cmd-card-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.cmd-card-title .icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.icon-blue{background:rgba(59,130,246,0.15);color:var(--blue)}
+.icon-gold{background:rgba(251,191,36,0.12);color:var(--gold)}
+.icon-red{background:rgba(239,68,68,0.12);color:var(--red)}
+.icon-green{background:rgba(34,197,94,0.12);color:var(--green)}
+.icon-orange{background:rgba(249,115,22,0.12);color:var(--orange)}
 
-/* Section headers */
-.sec-hdr{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
-.sec-hdr::after{content:'';flex:1;height:1px;background:var(--border);}
+.cmd-textarea{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:'Cascadia Code','Consolas',monospace;resize:vertical;outline:none;transition:border-color .15s;min-height:80px}
+.cmd-textarea:focus{border-color:var(--gold)}
+.cmd-textarea::placeholder{color:var(--hint)}
+.cmd-input{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s}
+.cmd-input:focus{border-color:var(--gold)}
+.cmd-input::placeholder{color:var(--hint)}
+.cmd-select{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;appearance:none;cursor:pointer}
+.cmd-select:focus{border-color:var(--gold)}
 
-/* Login */
-.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:linear-gradient(135deg,#0a0a0f,#1a1a2e);}
-.login-box{width:100%;max-width:360px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;}
-.login-title{font-family:'Instrument Serif',serif;font-size:26px;color:var(--t1);text-align:center;margin-bottom:6px;}
-.login-sub{font-size:12px;color:var(--t3);text-align:center;margin-bottom:24px;}
-.field{margin-bottom:14px;}
-.field label{display:block;font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px;}
-.err{color:var(--red);font-size:12px;margin-top:8px;}
+.cmd-row{display:flex;gap:8px;align-items:flex-end}
+.cmd-row .cmd-input{flex:1}
+.btn-send{background:var(--gold);color:#0d0d14;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;white-space:nowrap;flex-shrink:0}
+.btn-send:hover{background:var(--gold2)}
+.btn-send:disabled{background:var(--bg3);color:var(--hint);cursor:not-allowed}
+.btn-danger{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-danger:hover{background:rgba(239,68,68,0.25)}
+.btn-success{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-success:hover{background:rgba(34,197,94,0.25)}
 
-/* Modal */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
-.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+/* ── Toast / Feedback ────────────────────────────────────────────────────────── */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:13px;display:none;z-index:999;max-width:300px;line-height:1.5}
+#toast.show{display:block}
+#toast.ok{border-color:rgba(34,197,94,0.4);color:var(--green)}
+#toast.err{border-color:rgba(239,68,68,0.4);color:var(--red)}
 
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.main>*{animation:fadeIn .3s ease;}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* ── Command history log ─────────────────────────────────────────────────────── */
+.log-area{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:12px;max-height:180px;overflow-y:auto;font-size:12px;font-family:'Cascadia Code','Consolas',monospace;color:var(--muted)}
+.log-entry{margin-bottom:4px;display:flex;gap:8px}
+.log-time{color:var(--hint);flex-shrink:0}
+.log-ok{color:var(--green)}
+.log-err{color:var(--red)}
+
+/* ── Section divider ─────────────────────────────────────────────────────────── */
+.section-label{font-size:11px;color:var(--hint);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 12px}
+.client-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.stat-val{font-size:22px;font-weight:700;color:var(--gold)}
+.stat-lbl{font-size:12px;color:var(--muted);margin-top:2px}
 </style>
 </head>
 <body>
 
-<div id="app"></div>
+<!-- ── LOGIN ──────────────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="logo-row">
+      <span class="logo-mark">✦ Ordo POS</span>
+      <span class="logo-badge">ADMIN</span>
+    </div>
+    <div class="login-sub">Sign in to manage all client installations</div>
+    <label class="field-label">Email</label>
+    <input id="l-email" class="field-input" type="email" placeholder="admin@yourcompany.com" autofocus/>
+    <label class="field-label">Password</label>
+    <input id="l-pass" class="field-input" type="password" placeholder="Your admin password"/>
+    <button class="btn-primary" id="l-btn" onclick="doLogin()">Sign in →</button>
+    <div class="err-msg" id="l-err"></div>
+  </div>
+</div>
 
-<script>
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
-  authDomain: "pos-ordo.firebaseapp.com",
-  projectId: "pos-ordo",
-  storageBucket: "pos-ordo.firebasestorage.app",
-  messagingSenderId: "575923763514",
-  appId: "1:575923763514:web:f81283d99aafd2460f3803",
-  measurementId: "G-PND9FKHRVF"
-};
+<!-- ── DASHBOARD ──────────────────────────────────────────────────────────────── -->
+<div id="dashboard">
+  <div class="topbar">
+    <span class="topbar-logo">✦ Ordo POS Admin</span>
+    <span class="topbar-admin">Signed in as <span id="admin-email"></span></span>
+    <button class="btn-ghost" onclick="doLogout()">Sign out</button>
+  </div>
+  <div class="main-area">
 
-const ADMIN_EMAIL = "yshoeb52@gmail.com";
-
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// State
-let currentAdmin = null;
-let tenants = [];
-let activeTab = 'overview';
-let searchQuery = '';
-
-// Helper functions
-function showLoading() {
-  document.getElementById('app').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;">
-      <i class="fa fa-spinner" style="font-size:32px;animation:spin 1s linear infinite;color:var(--gold);"></i>
-      <div style="color:var(--t2);">Loading dashboard...</div>
-    </div>`;
-}
-
-function showError(message, details = '') {
-  document.getElementById('app').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
-      <div class="card" style="max-width:600px;text-align:center;">
-        <div style="font-size:48px;margin-bottom:16px;">🔒</div>
-        <h2 style="color:var(--red);margin-bottom:12px;">Access Error</h2>
-        <p style="color:var(--t2);margin-bottom:20px;line-height:1.6;">${message}</p>
-        ${details ? `<pre style="background:var(--el);padding:12px;border-radius:8px;font-size:11px;overflow-x:auto;margin-bottom:20px;text-align:left;">${details}</pre>` : ''}
-        <div style="background:var(--el);border-radius:8px;padding:16px;text-align:left;margin-bottom:20px;">
-          <div style="font-weight:700;margin-bottom:8px;color:var(--gold);">🔧 How to Fix:</div>
-          <ol style="color:var(--t2);font-size:12px;line-height:1.8;margin-left:20px;">
-            <li>Go to <a href="https://console.firebase.google.com/project/pos-ordo/firestore/rules" target="_blank" style="color:var(--gold);">Firebase Console → Firestore → Rules</a></li>
-            <li>Replace existing rules with:</li>
-          </ol>
-          <pre style="background:#0a0a0f;padding:12px;border-radius:6px;font-size:10px;overflow-x:auto;margin-top:10px;color:#ccc;">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /tenants/{document} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
-    }
-  }
-}</pre>
-          <p style="color:var(--t2);font-size:11px;margin-top:10px;">⚠️ After adding rules, click <strong style="color:var(--green);">Publish</strong> and wait 30 seconds.</p>
-        </div>
-        <button class="btn btn-gold" onclick="location.reload()" style="margin-right:10px;">
-          <i class="fa fa-sync"></i> Retry
-        </button>
-        <button class="btn btn-ghost" onclick="auth.signOut()">
-          <i class="fa fa-sign-out-alt"></i> Sign Out
-        </button>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <button class="broadcast-all-btn" onclick="selectAllClients()">⚡ Broadcast to all clients</button>
+      <div class="sidebar-head">
+        <span>Registered clients</span>
+        <button class="refresh-btn" onclick="refreshClients()" title="Refresh">↻</button>
+      </div>
+      <div class="client-list" id="client-list">
+        <div style="padding:12px;color:var(--hint);font-size:13px">Loading…</div>
       </div>
     </div>
-  `;
-}
 
-// Auth state
-auth.onAuthStateChanged(async user => {
-  console.log("Auth state changed:", user?.email);
-  
-  if (user && user.email === ADMIN_EMAIL) {
-    currentAdmin = user;
-    await loadDashboard();
-  } else if (user) {
-    await auth.signOut();
-    renderLogin('Access denied — admin only.');
+    <!-- COMMAND PANEL -->
+    <div class="command-panel" id="command-panel">
+      <div class="no-client" id="no-client">
+        <div class="no-client-icon">📡</div>
+        <div>Select a client from the sidebar<br>or broadcast to all</div>
+      </div>
+
+      <div id="client-commands" style="display:none">
+        <div class="panel-header">
+          <div class="panel-title" id="cp-title">Client Name</div>
+          <div class="panel-sub" id="cp-sub">Last seen: —</div>
+        </div>
+
+        <!-- Stats row -->
+        <div class="client-stats">
+          <div class="stat-card">
+            <div class="stat-val" id="stat-status">—</div>
+            <div class="stat-lbl">Status</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="stat-seen">—</div>
+            <div class="stat-lbl">Last seen</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="stat-ver">—</div>
+            <div class="stat-lbl">Version</div>
+          </div>
+        </div>
+
+        <div class="section-label">Commands</div>
+
+        <div class="cmd-grid">
+
+          <!-- Broadcast message -->
+          <div class="cmd-card">
+            <div class="cmd-card-title">
+              <div class="icon icon-blue">💬</div>
+              Broadcast message
+            </div>
+            <input id="msg-text" class="cmd-input" type="text" placeholder="e.g. Kitchen printer offline — use manual tickets"/>
+            <div class="cmd-row">
+              <select id="msg-level" class="cmd-select">
+                <option value="info">ℹ Info</option>
+                <option value="warning">⚠ Warning</option>
+                <option value="danger">🔴 Danger</option>
+              </select>
+              <button class="btn-send" onclick="sendCmd('broadcast_message')">Send</button>
+            </div>
+          </div>
+
+          <!-- Lock / Unlock -->
+          <div class="cmd-card">
+            <div class="cmd-card-title">
+              <div class="icon icon-red">🔒</div>
+              Lock / Unlock POS
+            </div>
+            <input id="lock-reason" class="cmd-input" type="text" placeholder="Reason (shown to cashier)"/>
+            <div style="display:flex;gap:8px">
+              <button class="btn-danger" style="flex:1" onclick="sendCmd('lock')">🔒 Lock</button>
+              <button class="btn-success" style="flex:1" onclick="sendCmd('unlock')">🔓 Unlock</button>
+            </div>
+          </div>
+
+          <!-- Push menu -->
+          <div class="cmd-card">
+            <div class="cmd-card-title">
+              <div class="icon icon-gold">🍽</div>
+              Push menu items
+            </div>
+            <div style="font-size:12px;color:var(--muted)">Paste a JSON array of items — replaces the entire menu on the client.</div>
+            <textarea id="menu-json" class="cmd-textarea" rows="5" placeholder='[{"id":"1","name":"Burger","nameAr":"برجر","price":25,"cat":"Mains"},...]'></textarea>
+            <button class="btn-send" onclick="sendCmd('push_menu')">Push menu →</button>
+          </div>
+
+          <!-- Push settings -->
+          <div class="cmd-card">
+            <div class="cmd-card-title">
+              <div class="icon icon-gold">⚙</div>
+              Push settings
+            </div>
+            <div style="font-size:12px;color:var(--muted)">Paste a JSON object — merged with existing settings.</div>
+            <textarea id="settings-json" class="cmd-textarea" rows="5" placeholder='{"currency":"SAR","vatRate":15,"receiptFooter":"Thank you!"}'></textarea>
+            <button class="btn-send" onclick="sendCmd('push_settings')">Push settings →</button>
+          </div>
+
+          <!-- Force reload -->
+          <div class="cmd-card">
+            <div class="cmd-card-title">
+              <div class="icon icon-orange">🔄</div>
+              Force reload
+            </div>
+            <div style="font-size:12px;color:var(--muted)">All open POS browser tabs on this client will reload immediately.</div>
+            <button class="btn-send" onclick="sendCmd('force_reload')">Reload POS →</button>
+          </div>
+
+          <!-- Clear orders -->
+          <div class="cmd-card">
+            <div class="cmd-card-title">
+              <div class="icon icon-red">🗑</div>
+              Clear orders
+            </div>
+            <div style="font-size:12px;color:var(--muted)">Permanently deletes all orders from this client. Useful for end-of-day or demo resets.</div>
+            <button class="btn-danger" onclick="confirmClear()">Clear all orders</button>
+          </div>
+
+        </div><!-- /.cmd-grid -->
+
+        <!-- Command log -->
+        <div class="section-label">Recent commands</div>
+        <div class="log-area" id="cmd-log">
+          <div class="log-entry"><span class="log-time">—</span><span>No commands sent yet this session</span></div>
+        </div>
+
+      </div><!-- /#client-commands -->
+    </div><!-- /.command-panel -->
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Firebase init ──────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyDTzLb-bqmZiNB0G0W4WTRGseMM37GUcpI",
+  authDomain:        "pos-ordo.firebaseapp.com",
+  projectId:         "pos-ordo",
+  storageBucket:     "pos-ordo.firebasestorage.app",
+  messagingSenderId: "575923763514",
+  appId:             "1:575923763514:web:f81283d99aafd2460f3803",
+  measurementId:     "G-PND9FKHRVF",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let selectedClientId   = null;
+let selectedClientData = null;
+let broadcastMode      = false;
+let allClients         = [];
+let clientsUnsubscribe = null;
+
+// ── Auth ───────────────────────────────────────────────────────────────────────
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById('login-screen').style.display = 'none';
+    const d = document.getElementById('dashboard');
+    d.style.display = 'flex';
+    document.getElementById('admin-email').textContent = user.email;
+    startClientListener();
   } else {
-    renderLogin();
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('dashboard').style.display = 'none';
+    if (clientsUnsubscribe) { clientsUnsubscribe(); clientsUnsubscribe = null; }
   }
 });
 
-// Load all tenants with error handling
-async function loadDashboard() {
-  showLoading();
-  
-  try {
-    console.log("Attempting to load tenants from Firestore...");
-    
-    // Test connection first
-    const testDoc = await db.collection('tenants').limit(1).get();
-    console.log("Firestore connection successful, testDoc size:", testDoc.size);
-    
-    // Get all tenants
-    const snap = await db.collection('tenants').orderBy('createdAt', 'desc').get();
-    tenants = snap.docs.map(doc => ({ 
-      uid: doc.id,  // IMPORTANT: Use uid from doc.id, not doc.data().uid
-      ...doc.data() 
-    }));
-    
-    console.log(`Successfully loaded ${tenants.length} tenants`);
-    renderDashboard();
-    
-  } catch (error) {
-    console.error("Firestore error details:", error);
-    showError(
-      'Failed to load tenant data from Firestore.',
-      `Error: ${error.message || 'Permission denied. Check your security rules.'}`
-    );
-  }
+function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const btn   = document.getElementById('l-btn');
+  const err   = document.getElementById('l-err');
+  err.style.display = 'none';
+  if (!email || !pass) { showLoginErr('Please enter email and password.'); return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  auth.signInWithEmailAndPassword(email, pass)
+    .catch(e => { showLoginErr(friendlyAuthErr(e.code)); btn.disabled=false; btn.textContent='Sign in →'; });
+}
+function showLoginErr(msg) {
+  const el = document.getElementById('l-err');
+  el.textContent = msg; el.style.display = 'block';
+}
+function friendlyAuthErr(code) {
+  if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential')
+    return 'Incorrect email or password.';
+  if (code === 'auth/too-many-requests') return 'Too many attempts. Try again later.';
+  return 'Sign in failed. Check your credentials.';
+}
+function doLogout() { auth.signOut(); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+});
+
+// ── Client list ────────────────────────────────────────────────────────────────
+function startClientListener() {
+  clientsUnsubscribe = db.collection('clients').onSnapshot(snap => {
+    allClients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderClientList();
+    // If a client is selected, refresh their stats
+    if (selectedClientId) {
+      const fresh = allClients.find(c => c.id === selectedClientId);
+      if (fresh) updateStats(fresh);
+    }
+  }, err => console.error('clients listener:', err));
+}
+function refreshClients() {
+  document.getElementById('client-list').innerHTML = '<div style="padding:12px;color:var(--hint);font-size:13px">Refreshing…</div>';
+  if (clientsUnsubscribe) { clientsUnsubscribe(); startClientListener(); }
 }
 
-// Render login screen
-function renderLogin(err = '') {
-  document.getElementById('app').innerHTML = `
-    <div class="login-wrap">
-      <div class="login-box">
-        <div class="login-title">Ordo Admin</div>
-        <div class="login-sub">Super admin access only</div>
-        ${err ? `<div class="err" style="margin-bottom:14px;padding:8px 12px;background:var(--red-dim);border-radius:6px;">${err}</div>` : ''}
-        <div class="field"><label>Email</label><input class="input" id="adm-email" type="email" value="${ADMIN_EMAIL}"/></div>
-        <div class="field"><label>Password</label><input class="input" id="adm-pass" type="password" onkeydown="if(event.key==='Enter')adminLogin()"/></div>
-        <div id="adm-err" class="err"></div>
-        <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:12px;" onclick="adminLogin()">Sign In →</button>
-      </div>
-    </div>`;
+function isOnline(lastSeen) {
+  if (!lastSeen) return false;
+  return (Date.now() - new Date(lastSeen).getTime()) < 10 * 60 * 1000;
+}
+function timeSince(iso) {
+  if (!iso) return 'Never';
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'Just now';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
 }
 
-async function adminLogin() {
-  const email = document.getElementById('adm-email').value;
-  const pass = document.getElementById('adm-pass').value;
-  const errEl = document.getElementById('adm-err');
-  
-  if (!email || !pass) {
-    errEl.textContent = 'Fill in both fields.';
+function renderClientList() {
+  const el = document.getElementById('client-list');
+  if (!allClients.length) {
+    el.innerHTML = '<div style="padding:12px;color:var(--hint);font-size:13px">No clients registered yet</div>';
     return;
   }
-  
+  el.innerHTML = allClients.map(c => {
+    const online = isOnline(c.lastSeen);
+    const locked = c.locked;
+    const dotCls = locked ? 'locked' : (online ? 'online' : 'offline');
+    const active = c.id === selectedClientId ? 'active' : '';
+    return `<div class="client-item ${active}" onclick="selectClient('${c.id}')">
+      <div class="client-name">
+        <span class="status-dot ${dotCls}"></span>
+        ${esc(c.clientName || c.id)}
+        ${locked ? '<span style="font-size:10px;color:var(--red)">LOCKED</span>' : ''}
+      </div>
+      <div class="client-email">${esc(c.adminEmail || '—')}</div>
+      <div class="client-lastseen">${timeSince(c.lastSeen)}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectClient(id) {
+  broadcastMode = false;
+  selectedClientId = id;
+  selectedClientData = allClients.find(c => c.id === id);
+  renderClientList();
+  showCommandPanel(selectedClientData);
+}
+function selectAllClients() {
+  broadcastMode = true;
+  selectedClientId = '__all__';
+  selectedClientData = null;
+  renderClientList();
+  showCommandPanel(null, true);
+}
+function showCommandPanel(client, allMode = false) {
+  document.getElementById('no-client').style.display = 'none';
+  document.getElementById('client-commands').style.display = 'block';
+  if (allMode) {
+    document.getElementById('cp-title').textContent = 'All clients (' + allClients.length + ')';
+    document.getElementById('cp-sub').textContent = 'Command will be sent to every registered client';
+    document.getElementById('stat-status').textContent = allClients.length;
+    document.getElementById('stat-status').style.color = 'var(--gold)';
+    document.getElementById('stat-seen').textContent = '—';
+    document.getElementById('stat-ver').textContent = '—';
+  } else {
+    updateStats(client);
+  }
+  clearLog();
+}
+function updateStats(c) {
+  document.getElementById('cp-title').textContent = c.clientName || c.id;
+  document.getElementById('cp-sub').textContent = 'ID: ' + c.id + (c.adminEmail ? '  ·  ' + c.adminEmail : '');
+  const online = isOnline(c.lastSeen);
+  const locked = c.locked;
+  const stEl = document.getElementById('stat-status');
+  stEl.textContent = locked ? 'Locked' : (online ? 'Online' : 'Offline');
+  stEl.style.color = locked ? 'var(--red)' : (online ? 'var(--green)' : 'var(--muted)');
+  document.getElementById('stat-seen').textContent = timeSince(c.lastSeen);
+  document.getElementById('stat-ver').textContent = c.version || '—';
+}
+
+// ── Send commands ──────────────────────────────────────────────────────────────
+async function sendCmd(type) {
+  if (!selectedClientId) return;
+
+  let payload = {};
+  let ok = true;
+
   try {
-    errEl.textContent = '';
-    await auth.signInWithEmailAndPassword(email, pass);
+    switch(type) {
+      case 'broadcast_message':
+        const msg = document.getElementById('msg-text').value.trim();
+        if (!msg) { toast('Enter a message to broadcast', 'err'); return; }
+        payload = { message: msg, level: document.getElementById('msg-level').value };
+        break;
+
+      case 'lock':
+        payload = { reason: document.getElementById('lock-reason').value.trim() || 'Locked by administrator.' };
+        break;
+
+      case 'unlock':
+        payload = {};
+        break;
+
+      case 'push_menu':
+        const menuRaw = document.getElementById('menu-json').value.trim();
+        if (!menuRaw) { toast('Paste menu JSON first', 'err'); return; }
+        try { payload = { items: JSON.parse(menuRaw) }; }
+        catch { toast('Invalid JSON — check syntax', 'err'); return; }
+        break;
+
+      case 'push_settings':
+        const setRaw = document.getElementById('settings-json').value.trim();
+        if (!setRaw) { toast('Paste settings JSON first', 'err'); return; }
+        try { payload = JSON.parse(setRaw); }
+        catch { toast('Invalid JSON — check syntax', 'err'); return; }
+        break;
+
+      case 'force_reload':
+      case 'clear_orders':
+        payload = {};
+        break;
+    }
+
+    const cmd = { type, payload, status: 'pending', createdAt: new Date().toISOString() };
+
+    if (broadcastMode) {
+      await Promise.all(allClients.map(c =>
+        db.collection('clients').doc(c.id).collection('commands').add(cmd)
+      ));
+      logEntry(type, `→ all ${allClients.length} clients`, true);
+      toast(`Sent to all ${allClients.length} clients`, 'ok');
+    } else {
+      await db.collection('clients').doc(selectedClientId).collection('commands').add(cmd);
+      logEntry(type, '→ ' + (selectedClientData?.clientName || selectedClientId), true);
+      toast('Command sent: ' + type, 'ok');
+    }
   } catch(e) {
-    errEl.textContent = 'Invalid credentials.';
+    logEntry(type, e.message, false);
+    toast('Error: ' + e.message, 'err');
   }
 }
 
-// Render main dashboard
-function renderDashboard() {
-  const total = tenants.length;
-  const trials = tenants.filter(t => t.status === 'trial').length;
-  const active = tenants.filter(t => t.status === 'active').length;
-  const expired = tenants.filter(t => t.status === 'expired').length;
-  const newThisMonth = tenants.filter(t => {
-    if (!t.createdAt) return false;
-    const d = new Date(t.createdAt);
-    const n = new Date();
-    return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
-  }).length;
-
-  const filtered = tenants.filter(t =>
-    !searchQuery ||
-    (t.restaurantName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (t.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (t.ownerName || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  document.getElementById('app').innerHTML = `
-    <div class="topbar">
-      <div class="logo">Ordo <span>Admin Dashboard</span></div>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <span class="admin-badge"><i class="fa fa-shield-alt"></i> ADMIN</span>
-        <span style="font-size:12px;color:var(--t3)"><i class="fa fa-envelope"></i> ${currentAdmin?.email || ''}</span>
-        <button class="btn btn-ghost btn-sm" onclick="auth.signOut()"><i class="fa fa-sign-out-alt"></i> Sign out</button>
-      </div>
-    </div>
-
-    <div class="layout">
-      <div class="sidebar">
-        <button class="nav-item ${activeTab === 'overview' ? 'active' : ''}" onclick="setTab('overview')">
-          <i class="fa fa-chart-pie"></i> Overview
-        </button>
-        <button class="nav-item ${activeTab === 'tenants' ? 'active' : ''}" onclick="setTab('tenants')">
-          <i class="fa fa-building"></i> Restaurants
-        </button>
-        <button class="nav-item ${activeTab === 'revenue' ? 'active' : ''}" onclick="setTab('revenue')">
-          <i class="fa fa-coins"></i> Revenue
-        </button>
-        <button class="nav-item ${activeTab === 'expiring' ? 'active' : ''}" onclick="setTab('expiring')">
-          <i class="fa fa-clock"></i> Expiring Soon
-        </button>
-      </div>
-
-      <div class="main">
-        ${activeTab === 'overview' ? renderOverview(total, trials, active, expired, newThisMonth, tenants) : ''}
-        ${activeTab === 'tenants' ? renderTenants(filtered) : ''}
-        ${activeTab === 'revenue' ? renderRevenue(tenants) : ''}
-        ${activeTab === 'expiring' ? renderExpiring(tenants) : ''}
-      </div>
-    </div>
-  `;
-}
-
-function renderOverview(total, trials, active, expired, newMonth, tenants) {
-  const recentTenants = [...tenants].slice(0, 8);
-  return `
-    <div class="stat-grid">
-      <div class="stat"><div class="stat-icon">🏪</div><div class="stat-val">${total}</div><div class="stat-lbl">Total Restaurants</div></div>
-      <div class="stat"><div class="stat-icon">⏳</div><div class="stat-val">${trials}</div><div class="stat-lbl">In Trial</div></div>
-      <div class="stat"><div class="stat-icon">✅</div><div class="stat-val">${active}</div><div class="stat-lbl">Active (Paid)</div></div>
-      <div class="stat"><div class="stat-icon">📅</div><div class="stat-val">${newMonth}</div><div class="stat-lbl">New This Month</div></div>
-      <div class="stat"><div class="stat-icon">⚠️</div><div class="stat-val">${expired}</div><div class="stat-lbl">Expired</div></div>
-    </div>
-    <div class="sec-hdr">Recent Signups</div>
-    <div class="card" style="padding:0;overflow:hidden;">
-      <table class="tbl">
-        <thead><tr><th>Restaurant</th><th>Owner</th><th>Plan</th><th>Status</th><th>Joined</th></tr></thead>
-        <tbody>
-          ${recentTenants.map(t => `
-            <tr>
-              <td><strong>${t.restaurantName || '—'}</strong><br><span style="color:var(--t3);font-size:11px">${t.email || '—'}</span></td>
-              <td style="color:var(--t2)">${t.ownerName || '—'}</td>
-              <td>${getPlanBadge(t.plan)}</td>
-              <td>${getStatusBadge(t.status)}</td>
-              <td style="color:var(--t3);font-size:12px">${formatDate(t.createdAt)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function renderTenants(filtered) {
-  return `
-    <div class="search-wrap">
-      <i class="fa fa-search"></i>
-      <input class="input" placeholder="Search restaurants, email, owner..." value="${searchQuery}" oninput="window.searchQuery=this.value;window.renderDashboard()"/>
-    </div>
-    <div class="sec-hdr">${filtered.length} restaurant${filtered.length !== 1 ? 's' : ''}</div>
-    <div class="card" style="padding:0;overflow:hidden;">
-      <table class="tbl">
-        <thead>
-          <tr>
-            <th>Restaurant</th>
-            <th>Owner</th>
-            <th>Email</th>
-            <th>Plan</th>
-            <th>Status</th>
-            <th>Trial Ends</th>
-            <th>Joined</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${filtered.map(t => `
-            <tr>
-              <td><strong>${t.restaurantName || '—'}</strong></td>
-              <td style="color:var(--t2)">${t.ownerName || '—'}</td>
-              <td style="color:var(--t3);font-size:12px">${t.email || '—'}</td>
-              <td>${getPlanBadge(t.plan)}</td>
-              <td>${getStatusBadge(t.status)}</td>
-              <td style="color:var(--t3);font-size:12px">${formatDate(t.trialEnd)}</td>
-              <td style="color:var(--t3);font-size:12px">${formatDate(t.createdAt)}</td>
-              <td style="display:flex;gap:5px;">
-                <button class="btn btn-ghost btn-sm" onclick="viewTenant('${t.uid}')"><i class="fa fa-eye"></i></button>
-                <button class="btn btn-success btn-sm" onclick="activateTenant('${t.uid}')"><i class="fa fa-check"></i></button>
-                <button class="btn btn-danger btn-sm" onclick="expireTenant('${t.uid}')"><i class="fa fa-ban"></i></button>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function renderRevenue(tenants) {
-  const paid = tenants.filter(t => t.status === 'active');
-  const monthly = paid.filter(t => t.plan === 'monthly').length;
-  const annual = paid.filter(t => t.plan === 'annual').length;
-  const lifetime = paid.filter(t => t.plan === 'lifetime').length;
-  const mrr = monthly * 199 + annual * 149;
-  const arr = mrr * 12;
-  
-  return `
-    <div class="stat-grid">
-      <div class="stat"><div class="stat-icon">💰</div><div class="stat-val">SAR ${mrr.toLocaleString()}</div><div class="stat-lbl">Monthly Recurring Revenue</div></div>
-      <div class="stat"><div class="stat-icon">📈</div><div class="stat-val">SAR ${arr.toLocaleString()}</div><div class="stat-lbl">Annual Run Rate</div></div>
-      <div class="stat"><div class="stat-icon">🔄</div><div class="stat-val">${monthly}</div><div class="stat-lbl">Monthly Subscribers</div></div>
-      <div class="stat"><div class="stat-icon">📅</div><div class="stat-val">${annual}</div><div class="stat-lbl">Annual Subscribers</div></div>
-      <div class="stat"><div class="stat-icon">♾️</div><div class="stat-val">${lifetime}</div><div class="stat-lbl">Lifetime Licenses</div></div>
-    </div>
-    <div class="sec-hdr">Paid Accounts</div>
-    <div class="card" style="padding:0;overflow:hidden;">
-      <table class="tbl">
-        <thead><tr><th>Restaurant</th><th>Plan</th><th>Email</th><th>Paid Until</th></tr></thead>
-        <tbody>
-          ${paid.map(t => `
-            <tr>
-              <td><strong>${t.restaurantName || '—'}</strong></td>
-              <td>${getPlanBadge(t.plan)}</td>
-              <td style="color:var(--t3)">${t.email}</td>
-              <td style="color:var(--t3);font-size:12px">${formatDate(t.paidUntil)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function renderExpiring(tenants) {
-  const soon = tenants.filter(t => {
-    if (t.status !== 'trial') return false;
-    if (!t.trialEnd) return false;
-    const days = Math.ceil((new Date(t.trialEnd) - new Date()) / 86400000);
-    return days <= 3 && days >= 0;
-  }).sort((a, b) => new Date(a.trialEnd) - new Date(b.trialEnd));
-
-  return `
-    <div class="sec-hdr">⏰ ${soon.length} trial${soon.length !== 1 ? 's' : ''} expiring within 3 days</div>
-    ${soon.length === 0 ? '<div class="card" style="text-align:center;color:var(--t3);padding:40px;">No trials expiring soon 🎉</div>' : ''}
-    ${soon.length > 0 ? `
-    <div class="card" style="padding:0;overflow:hidden;">
-      <table class="tbl">
-        <thead><tr><th>Restaurant</th><th>Email</th><th>Days Left</th><th>Actions</th></tr></thead>
-        <tbody>
-          ${soon.map(t => {
-            const days = Math.ceil((new Date(t.trialEnd) - new Date()) / 86400000);
-            return `
-              <tr>
-                <td><strong>${t.restaurantName || '—'}</strong></td>
-                <td style="color:var(--t3)">${t.email}</td>
-                <td><span class="badge ${days <= 1 ? 'badge-red' : 'badge-yellow'}">${days} day${days !== 1 ? 's' : ''}</span></td>
-                <td style="display:flex;gap:6px;">
-                  <button class="btn btn-ghost btn-sm" onclick="extendTrial('${t.uid}')"><i class="fa fa-clock"></i> Extend 7d</button>
-                  <button class="btn btn-gold btn-sm" onclick="activateTenant('${t.uid}')"><i class="fa fa-check"></i> Activate</button>
-                </td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>` : ''}
-  `;
-}
-
-// Helper functions
-function getPlanBadge(plan) {
-  const colors = { trial: 'badge-blue', monthly: 'badge-gold', annual: 'badge-purple', lifetime: 'badge-green' };
-  const labels = { trial: 'Trial', monthly: 'Monthly', annual: 'Annual', lifetime: 'Lifetime' };
-  return `<span class="badge ${colors[plan] || 'badge-blue'}">${labels[plan] || plan}</span>`;
-}
-
-function getStatusBadge(status) {
-  const colors = { trial: 'badge-yellow', active: 'badge-green', expired: 'badge-red', cancelled: 'badge-blue' };
-  const labels = { trial: 'Trial', active: 'Active', expired: 'Expired', cancelled: 'Cancelled' };
-  return `<span class="badge ${colors[status] || 'badge-blue'}">${labels[status] || status}</span>`;
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    return new Date(dateStr).toLocaleDateString();
-  } catch {
-    return '—';
+function confirmClear() {
+  if (confirm('Delete ALL orders from this client? This cannot be undone.')) {
+    sendCmd('clear_orders');
   }
 }
 
-// Actions
-window.setTab = function(tab) {
-  activeTab = tab;
-  renderDashboard();
-};
+// ── Log ────────────────────────────────────────────────────────────────────────
+function logEntry(type, detail, success) {
+  const el = document.getElementById('cmd-log');
+  const t  = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const cls = success ? 'log-ok' : 'log-err';
+  el.innerHTML = `<div class="log-entry"><span class="log-time">${t}</span><span class="${cls}">${type}</span><span style="color:var(--hint)"> ${detail}</span></div>` + el.innerHTML;
+}
+function clearLog() {
+  document.getElementById('cmd-log').innerHTML = '<div class="log-entry"><span class="log-time">—</span><span>No commands sent yet this session</span></div>';
+}
 
-window.viewTenant = function(uid) {
-  const tenant = tenants.find(t => t.uid === uid);
-  if (!tenant) return;
-  
-  alert(`Restaurant: ${tenant.restaurantName}\nOwner: ${tenant.ownerName}\nEmail: ${tenant.email}\nPlan: ${tenant.plan}\nStatus: ${tenant.status}`);
-};
+// ── Toast ──────────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3500);
+}
 
-window.activateTenant = async function(uid) {
-  if (!confirm('Activate this account?')) return;
-  try {
-    const paidUntil = new Date();
-    paidUntil.setMonth(paidUntil.getMonth() + 1);
-    await db.collection('tenants').doc(uid).update({
-      status: 'active',
-      plan: 'monthly',
-      paidUntil: paidUntil.toISOString()
-    });
-    await loadDashboard();
-    alert('✅ Account activated!');
-  } catch (error) {
-    alert('Error activating account: ' + error.message);
-  }
-};
-
-window.expireTenant = async function(uid) {
-  if (!confirm('Mark this account as expired?')) return;
-  try {
-    await db.collection('tenants').doc(uid).update({ status: 'expired' });
-    await loadDashboard();
-    alert('⚠️ Account marked as expired');
-  } catch (error) {
-    alert('Error expiring account: ' + error.message);
-  }
-};
-
-window.extendTrial = async function(uid) {
-  const tenant = tenants.find(t => t.uid === uid);
-  if (!tenant) return;
-  try {
-    const newEnd = new Date(tenant.trialEnd || new Date());
-    newEnd.setDate(newEnd.getDate() + 7);
-    await db.collection('tenants').doc(uid).update({ trialEnd: newEnd.toISOString() });
-    await loadDashboard();
-    alert('✅ Trial extended by 7 days!');
-  } catch (error) {
-    alert('Error extending trial: ' + error.message);
-  }
-};
-
-// Make functions available globally
-window.searchQuery = searchQuery;
-window.renderDashboard = renderDashboard;
-window.loadDashboard = loadDashboard;
-window.auth = auth;
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
 </body>
 </html>
